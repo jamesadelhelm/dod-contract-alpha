@@ -94,15 +94,21 @@ def parse_from_dod_html(url: str = DOD_CONTRACTS_URL, max_contracts: int = 50) -
     Requires: requests, beautifulsoup4
     """
     try:
-        import requests
         from bs4 import BeautifulSoup
     except ImportError:
-        raise ImportError("Install requests and beautifulsoup4: pip install requests beautifulsoup4")
+        raise ImportError("Install beautifulsoup4: pip install beautifulsoup4")
 
-    headers = {"User-Agent": "Mozilla/5.0 (research agent; not commercial)"}
     try:
-        resp = requests.get(url, headers=headers, timeout=15)
+        from curl_cffi import requests as cf_requests
+        resp = cf_requests.get(url, impersonate="chrome120", timeout=15)
         resp.raise_for_status()
+    except ImportError:
+        try:
+            import requests
+            resp = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=15)
+            resp.raise_for_status()
+        except Exception as e:
+            raise ConnectionError(f"Could not fetch DoD contracts page: {e}")
     except Exception as e:
         raise ConnectionError(f"Could not fetch DoD contracts page: {e}")
 
