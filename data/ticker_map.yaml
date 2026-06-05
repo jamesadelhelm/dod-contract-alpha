@@ -1,0 +1,724 @@
+# DoD Contract Agent — Ticker Mapping
+# Format:
+#   awardee_name_variant:
+#     ticker: TICKER
+#     parent: Parent Company Name
+#     confidence: 0.0-1.0   (1.0 = certain, 0.7 = likely, 0.5 = possible)
+#     notes: optional free-text
+
+# ── Traditional Defense Primes ──────────────────────────────────────────────
+lockheed martin corporation:
+  ticker: LMT
+  parent: Lockheed Martin
+  confidence: 1.0
+lockheed martin:
+  ticker: LMT
+  parent: Lockheed Martin
+  confidence: 1.0
+sikorsky aircraft:
+  ticker: LMT
+  parent: Lockheed Martin
+  confidence: 1.0
+  notes: Subsidiary of Lockheed Martin
+
+northrop grumman corporation:
+  ticker: NOC
+  parent: Northrop Grumman
+  confidence: 1.0
+northrop grumman:
+  ticker: NOC
+  parent: Northrop Grumman
+  confidence: 1.0
+northrop grumman systems corporation:
+  ticker: NOC
+  parent: Northrop Grumman
+  confidence: 1.0
+
+raytheon company:
+  ticker: RTX
+  parent: RTX Corporation
+  confidence: 1.0
+raytheon technologies:
+  ticker: RTX
+  parent: RTX Corporation
+  confidence: 1.0
+rtx corporation:
+  ticker: RTX
+  parent: RTX Corporation
+  confidence: 1.0
+pratt & whitney:
+  ticker: RTX
+  parent: RTX Corporation
+  confidence: 1.0
+  notes: Subsidiary of RTX
+collins aerospace:
+  ticker: RTX
+  parent: RTX Corporation
+  confidence: 1.0
+  notes: Subsidiary of RTX
+bbn technologies:
+  ticker: RTX
+  parent: RTX Corporation
+  confidence: 0.9
+  notes: Acquired by Raytheon BBN
+
+general dynamics corporation:
+  ticker: GD
+  parent: General Dynamics
+  confidence: 1.0
+general dynamics:
+  ticker: GD
+  parent: General Dynamics
+  confidence: 1.0
+electric boat corporation:
+  ticker: GD
+  parent: General Dynamics
+  confidence: 1.0
+  notes: GD submarine subsidiary
+bath iron works:
+  ticker: GD
+  parent: General Dynamics
+  confidence: 1.0
+  notes: GD shipbuilding subsidiary
+general dynamics information technology:
+  ticker: GD
+  parent: General Dynamics
+  confidence: 1.0
+  notes: GDIT subsidiary
+gdit:
+  ticker: GD
+  parent: General Dynamics
+  confidence: 1.0
+
+boeing company:
+  ticker: BA
+  parent: Boeing
+  confidence: 1.0
+boeing:
+  ticker: BA
+  parent: Boeing
+  confidence: 1.0
+boeing defense space & security:
+  ticker: BA
+  parent: Boeing
+  confidence: 1.0
+
+huntington ingalls industries:
+  ticker: HII
+  parent: Huntington Ingalls Industries
+  confidence: 1.0
+huntington ingalls:
+  ticker: HII
+  parent: Huntington Ingalls Industries
+  confidence: 1.0
+newport news shipbuilding:
+  ticker: HII
+  parent: Huntington Ingalls Industries
+  confidence: 1.0
+ingalls shipbuilding:
+  ticker: HII
+  parent: Huntington Ingalls Industries
+  confidence: 1.0
+hii:
+  ticker: HII
+  parent: Huntington Ingalls Industries
+  confidence: 1.0
+hii mission technologies:
+  ticker: HII
+  parent: Huntington Ingalls Industries
+  confidence: 0.9
+
+l3harris technologies:
+  ticker: LHX
+  parent: L3Harris Technologies
+  confidence: 1.0
+l3harris:
+  ticker: LHX
+  parent: L3Harris Technologies
+  confidence: 1.0
+harris corporation:
+  ticker: LHX
+  parent: L3Harris Technologies
+  confidence: 0.9
+
+textron inc:
+  ticker: TXT
+  parent: Textron
+  confidence: 1.0
+textron:
+  ticker: TXT
+  parent: Textron
+  confidence: 1.0
+bell textron:
+  ticker: TXT
+  parent: Textron
+  confidence: 1.0
+  notes: Bell helicopter subsidiary
+
+# ── IT / Services / Analytics ────────────────────────────────────────────────
+leidos inc:
+  ticker: LDOS
+  parent: Leidos
+  confidence: 1.0
+leidos:
+  ticker: LDOS
+  parent: Leidos
+  confidence: 1.0
+
+booz allen hamilton:
+  ticker: BAH
+  parent: Booz Allen Hamilton
+  confidence: 1.0
+booz allen:
+  ticker: BAH
+  parent: Booz Allen Hamilton
+  confidence: 1.0
+
+caci international:
+  ticker: CACI
+  parent: CACI International
+  confidence: 1.0
+caci:
+  ticker: CACI
+  parent: CACI International
+  confidence: 1.0
+
+science applications international corporation:
+  ticker: SAIC
+  parent: SAIC
+  confidence: 1.0
+saic:
+  ticker: SAIC
+  parent: SAIC
+  confidence: 1.0
+
+parsons corporation:
+  ticker: PSN
+  parent: Parsons Corporation
+  confidence: 1.0
+parsons:
+  ticker: PSN
+  parent: Parsons Corporation
+  confidence: 1.0
+
+peraton:
+  ticker: null
+  parent: Peraton (Private)
+  confidence: 1.0
+  notes: Private company, owned by Veritas Capital
+
+mantech international:
+  ticker: null
+  parent: ManTech (Private)
+  confidence: 1.0
+  notes: Taken private by Carlyle Group 2022
+
+accenture federal services:
+  ticker: ACN
+  parent: Accenture
+  confidence: 0.9
+  notes: Federal subsidiary of Accenture plc
+
+ibm federal:
+  ticker: IBM
+  parent: IBM
+  confidence: 0.9
+
+# ── AI / Data / Autonomy ─────────────────────────────────────────────────────
+palantir technologies:
+  ticker: PLTR
+  parent: Palantir Technologies
+  confidence: 1.0
+palantir:
+  ticker: PLTR
+  parent: Palantir Technologies
+  confidence: 1.0
+
+kratos defense & security solutions:
+  ticker: KTOS
+  parent: Kratos Defense
+  confidence: 1.0
+kratos:
+  ticker: KTOS
+  parent: Kratos Defense
+  confidence: 1.0
+
+aerovironment inc:
+  ticker: AVAV
+  parent: AeroVironment
+  confidence: 1.0
+aerovironment:
+  ticker: AVAV
+  parent: AeroVironment
+  confidence: 1.0
+
+shield ai:
+  ticker: null
+  parent: Shield AI (Private)
+  confidence: 1.0
+  notes: Autonomous AI for defense; private as of 2025
+
+anduril industries:
+  ticker: null
+  parent: Anduril Industries (Private)
+  confidence: 1.0
+  notes: Private autonomous defense startup
+
+# ── Telecom / Network ────────────────────────────────────────────────────────
+at&t inc:
+  ticker: T
+  parent: AT&T Inc.
+  confidence: 1.0
+at&t:
+  ticker: T
+  parent: AT&T Inc.
+  confidence: 1.0
+at&t enterprises:
+  ticker: T
+  parent: AT&T Inc.
+  confidence: 1.0
+  notes: AT&T government/enterprise subsidiary
+at&t government solutions:
+  ticker: T
+  parent: AT&T Inc.
+  confidence: 1.0
+at&t corp:
+  ticker: T
+  parent: AT&T Inc.
+  confidence: 1.0
+at&t corporation:
+  ticker: T
+  parent: AT&T Inc.
+  confidence: 1.0
+firstnet:
+  ticker: T
+  parent: AT&T Inc.
+  confidence: 0.9
+  notes: First Responder Network Authority — built and operated by AT&T
+
+verizon communications:
+  ticker: VZ
+  parent: Verizon Communications
+  confidence: 1.0
+verizon:
+  ticker: VZ
+  parent: Verizon Communications
+  confidence: 1.0
+verizon federal:
+  ticker: VZ
+  parent: Verizon Communications
+  confidence: 1.0
+verizon business:
+  ticker: VZ
+  parent: Verizon Communications
+  confidence: 1.0
+verizon business network services:
+  ticker: VZ
+  parent: Verizon Communications
+  confidence: 1.0
+
+t-mobile us:
+  ticker: TMUS
+  parent: T-Mobile US Inc.
+  confidence: 1.0
+t-mobile:
+  ticker: TMUS
+  parent: T-Mobile US Inc.
+  confidence: 1.0
+t-mobile secure federal operations:
+  ticker: TMUS
+  parent: T-Mobile US Inc.
+  confidence: 1.0
+  notes: T-Mobile federal/government subsidiary
+t-mobile usa:
+  ticker: TMUS
+  parent: T-Mobile US Inc.
+  confidence: 1.0
+
+# ── Cyber / Intelligence ──────────────────────────────────────────────────────
+leidos intelligence group:
+  ticker: LDOS
+  parent: Leidos
+  confidence: 0.9
+
+saic national security:
+  ticker: SAIC
+  parent: SAIC
+  confidence: 0.9
+
+mandiant:
+  ticker: GOOGL
+  parent: Google (Alphabet)
+  confidence: 0.7
+  notes: Acquired by Google 2022; part of Alphabet
+
+crowdstrike:
+  ticker: CRWD
+  parent: CrowdStrike
+  confidence: 1.0
+
+palo alto networks:
+  ticker: PANW
+  parent: Palo Alto Networks
+  confidence: 1.0
+
+# ── Engineering / Environmental Services ────────────────────────────────────
+aecom:
+  ticker: ACM
+  parent: AECOM
+  confidence: 1.0
+aecom technical services:
+  ticker: ACM
+  parent: AECOM
+  confidence: 1.0
+aecom management services:
+  ticker: ACM
+  parent: AECOM
+  confidence: 1.0
+urs group:
+  ticker: ACM
+  parent: AECOM
+  confidence: 1.0
+  notes: URS Corporation acquired by AECOM in 2014; legacy subsidiary name still appears on contracts
+urs corporation:
+  ticker: ACM
+  parent: AECOM
+  confidence: 1.0
+  notes: Acquired by AECOM 2014
+urs federal services:
+  ticker: ACM
+  parent: AECOM
+  confidence: 0.9
+
+jacobs solutions:
+  ticker: J
+  parent: Jacobs Solutions Inc.
+  confidence: 1.0
+jacobs engineering group:
+  ticker: J
+  parent: Jacobs Solutions Inc.
+  confidence: 1.0
+jacobs engineering:
+  ticker: J
+  parent: Jacobs Solutions Inc.
+  confidence: 1.0
+jacobs government services:
+  ticker: J
+  parent: Jacobs Solutions Inc.
+  confidence: 1.0
+  notes: Jacobs government/federal division
+jacobs technology:
+  ticker: J
+  parent: Jacobs Solutions Inc.
+  confidence: 0.9
+
+tetra tech:
+  ticker: TTEK
+  parent: Tetra Tech Inc.
+  confidence: 1.0
+tetra tech inc:
+  ticker: TTEK
+  parent: Tetra Tech Inc.
+  confidence: 1.0
+tetra tech ec:
+  ticker: TTEK
+  parent: Tetra Tech Inc.
+  confidence: 1.0
+  notes: Tetra Tech's environmental services subsidiary (EC = Environmental Consulting)
+tetra tech federal:
+  ticker: TTEK
+  parent: Tetra Tech Inc.
+  confidence: 1.0
+
+clark construction group:
+  ticker: null
+  parent: Clark Construction Group (Private)
+  confidence: 1.0
+  notes: Private, employee-owned construction firm
+
+skanska usa:
+  ticker: null
+  parent: Skanska AB (SKA-B, Stockholm)
+  confidence: 1.0
+  notes: US subsidiary of Skanska AB; parent is listed in Stockholm, not a US ticker
+skanska usa civil:
+  ticker: null
+  parent: Skanska AB (SKA-B, Stockholm)
+  confidence: 1.0
+
+aptim federal services:
+  ticker: null
+  parent: APTIM Corp (Private)
+  confidence: 1.0
+  notes: Private; owned by J.F. Lehman & Company PE
+aptim:
+  ticker: null
+  parent: APTIM Corp (Private)
+  confidence: 1.0
+
+conti federal services:
+  ticker: null
+  parent: Conti Federal Services (Private)
+  confidence: 1.0
+  notes: Private construction and remediation contractor
+
+# ── Logistics / Services ─────────────────────────────────────────────────────
+kbr inc:
+  ticker: KBR
+  parent: KBR
+  confidence: 1.0
+kbr:
+  ticker: KBR
+  parent: KBR
+  confidence: 1.0
+
+v2x inc:
+  ticker: VVX
+  parent: V2X
+  confidence: 1.0
+v2x:
+  ticker: VVX
+  parent: V2X
+  confidence: 1.0
+
+amentum:
+  ticker: AMTM
+  parent: Amentum
+  confidence: 1.0
+  notes: Spun out of AECOM in 2023, listed ~2024
+
+dyncorp international:
+  ticker: null
+  parent: DynCorp (Private)
+  confidence: 1.0
+  notes: Private
+
+fluor corporation:
+  ticker: FLR
+  parent: Fluor
+  confidence: 1.0
+fluor:
+  ticker: FLR
+  parent: Fluor
+  confidence: 1.0
+
+# ── Healthcare / Pharma / Biotech ──────────────────────────────────────────
+hologic inc:
+  ticker: HOLX
+  parent: Hologic
+  confidence: 1.0
+hologic:
+  ticker: HOLX
+  parent: Hologic
+  confidence: 1.0
+
+pfizer inc:
+  ticker: PFE
+  parent: Pfizer
+  confidence: 1.0
+pfizer:
+  ticker: PFE
+  parent: Pfizer
+  confidence: 1.0
+
+moderna inc:
+  ticker: MRNA
+  parent: Moderna
+  confidence: 1.0
+moderna:
+  ticker: MRNA
+  parent: Moderna
+  confidence: 1.0
+
+abbott laboratories:
+  ticker: ABT
+  parent: Abbott
+  confidence: 1.0
+abbott:
+  ticker: ABT
+  parent: Abbott
+  confidence: 1.0
+
+johnson & johnson:
+  ticker: JNJ
+  parent: Johnson & Johnson
+  confidence: 1.0
+j&j:
+  ticker: JNJ
+  parent: Johnson & Johnson
+  confidence: 1.0
+
+mckesson corporation:
+  ticker: MCK
+  parent: McKesson
+  confidence: 1.0
+mckesson:
+  ticker: MCK
+  parent: McKesson
+  confidence: 1.0
+
+cencora inc:
+  ticker: COR
+  parent: Cencora
+  confidence: 1.0
+amerisourcebergen:
+  ticker: COR
+  parent: Cencora
+  confidence: 1.0
+  notes: Rebranded to Cencora
+
+cardinal health:
+  ticker: CAH
+  parent: Cardinal Health
+  confidence: 1.0
+
+elevance health:
+  ticker: ELV
+  parent: Elevance Health
+  confidence: 1.0
+anthem:
+  ticker: ELV
+  parent: Elevance Health
+  confidence: 0.9
+  notes: Rebranded to Elevance Health
+
+centene corporation:
+  ticker: CNC
+  parent: Centene
+  confidence: 1.0
+centene:
+  ticker: CNC
+  parent: Centene
+  confidence: 1.0
+
+humana inc:
+  ticker: HUM
+  parent: Humana
+  confidence: 1.0
+humana:
+  ticker: HUM
+  parent: Humana
+  confidence: 1.0
+
+unitedhealth group:
+  ticker: UNH
+  parent: UnitedHealth Group
+  confidence: 1.0
+unitedhealth:
+  ticker: UNH
+  parent: UnitedHealth Group
+  confidence: 1.0
+optum:
+  ticker: UNH
+  parent: UnitedHealth Group
+  confidence: 1.0
+  notes: UnitedHealth subsidiary
+
+thermo fisher scientific:
+  ticker: TMO
+  parent: Thermo Fisher Scientific
+  confidence: 1.0
+thermo fisher:
+  ticker: TMO
+  parent: Thermo Fisher Scientific
+  confidence: 1.0
+
+ge healthcare technologies:
+  ticker: GEHC
+  parent: GE HealthCare
+  confidence: 1.0
+ge healthcare:
+  ticker: GEHC
+  parent: GE HealthCare
+  confidence: 1.0
+
+becton dickinson and company:
+  ticker: BDX
+  parent: Becton Dickinson
+  confidence: 1.0
+becton dickinson:
+  ticker: BDX
+  parent: Becton Dickinson
+  confidence: 1.0
+bd medical:
+  ticker: BDX
+  parent: Becton Dickinson
+  confidence: 0.9
+
+# ── Space ────────────────────────────────────────────────────────────────────
+spacex:
+  ticker: null
+  parent: SpaceX (Private)
+  confidence: 1.0
+  notes: Private
+
+united launch alliance:
+  ticker: null
+  parent: ULA (Joint venture BA/LMT, private)
+  confidence: 1.0
+  notes: JV of Boeing and Lockheed Martin; private entity
+
+rocket lab:
+  ticker: RKLB
+  parent: Rocket Lab
+  confidence: 1.0
+
+maxar technologies:
+  ticker: null
+  parent: Maxar Technologies (Private)
+  confidence: 1.0
+  notes: Taken private by Advent International 2023
+
+planet labs:
+  ticker: PL
+  parent: Planet Labs
+  confidence: 1.0
+
+# ── Energy / Nuclear ─────────────────────────────────────────────────────────
+bwx technologies:
+  ticker: BWXT
+  parent: BWX Technologies
+  confidence: 1.0
+bwxt:
+  ticker: BWXT
+  parent: BWX Technologies
+  confidence: 1.0
+  notes: Key naval nuclear propulsion supplier
+
+# ── Industrial ────────────────────────────────────────────────────────────────
+general electric:
+  ticker: GE
+  parent: GE Aerospace
+  confidence: 0.9
+  notes: Now GE Aerospace post spin-offs
+ge aerospace:
+  ticker: GE
+  parent: GE Aerospace
+  confidence: 1.0
+
+transdigm group:
+  ticker: TDG
+  parent: TransDigm Group
+  confidence: 1.0
+transdigm:
+  ticker: TDG
+  parent: TransDigm Group
+  confidence: 1.0
+
+heico corporation:
+  ticker: HEI
+  parent: HEICO Corporation
+  confidence: 1.0
+heico:
+  ticker: HEI
+  parent: HEICO Corporation
+  confidence: 1.0
+
+curtiss-wright corporation:
+  ticker: CW
+  parent: Curtiss-Wright
+  confidence: 1.0
+curtiss-wright:
+  ticker: CW
+  parent: Curtiss-Wright
+  confidence: 1.0

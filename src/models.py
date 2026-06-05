@@ -1,0 +1,192 @@
+"""
+Data models using stdlib dataclasses (no pydantic dependency).
+"""
+from __future__ import annotations
+from dataclasses import dataclass, field
+from typing import Optional, List
+from enum import Enum
+
+
+class ContractType(str, Enum):
+    NEW_AWARD = "New Award"
+    MODIFICATION = "Modification"
+    OPTION_EXERCISE = "Option Exercise"
+    IDIQ = "IDIQ"
+    DELIVERY_ORDER = "Delivery Order"
+    TASK_ORDER = "Task Order"
+    SOLE_SOURCE = "Sole Source"
+    UNKNOWN = "Unknown"
+
+
+class Sector(str, Enum):
+    TRADITIONAL_DEFENSE_PRIME = "Traditional Defense Prime"
+    AEROSPACE = "Aerospace"
+    SHIPBUILDING = "Shipbuilding"
+    SPACE = "Space"
+    CYBERSECURITY = "Cybersecurity"
+    AI_DATA_SOFTWARE = "AI / Data / Software"
+    CLOUD_IT_SERVICES = "Cloud / IT Services"
+    MILITARY_HEALTHCARE = "Military Healthcare"
+    PHARMACEUTICAL_BIOTECH = "Pharmaceutical / Biotech"
+    MEDICAL_DEVICES = "Medical Devices"
+    LOGISTICS = "Logistics"
+    INFRASTRUCTURE_CONSTRUCTION = "Infrastructure / Construction"
+    ENERGY_NUCLEAR = "Energy / Nuclear"
+    INDUSTRIAL_COMPONENTS = "Industrial Components"
+    CONSULTING_SERVICES = "Consulting / Services"
+    PRIVATE_NO_TICKER = "Private / No Public Ticker"
+    UNCLEAR = "Unclear"
+
+
+class Verdict(str, Enum):
+    STRONG_CANDIDATE = "Strong Candidate"
+    POTENTIALLY_ATTRACTIVE = "Potentially Attractive"
+    WATCHLIST = "Watchlist"
+    LOW_CONVICTION = "Low Conviction"
+    IGNORE = "Ignore"
+    HIGH_QUALITY_BUT_EXPENSIVE = "High Quality But Expensive"
+    RESEARCH_FURTHER = "Research Further"
+
+
+@dataclass
+class Contract:
+    awardee_name: str
+    parent_company: Optional[str] = None
+    ticker: Optional[str] = None
+    ticker_confidence: float = 0.0
+    contract_value: float = 0.0
+    funded_amount: Optional[float] = None
+    contract_type: ContractType = ContractType.UNKNOWN
+    agency: Optional[str] = None
+    branch: Optional[str] = None
+    description: str = ""
+    location: Optional[str] = None
+    completion_date: Optional[str] = None
+    award_date: Optional[str] = None
+    is_sole_source: bool = False
+    is_competitive: bool = False
+    is_idiq: bool = False
+    sector: Sector = Sector.UNCLEAR
+    keywords: List[str] = field(default_factory=list)
+    investment_relevance_notes: str = ""
+    raw_text: str = ""
+
+
+@dataclass
+class CompanyFundamentals:
+    ticker: str
+    company_name: str = ""
+    market_cap_millions: Optional[float] = None
+    annual_revenue_millions: Optional[float] = None
+    government_revenue_pct: Optional[float] = None
+    dod_revenue_pct: Optional[float] = None
+    roe: Optional[float] = None
+    roic: Optional[float] = None
+    free_cash_flow_margin: Optional[float] = None
+    operating_margin: Optional[float] = None
+    pe_ratio: Optional[float] = None
+    forward_pe: Optional[float] = None
+    ev_ebitda: Optional[float] = None
+    price_to_book: Optional[float] = None
+    fcf_yield: Optional[float] = None
+    debt_equity: Optional[float] = None
+    current_ratio: Optional[float] = None
+    interest_coverage: Optional[float] = None
+    backlog_to_revenue: Optional[float] = None
+    net_debt_millions: Optional[float] = None
+    debt_ebitda: Optional[float] = None
+    insider_ownership_pct: Optional[float] = None
+    earnings_stability_years: Optional[int] = None
+    moat_rating: Optional[str] = None
+    gross_margin: Optional[float] = None          # % gross profit / revenue
+    revenue_growth_1yr: Optional[float] = None    # % YoY revenue growth
+    data_source: str = "mock"
+    data_notes: str = ""
+    current_price: Optional[float] = None
+    shares_millions: Optional[float] = None
+
+
+@dataclass
+class ComponentScore:
+    raw: float
+    weight: float
+    explanation: str
+    flags: List[str] = field(default_factory=list)
+
+
+@dataclass
+class CompanyScore:
+    ticker: str
+    company_name: str
+    sector: Sector
+    buffett_quality: ComponentScore
+    graham_value: ComponentScore
+    dod_stability: ComponentScore
+    management: ComponentScore
+    contract_catalyst: ComponentScore
+    balance_sheet: ComponentScore
+    final_score: float
+    verdict: Verdict
+    overall_explanation: str
+    recent_contracts: List[Contract] = field(default_factory=list)
+    why_it_matters: str = ""
+    why_it_might_not_matter: str = ""
+    key_risks: List[str] = field(default_factory=list)
+    what_to_verify: List[str] = field(default_factory=list)
+    red_flags: List[str] = field(default_factory=list)
+    low_ticker_confidence: bool = False
+    specialist: object = None  # SpecialistProfile, set after scoring
+    dcf: object = None           # DCFResult, set after scoring
+
+
+class SpecialistTierStatus(str, Enum):
+    IN_TIER      = "In Tier"
+    NEAR_TIER    = "Near Tier"
+    LARGE_PRIME  = "Large Prime"
+    TOO_SMALL    = "Too Small"
+    LOW_GOV_CONC = "Low Gov Concentration"
+    UNKNOWN      = "Unknown"
+
+
+@dataclass
+class SpecialistProfile:
+    """
+    Captures whether a company sits in the 'specialist sweet spot':
+    mid-cap, high DoD revenue concentration, specialized/sole-source work
+    that institutional coverage tends to underweight.
+    """
+    status: SpecialistTierStatus = SpecialistTierStatus.UNKNOWN
+    market_cap_millions: Optional[float] = None
+    dod_revenue_pct: Optional[float] = None
+    contract_to_revenue_pct: Optional[float] = None
+    is_sole_source: bool = False
+    score_adjustment: float = 0.0
+    rationale: str = ""
+    analyst_coverage_note: str = ""
+
+
+@dataclass
+class DCFResult:
+    """Lightweight reference — full class lives in src/dcf.py"""
+    ticker: str = ""
+    verdict: str = ""
+    central_estimate: Optional[float] = None
+    fair_value_range_low: Optional[float] = None
+    fair_value_range_high: Optional[float] = None
+    margin_of_safety_base: Optional[float] = None
+    implied_growth_rate: Optional[float] = None
+    valuation_score: float = 50.0
+    valuation_note: str = ""
+    data_quality: str = "insufficient"
+    caveats: List[str] = field(default_factory=list)
+    discount_rate_base: float = 9.0
+    discount_rate_adjustments: List[str] = field(default_factory=list)
+    bear_iv: Optional[float] = None
+    base_iv: Optional[float] = None
+    bull_iv: Optional[float] = None
+    bear_mos: Optional[float] = None
+    bull_mos: Optional[float] = None
+    bear_growth: Optional[float] = None
+    base_growth: Optional[float] = None
+    bull_growth: Optional[float] = None
+    current_price: Optional[float] = None
