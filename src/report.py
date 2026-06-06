@@ -244,6 +244,17 @@ def generate_report(
                 ctx_parts.append(
                     f"Consensus: **{f_ctx.analyst_recommendation}** ({f_ctx.analyst_count} analysts)"
                 )
+            if f_ctx.short_pct_of_float is not None:
+                short_warn = " ⚠️" if f_ctx.short_pct_of_float > 15 else ""
+                ctx_parts.append(f"Short float: {f_ctx.short_pct_of_float:.1f}%{short_warn}")
+            if f_ctx.next_earnings_date:
+                from datetime import datetime as _dt2
+                try:
+                    days_out = (_dt2.strptime(f_ctx.next_earnings_date, "%Y-%m-%d") - _dt2.now()).days
+                    earn_warn = " ⚠️" if days_out <= 14 else ""
+                    ctx_parts.append(f"Earnings: {f_ctx.next_earnings_date} ({days_out}d){earn_warn}")
+                except Exception:
+                    ctx_parts.append(f"Earnings: {f_ctx.next_earnings_date}")
         mkt_line = " | ".join(ctx_parts) if ctx_parts else "*Market data unavailable in this run mode*"
 
         lines += [
@@ -348,8 +359,8 @@ def generate_report(
         "",
         "### 6a. Market Multiples",
         "",
-        "| Ticker | P/E | Fwd P/E | EV/EBITDA | FCF Yield | D/E | Graham Score |",
-        "|--------|-----|---------|-----------|-----------|-----|-------------|",
+        "| Ticker | P/E | Fwd P/E | EV/EBITDA | FCF Yield | Div Yield | Share Chg YoY | D/E | Graham Score |",
+        "|--------|-----|---------|-----------|-----------|-----------|---------------|-----|-------------|",
     ]
     for s in ranked_scores:
         f = (fundamentals_map or {}).get(s.ticker)
@@ -360,9 +371,17 @@ def generate_report(
         fpe  = f"{f.forward_pe:.0f}x"  if f.forward_pe           else "N/A"
         ev   = f"{f.ev_ebitda:.0f}x"   if f.ev_ebitda            else "N/A"
         fcfy = f"{f.fcf_yield:.1f}%"   if f.fcf_yield            else "N/A"
+        divy = f"{f.dividend_yield:.1f}%" if f.dividend_yield is not None else "—"
+        sc   = f"{f.shares_chg_1yr_pct:+.1f}%" if f.shares_chg_1yr_pct is not None else "N/A"
+        # Flag dilution > 3% and buyback < -2%
+        if f.shares_chg_1yr_pct is not None:
+            if f.shares_chg_1yr_pct > 3:
+                sc += " 🔺"  # dilution
+            elif f.shares_chg_1yr_pct < -2:
+                sc += " ✅"  # buyback
         de   = f"{f.debt_equity:.1f}x" if f.debt_equity is not None else "N/A"
         lines.append(
-            f"| {s.ticker} | {pe} | {fpe} | {ev} | {fcfy} | {de} | {s.graham_value.raw:.0f} |"
+            f"| {s.ticker} | {pe} | {fpe} | {ev} | {fcfy} | {divy} | {sc} | {de} | {s.graham_value.raw:.0f} |"
         )
     lines += ["", "### 6b. DCF Intrinsic Value Estimates", ""]
     lines += [
@@ -446,29 +465,44 @@ def generate_report(
         "> not a veto, but a reason to understand *why* the Street disagrees before deploying capital.",
         "> 52-week position context distinguishes temporary dislocation from structural decline.",
         "",
-        "| Ticker | Price | 52W Low | 52W High | Off High | 1Yr Return | Target | Upside | # Analysts | Consensus |",
-        "|--------|-------|---------|----------|----------|------------|--------|--------|------------|-----------|",
+        "| Ticker | Price | 52W Low | 52W High | Off High | 1Yr Rtn | Short % | Short Days | Target | Upside | # Analysts | Consensus | Next Earnings |",
+        "|--------|-------|---------|----------|----------|---------|---------|------------|--------|--------|------------|-----------|---------------|",
     ]
     for s in ranked_scores:
         f_a = (fundamentals_map or {}).get(s.ticker)
         if not f_a:
-            lines.append(f"| {s.ticker} | — | — | — | — | — | — | — | — | — |")
+            lines.append(f"| {s.ticker} | — | — | — | — | — | — | — | — | — | — | — | — |")
             continue
         price_str = f"${f_a.current_price:.2f}" if f_a.current_price else "N/A"
         lo_str    = f"${f_a.price_52w_low:.2f}" if f_a.price_52w_low else "N/A"
         hi_str    = f"${f_a.price_52w_high:.2f}" if f_a.price_52w_high else "N/A"
         off_str   = f"{f_a.pct_off_52w_high:+.0f}%" if f_a.pct_off_52w_high is not None else "N/A"
         ret_str   = f"{f_a.return_1yr:+.1f}%" if f_a.return_1yr is not None else "N/A"
+        # Short interest — flag high short % in context of positive score
+        short_str = f"{f_a.short_pct_of_float:.1f}%" if f_a.short_pct_of_float is not None else "N/A"
+        if f_a.short_pct_of_float is not None and f_a.short_pct_of_float > 15 and s.final_score >= 65:
+            short_str = f"⚠️ {short_str}"
+        shrt_days = f"{f_a.short_ratio_days:.1f}d" if f_a.short_ratio_days else "N/A"
         tgt_str   = f"${f_a.analyst_target_price:.2f}" if f_a.analyst_target_price else "N/A"
         up_str    = f"{f_a.upside_to_target:+.1f}%" if f_a.upside_to_target is not None else "N/A"
         n_str     = str(f_a.analyst_count) if f_a.analyst_count else "N/A"
         rec_str   = f_a.analyst_recommendation or "N/A"
-        # Highlight concerning divergence
         if f_a.analyst_recommendation in ("sell", "underperform") and s.final_score >= 65:
             rec_str = f"⚠️ {rec_str}"
+        # Next earnings
+        earn_str = "N/A"
+        if f_a.next_earnings_date:
+            try:
+                from datetime import datetime as _dt3
+                days_out = (_dt3.strptime(f_a.next_earnings_date, "%Y-%m-%d") - _dt3.now()).days
+                earn_str = f"{f_a.next_earnings_date} ({days_out}d)"
+                if days_out <= 14:
+                    earn_str = f"⚠️ {earn_str}"
+            except Exception:
+                earn_str = f_a.next_earnings_date
         lines.append(
             f"| {s.ticker} | {price_str} | {lo_str} | {hi_str} | {off_str} | {ret_str} "
-            f"| {tgt_str} | {up_str} | {n_str} | {rec_str} |"
+            f"| {short_str} | {shrt_days} | {tgt_str} | {up_str} | {n_str} | {rec_str} | {earn_str} |"
         )
     lines += [""]
 

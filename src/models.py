@@ -117,6 +117,15 @@ class CompanyFundamentals:
     # Margin trends (YoY change in percentage points; positive = expanding)
     operating_margin_delta: Optional[float] = None
     gross_margin_delta: Optional[float] = None
+    # Short interest
+    short_pct_of_float: Optional[float] = None     # % of float sold short
+    short_ratio_days: Optional[float] = None        # days to cover at avg volume
+    # Capital return
+    dividend_yield: Optional[float] = None          # % annual dividend yield
+    payout_ratio: Optional[float] = None            # % of earnings paid as dividends
+    shares_chg_1yr_pct: Optional[float] = None      # % YoY change in diluted shares (neg = buyback)
+    # Earnings calendar
+    next_earnings_date: Optional[str] = None        # "YYYY-MM-DD"
 
 
 @dataclass

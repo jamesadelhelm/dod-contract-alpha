@@ -114,6 +114,14 @@ def run_dcf(
     bear_g1, bear_g2, base_g1, base_g2, bull_g1, bull_g2 = _growth_assumptions(f, sector)
     terminal_g = _terminal_growth(sector, f)
 
+    # Note when growth is anchored to actual company revenue data
+    actual_growth = f.revenue_growth_1yr
+    if actual_growth is not None and -10 < actual_growth < 60:
+        caveats.append(
+            f"Growth anchored to actual revenue growth ({actual_growth:+.1f}% YoY) blended with "
+            f"sector defaults — bear/base/bull yr1–5: {bear_g1:.0f}%/{base_g1:.0f}%/{bull_g1:.0f}%."
+        )
+
     # ── FCF margin scenarios ──────────────────────────────────────────────────
     fcf_base   = _safe(f.free_cash_flow_margin, 8.0)
     fcf_bear   = max(fcf_base * 0.75, 2.0)
@@ -330,14 +338,40 @@ def _growth_assumptions(
     defaults = (2, 1, 4, 3, 8, 5)
     bear_g1, bear_g2, base_g1, base_g2, bull_g1, bull_g2 = sector_growth.get(sector, defaults)
 
+    # Anchor to actual company revenue growth when available.
+    # Pure sector defaults ignore whether a company is actually growing fast or slow —
+    # a company growing 30% YoY should not get the same base case as one growing 4%.
+    # Blend: 60% actual + 40% sector default for yr1-5 (mean-revert more in yr6-10).
+    actual = f.revenue_growth_1yr
+    if actual is not None and -10 < actual < 60:
+        # Base yr1–5: 60% actual, 40% sector
+        base_g1 = round(actual * 0.60 + base_g1 * 0.40, 1)
+        base_g1 = max(-2.0, min(base_g1, 40.0))
+        # Bull yr1–5: ~85% of recent momentum sustained; at least 3pp above base
+        bull_g1 = round(max(actual * 0.85, bull_g1 * 0.90), 1)
+        bull_g1 = max(bull_g1, base_g1 + 3.0)
+        bull_g1 = min(bull_g1, 50.0)
+        # Bear yr1–5: 40% of actual growth (significant deceleration)
+        bear_g1 = round(min(actual * 0.40, bear_g1), 1)
+        bear_g1 = max(bear_g1, -5.0)
+        # Yr6–10: stronger mean-reversion to sector long-run rates
+        actual_tapered = actual * 0.45
+        base_g2 = round(actual_tapered * 0.40 + base_g2 * 0.60, 1)
+        base_g2 = max(1.0, base_g2)
+        bull_g2 = round(bull_g1 * 0.55, 1)
+        bull_g2 = max(bull_g2, base_g2 + 1.0)
+        bull_g2 = min(bull_g2, 25.0)
+        bear_g2 = round(bear_g1 * 0.65, 1)
+        bear_g2 = max(bear_g2, -2.0)
+
     # Adjust bear down if FCF is negative (already struggling)
     if (f.free_cash_flow_margin or 0) < 0:
-        bear_g1 = max(bear_g1 - 2, -2)
-        bear_g2 = max(bear_g2 - 2, -2)
+        bear_g1 = max(bear_g1 - 2, -5)
+        bear_g2 = max(bear_g2 - 2, -3)
 
     # Boost bull if wide moat (pricing power)
     if (f.moat_rating or "") == "Wide":
-        bull_g1 = min(bull_g1 + 2, 35)
+        bull_g1 = min(bull_g1 + 2, 50)
         bull_g2 = min(bull_g2 + 2, 25)
 
     return bear_g1, bear_g2, base_g1, base_g2, bull_g1, bull_g2

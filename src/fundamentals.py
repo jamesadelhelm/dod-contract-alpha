@@ -149,6 +149,29 @@ def get_fundamentals_from_yfinance(ticker: str) -> Optional[CompanyFundamentals]
             pct_off_high = round((price - high_52w) / high_52w * 100, 1)
         return_1yr = _pct(info.get("52WeekChange"))
 
+        # ── Short interest ────────────────────────────────────────────────────
+        short_pct_float = _pct(info.get("shortPercentOfFloat"))
+        short_ratio     = info.get("shortRatio")  # days to cover (float)
+        if isinstance(short_ratio, (int, float)) and short_ratio > 200:
+            short_ratio = None  # yfinance sometimes returns junk values
+
+        # ── Capital return ────────────────────────────────────────────────────
+        # yfinance dividendYield is inconsistent: sometimes a fraction (0.015),
+        # sometimes already a percent (1.5). Normalize by treating values > 0.3
+        # as already-in-percent; cap at 30 to discard junk values.
+        _dy_raw = info.get("dividendYield")
+        if _dy_raw is not None:
+            _dy = float(_dy_raw)
+            div_yield = round(_dy if _dy > 0.3 else _dy * 100, 2)
+            div_yield = div_yield if div_yield <= 30 else None
+        else:
+            div_yield = None
+        payout_rat  = _pct(info.get("payoutRatio"))
+        shares_chg  = _derive_shares_change(stock)
+
+        # ── Next earnings date ────────────────────────────────────────────────
+        next_earn = _get_next_earnings(info, stock)
+
         # ── Margin trends (YoY delta in percentage points) ────────────────────
         op_margin_delta = None
         gross_margin_delta_val = None
@@ -213,6 +236,12 @@ def get_fundamentals_from_yfinance(ticker: str) -> Optional[CompanyFundamentals]
             return_1yr=return_1yr,
             operating_margin_delta=op_margin_delta,
             gross_margin_delta=gross_margin_delta_val,
+            short_pct_of_float=short_pct_float,
+            short_ratio_days=short_ratio,
+            dividend_yield=div_yield,
+            payout_ratio=payout_rat,
+            shares_chg_1yr_pct=shares_chg,
+            next_earnings_date=next_earn,
         )
 
         # ── Overlay curated fields from mock ──────────────────────────────────
@@ -385,6 +414,57 @@ def _earnings_stability(stock) -> Optional[int]:
         return count if count > 0 else 0
     except Exception:
         return None
+
+
+def _derive_shares_change(stock) -> Optional[float]:
+    """
+    % change in diluted shares outstanding YoY.
+    Negative = buyback (good), Positive = dilution (bad).
+    """
+    try:
+        inc = stock.income_stmt
+        if inc is None or inc.empty or len(inc.columns) < 2:
+            return None
+        c0, c1 = inc.columns[0], inc.columns[1]
+        s0 = _row(inc, ["Diluted Average Shares", "Basic Average Shares"], c0)
+        s1 = _row(inc, ["Diluted Average Shares", "Basic Average Shares"], c1)
+        if s0 and s1 and s1 > 0:
+            chg = round((s0 - s1) / s1 * 100, 1)
+            # Sanity bounds: >25% change either way is likely a split/merger, not organic
+            return chg if -25 < chg < 25 else None
+    except Exception:
+        pass
+    return None
+
+
+def _get_next_earnings(info: dict, stock) -> Optional[str]:
+    """Return next upcoming earnings date as 'YYYY-MM-DD' string, or None."""
+    from datetime import datetime as _dt
+    ts = info.get("earningsTimestamp")
+    if ts:
+        try:
+            dt = _dt.fromtimestamp(int(ts))
+            if dt > _dt.now():
+                return dt.strftime("%Y-%m-%d")
+        except Exception:
+            pass
+    try:
+        cal = stock.calendar
+        if cal is not None and isinstance(cal, dict):
+            dates = cal.get("Earnings Date", [])
+            if not hasattr(dates, "__iter__"):
+                dates = [dates]
+            for ed in dates:
+                try:
+                    if hasattr(ed, "to_pydatetime"):
+                        ed = ed.to_pydatetime()
+                    if ed > _dt.now():
+                        return ed.strftime("%Y-%m-%d")
+                except Exception:
+                    continue
+    except Exception:
+        pass
+    return None
 
 
 # ── Margin helpers ────────────────────────────────────────────────────────────

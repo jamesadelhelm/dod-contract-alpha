@@ -932,6 +932,42 @@ def score_company(
             "pricing power erosion or input cost inflation"
         )
 
+    # Short interest — informed capital expressing a negative view
+    short_pct = getattr(f, "short_pct_of_float", None)
+    if short_pct is not None and short_pct > 25:
+        all_flags.append(
+            f"Very high short interest ({short_pct:.1f}% of float) — "
+            "significant informed short position against this thesis; "
+            "identify and refute the short thesis before deploying capital"
+        )
+    elif short_pct is not None and short_pct > 15:
+        all_flags.append(
+            f"Elevated short interest ({short_pct:.1f}% of float) — "
+            "meaningful short position; verify thesis is not already consensus"
+        )
+
+    # Share dilution — capital allocation failure hidden from ROIC
+    shares_chg = getattr(f, "shares_chg_1yr_pct", None)
+    if shares_chg is not None and shares_chg > 5:
+        all_flags.append(
+            f"Share count grew {shares_chg:+.1f}% YoY — dilution is destroying equity value; "
+            "check for M&A financing, equity compensation burn, or ongoing raises"
+        )
+
+    # Near-term earnings — binary risk to position sizing
+    next_earn = getattr(f, "next_earnings_date", None)
+    if next_earn:
+        try:
+            from datetime import datetime as _dt
+            days_to_earn = (_dt.strptime(next_earn, "%Y-%m-%d") - _dt.now()).days
+            if 0 <= days_to_earn <= 14:
+                all_flags.append(
+                    f"Earnings report in {days_to_earn} days ({next_earn}) — "
+                    "near-term binary catalyst; size position accordingly"
+                )
+        except Exception:
+            pass
+
     # Specialist tier scoring — apply bonus/penalty before verdict
     specialist = score_specialist_tier(ticker, f, contracts)
     final = _clamp(final + specialist.score_adjustment)
@@ -1015,7 +1051,8 @@ def score_company(
         key_risks=risks,
         what_to_verify=verify,
         red_flags=[f for f in all_flags if any(kw in f.lower() for kw in
-            ["cap", "dangerous", "dilution", "negative", "contracting", "consensus"])],
+            ["cap", "dangerous", "dilution", "negative", "contracting", "consensus",
+             "short interest", "destroying", "binary catalyst"])],
         low_ticker_confidence=any(c.ticker_confidence < OVERRIDE_RULES["low_ticker_confidence_flag_threshold"] for c in contracts if c.ticker == ticker),
         specialist=specialist,
         dcf=dcf,
