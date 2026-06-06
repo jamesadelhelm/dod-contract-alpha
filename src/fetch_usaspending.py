@@ -63,20 +63,37 @@ def _get(endpoint: str, params: dict = None, timeout: int = 20) -> Optional[dict
         return None
 
 
+def _dod_fiscal_year_start() -> datetime.date:
+    """Return Oct 1 of the current DoD fiscal year."""
+    today = datetime.date.today()
+    if today.month >= 10:
+        return datetime.date(today.year, 10, 1)
+    else:
+        return datetime.date(today.year - 1, 10, 1)
+
+
 def fetch_recent_dod_awards(
     days_back: int = 7,
     limit: int = 100,
     min_award_amount: float = 5_000_000,
-    max_pages: int = 5,
+    max_pages: int = 10,
+    use_fiscal_year: bool = True,
 ) -> List[Dict]:
     """
-    Fetch recent DoD contract awards from USAspending.gov.
-    Paginates up to max_pages × 100 = 500 raw results, then applies the
-    min_award_amount filter in Python (API-side filter is unreliable).
+    Fetch DoD contract awards from USAspending.gov.
+
+    use_fiscal_year=True (default): fetches all awards in the current DoD fiscal
+    year (Oct 1 to today). Recommended — USAspending has a 30-90 day lag on new
+    data, so 'last N days' filters often return nothing.
+
+    use_fiscal_year=False: uses days_back to set the lookback window.
     Returns list of raw award dicts sorted by Award Amount descending.
     """
     end_date = datetime.date.today()
-    start_date = end_date - datetime.timedelta(days=days_back)
+    if use_fiscal_year:
+        start_date = _dod_fiscal_year_start()
+    else:
+        start_date = end_date - datetime.timedelta(days=days_back)
 
     base_payload = {
         "filters": {
@@ -134,13 +151,16 @@ def fetch_recent_dod_awards(
                 seen_ids.add(rid)
                 all_results.append(r)
 
-        # If the page returned fewer than limit, there are no more pages
+        # No more pages if this page returned fewer results than requested
         if len(page_results) < limit:
             break
 
-        # Stop early if smallest amount on this page is already below threshold
-        page_min = min(float(r.get("Award Amount") or 0) for r in page_results)
-        if page_min < min_award_amount:
+        # Stop early only if the MAXIMUM on this page is below the threshold
+        # (i.e., all remaining pages would also be below — results are sorted desc)
+        # Do NOT stop based on min-on-page: USAspending mixes $0 records into results
+        # even when sorted descending, which would falsely terminate pagination.
+        page_max = max((float(r.get("Award Amount") or 0) for r in page_results), default=0)
+        if page_max < min_award_amount:
             break
 
     # Filter by minimum amount
@@ -252,13 +272,18 @@ def usaspending_awards_to_contracts(raw_awards: List[Dict]) -> List[Dict]:
 def load_from_usaspending(days_back: int = 30, min_amount_millions: float = 5.0) -> List[Dict]:
     """
     Main entry: fetch from USAspending and return normalized contract dicts.
-    Falls back to mock data if network unavailable.
+    Defaults to fiscal-year mode (Oct 1 to today) to work around USAspending's
+    30-90 day data lag. Falls back to mock data if network unavailable.
     """
+    fy_start = _dod_fiscal_year_start()
+    today = datetime.date.today()
+    print(f"[USAspending] Fetching FY contracts ({fy_start} → {today}, min ${min_amount_millions:.0f}M)")
     try:
         raw = fetch_recent_dod_awards(
             days_back=days_back,
             limit=100,
             min_award_amount=min_amount_millions * 1_000_000,
+            use_fiscal_year=True,
         )
         if raw:
             normalized = usaspending_awards_to_contracts(raw)

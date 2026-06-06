@@ -74,7 +74,7 @@ def resolve_ticker(awardee_name: str) -> Tuple[Optional[str], Optional[str], flo
                 return None, parent, confidence
             return ticker, parent, confidence
 
-    # Fuzzy: check if any map key is a substring of the awardee or vice versa
+    # Fuzzy: multi-pass matching
     norm_awardee = _normalize(awardee_name).lower()
     best_match = None
     best_conf = 0.0
@@ -83,13 +83,25 @@ def resolve_ticker(awardee_name: str) -> Tuple[Optional[str], Optional[str], flo
     for key, entry in tmap.items():
         if len(key) < 4:
             continue
-        # substring match (key appears in awardee)
+
+        sim = 0.0
+        # Pass 1: substring containment
         if key in norm_awardee or norm_awardee in key:
             sim = len(key) / max(len(key), len(norm_awardee))
-            if sim > best_conf:
-                best_conf = sim
-                best_match = key
-                best_entry = entry
+
+        # Pass 2: prefix match — "humana government business" starts with "humana"
+        # Use a lower threshold (0.3) since the remainder is a qualifier, not a
+        # different company. This catches subsidiary names where the parent brand
+        # appears at the start (e.g. "HUMANA GOVERNMENT BUSINESS INC" → HUM).
+        elif norm_awardee.startswith(key) or key.startswith(norm_awardee):
+            sim = len(key) / max(len(key), len(norm_awardee))
+            # Apply prefix bonus so it can beat the 0.5 threshold
+            sim = max(sim, 0.55) if len(key) >= 6 else sim
+
+        if sim > best_conf:
+            best_conf = sim
+            best_match = key
+            best_entry = entry
 
     if best_entry and best_conf >= 0.5:
         ticker = best_entry.get("ticker")

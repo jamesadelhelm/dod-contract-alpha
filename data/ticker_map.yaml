@@ -78,6 +78,16 @@ electric boat corporation:
 bath iron works:
   ticker: GD
   parent: General Dynamics
+national steel and shipbuilding company:
+  ticker: GD
+  parent: General Dynamics
+  confidence: 1.0
+  notes: GD NASSCO — San Diego shipyard, builds Navy auxiliary and sealift ships
+nassco:
+  ticker: GD
+  parent: General Dynamics
+  confidence: 1.0
+  notes: Abbreviated form of GD NASSCO
   confidence: 1.0
   notes: GD shipbuilding subsidiary
 general dynamics information technology:
@@ -480,6 +490,30 @@ v2x:
   ticker: VVX
   parent: V2X
   confidence: 1.0
+# Vectrus merged with Vertex Aerospace to form V2X in 2022
+vectrus systems llc:
+  ticker: VVX
+  parent: V2X
+  confidence: 1.0
+  notes: Vectrus merged with Vertex Aerospace → V2X (VVX) in 2022
+vectrus systems:
+  ticker: VVX
+  parent: V2X
+  confidence: 1.0
+vectrus:
+  ticker: VVX
+  parent: V2X
+  confidence: 0.9
+# Vertex Aerospace merged with Vectrus in 2022 to form V2X (VVX)
+vertex aerospace llc:
+  ticker: VVX
+  parent: V2X
+  confidence: 1.0
+  notes: Vertex Aerospace merged with Vectrus → V2X (VVX) in 2022
+vertex aerospace:
+  ticker: VVX
+  parent: V2X
+  confidence: 1.0
 
 amentum:
   ticker: AMTM
@@ -501,6 +535,208 @@ fluor:
   ticker: FLR
   parent: Fluor
   confidence: 1.0
+# Fluor Marine Propulsion LLC is a Fluor subsidiary operating Navy nuclear propulsion prototype sites
+fluor marine propulsion, llc:
+  ticker: FLR
+  parent: Fluor
+  confidence: 0.9
+  notes: Fluor subsidiary; Navy nuclear propulsion prototype operations
+fluor marine propulsion:
+  ticker: FLR
+  parent: Fluor
+  confidence: 0.9
+  notes: Fluor subsidiary; Navy nuclear propulsion prototype operations
+
+# Private Bechtel entities (Bechtel Group is private)
+bechtel plant machinery, inc.:
+  ticker: null
+  parent: Bechtel Group (Private)
+  confidence: 1.0
+  notes: Bechtel subsidiary; manufactures naval nuclear propulsion equipment
+bechtel plant machinery:
+  ticker: null
+  parent: Bechtel Group (Private)
+  confidence: 1.0
+bechtel national, inc.:
+  ticker: null
+  parent: Bechtel Group (Private)
+  confidence: 1.0
+bechtel national:
+  ticker: null
+  parent: Bechtel Group (Private)
+  confidence: 1.0
+bechtel marine propulsion corporation:
+  ticker: null
+  parent: Bechtel Group (Private)
+  confidence: 1.0
+bechtel parsons blue grass:
+  ticker: null
+  parent: Bechtel Group and Parsons (Private JV)
+
+# Additional private defense contractors
+eastern shipbuilding group, inc.:
+  ticker: null
+  parent: Eastern Shipbuilding Group (Private)
+  confidence: 1.0
+  notes: Private shipbuilder in Panama City FL; NOT Eastern Company (EML)
+eastern shipbuilding group:
+  ticker: null
+  parent: Eastern Shipbuilding Group (Private)
+  confidence: 1.0
+aevex aerospace, llc:
+  ticker: null
+  parent: AEVEX Aerospace (Private)
+  confidence: 1.0
+  notes: Private ISR and aviation services company; NOT to be confused with any public AVEX ticker
+aevex aerospace:
+  ticker: null
+  parent: AEVEX Aerospace (Private)
+  confidence: 1.0
+peraton:
+  ticker: null
+  parent: Peraton (Private — Veritas Capital)
+  confidence: 1.0
+  notes: Spun out of Harris IT/Perspecta; owned by Veritas Capital private equity
+peraton inc:
+  ticker: null
+  parent: Peraton (Private — Veritas Capital)
+  confidence: 1.0
+perspecta:
+  ticker: null
+  parent: Perspecta (acquired by Peraton/Veritas, now private)
+  confidence: 1.0
+caci international:
+  ticker: CACI
+  parent: CACI International
+  confidence: 1.0
+caci:
+  ticker: CACI
+  parent: CACI International
+  confidence: 1.0
+# Winchester/Olin: Winchester Ammunition is a brand of Olin Corporation
+olin winchester llc:
+  ticker: OLN
+  parent: Olin Corporation
+  confidence: 0.9
+  notes: Winchester is a brand of Olin Corporation
+olin winchester, llc:
+  ticker: OLN
+  parent: Olin Corporation
+  confidence: 0.9
+olin winchester:
+  ticker: OLN
+  parent: Olin Corporation
+  confidence: 0.9
+# General Dynamics Ordnance — GD subsidiary
+general dynamics ordnance and tactical systems, inc.:
+  ticker: GD
+  parent: General Dynamics
+  confidence: 0.95
+  notes: GD subsidiary for munitions and ordnance
+general dynamics ordnance & tactical systems, inc.:
+  ticker: GD
+  parent: General Dynamics
+  confidence: 0.95
+general dynamics ordnance and tactical systems:
+  ticker: GD
+  parent: General Dynamics
+  confidence: 0.95
+general dynamics ordnance & tactical systems:
+  ticker: GD
+  parent: General Dynamics
+  confidence: 0.95
+  confidence: 0.9
+  notes: JV for chemical demilitarization
+
+# Bell Boeing Joint Project Office — 50/50 JV for V-22 Osprey; cannot cleanly map to one ticker
+bell boeing joint project office:
+  ticker: null
+  parent: Bell/Boeing V-22 JV (BA + TXT)
+  confidence: 0.9
+  notes: Joint venture; 50% Boeing (BA), 50% Bell/Textron (TXT)
+
+# Non-US or non-publicly-US-listed companies
+bae systems land & armaments l.p.:
+  ticker: null
+  parent: "BAE Systems (London-listed; OTC ADR BAESY)"
+  confidence: 1.0
+  notes: BAE Systems subsidiary; listed in UK not US
+bae systems land and armaments l.p.:
+  ticker: null
+  parent: "BAE Systems (London-listed; OTC ADR BAESY)"
+  confidence: 1.0
+austal usa, llc:
+  ticker: null
+  parent: "Austal Limited (ASX-listed; Australian company)"
+  confidence: 1.0
+  notes: Australian shipbuilder; not US-listed
+austal usa:
+  ticker: null
+  parent: "Austal Limited (ASX-listed; Australian company)"
+  confidence: 1.0
+
+# FFRDCs and nonprofits (not publicly traded)
+the mitre corporation:
+  ticker: null
+  parent: MITRE Corporation (FFRDC / Nonprofit)
+  confidence: 1.0
+  notes: Federally Funded Research and Development Center; not public
+mitre corporation:
+  ticker: null
+  parent: MITRE Corporation (FFRDC / Nonprofit)
+  confidence: 1.0
+the aerospace corporation:
+  ticker: null
+  parent: The Aerospace Corporation (FFRDC / Nonprofit)
+  confidence: 1.0
+  notes: FFRDC supporting USAF/DoD space programs; not public
+aerospace corporation:
+  ticker: null
+  parent: The Aerospace Corporation (FFRDC / Nonprofit)
+  confidence: 1.0
+massachusetts institute of technology:
+  ticker: null
+  parent: MIT (Academic Institution)
+  confidence: 1.0
+  notes: Lincoln Laboratory FFRDC
+
+# Private defense/aerospace companies
+general atomics aeronautical systems, inc.:
+  ticker: null
+  parent: General Atomics (Private — Neal/Linden Blue)
+  confidence: 1.0
+  notes: Maker of Predator/Reaper drones; General Atomics is private
+general atomics aeronautical systems:
+  ticker: null
+  parent: General Atomics (Private)
+  confidence: 1.0
+general atomics:
+  ticker: null
+  parent: General Atomics (Private)
+  confidence: 1.0
+sierra nevada company, llc:
+  ticker: null
+  parent: Sierra Nevada Corporation (Private)
+  confidence: 1.0
+  notes: Private; maker of Dream Chaser spaceplane
+sierra nevada company:
+  ticker: null
+  parent: Sierra Nevada Corporation (Private)
+  confidence: 1.0
+sierra nevada corporation:
+  ticker: null
+  parent: Sierra Nevada Corporation (Private)
+  confidence: 1.0
+m1 support services, l.p.:
+  ticker: null
+  parent: M1 Support Services (Private)
+  confidence: 1.0
+  notes: DoD aviation maintenance contractor; private
+canadian commercial corporation:
+  ticker: null
+  parent: Canadian Commercial Corporation (Canadian Crown Corp)
+  confidence: 1.0
+  notes: Canada government procurement intermediary; not a private company
 
 # ── Healthcare / Pharma / Biotech ──────────────────────────────────────────
 hologic inc:
@@ -599,6 +835,43 @@ humana:
   ticker: HUM
   parent: Humana
   confidence: 1.0
+humana government business inc:
+  ticker: HUM
+  parent: Humana
+  confidence: 1.0
+  notes: Humana's military/TRICARE business unit
+humana government business:
+  ticker: HUM
+  parent: Humana
+  confidence: 1.0
+  notes: Humana's military/TRICARE business unit
+
+# Health Net was acquired by Centene (CNC) in 2016
+health net federal services, llc:
+  ticker: CNC
+  parent: Centene
+  confidence: 1.0
+  notes: Centene subsidiary; manages TRICARE West Region
+health net federal services:
+  ticker: CNC
+  parent: Centene
+  confidence: 1.0
+health net:
+  ticker: CNC
+  parent: Centene
+  confidence: 0.9
+  notes: Health Net was acquired by Centene in 2016
+
+# TriWest Healthcare Alliance — private company (TRICARE contractor, lost West region)
+triwest healthcare alliance corp:
+  ticker: null
+  parent: TriWest Healthcare Alliance (Private)
+  confidence: 1.0
+  notes: Private TRICARE contractor
+triwest healthcare alliance:
+  ticker: null
+  parent: TriWest Healthcare Alliance (Private)
+  confidence: 1.0
 
 unitedhealth group:
   ticker: UNH
@@ -613,6 +886,19 @@ optum:
   parent: UnitedHealth Group
   confidence: 1.0
   notes: UnitedHealth subsidiary
+unitedhealth military & veterans services, llc:
+  ticker: UNH
+  parent: UnitedHealth Group
+  confidence: 1.0
+  notes: UnitedHealth subsidiary managing TRICARE East Region
+unitedhealth military & veterans services:
+  ticker: UNH
+  parent: UnitedHealth Group
+  confidence: 1.0
+unitedhealth military and veterans services:
+  ticker: UNH
+  parent: UnitedHealth Group
+  confidence: 1.0
 
 thermo fisher scientific:
   ticker: TMO
@@ -651,6 +937,19 @@ spacex:
   parent: SpaceX (Private)
   confidence: 1.0
   notes: Private
+space exploration technologies corp.:
+  ticker: null
+  parent: SpaceX (Private)
+  confidence: 1.0
+  notes: SpaceX legal name; private company — SPCX is an ETF, not SpaceX
+space exploration technologies corp:
+  ticker: null
+  parent: SpaceX (Private)
+  confidence: 1.0
+space exploration technologies:
+  ticker: null
+  parent: SpaceX (Private)
+  confidence: 1.0
 
 united launch alliance:
   ticker: null
