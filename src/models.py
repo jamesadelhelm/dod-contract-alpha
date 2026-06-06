@@ -104,6 +104,19 @@ class CompanyFundamentals:
     data_notes: str = ""
     current_price: Optional[float] = None
     shares_millions: Optional[float] = None
+    # Analyst consensus (from yfinance)
+    analyst_count: Optional[int] = None
+    analyst_target_price: Optional[float] = None          # mean price target
+    analyst_recommendation: Optional[str] = None          # "buy", "hold", "sell", "strong_buy"
+    upside_to_target: Optional[float] = None              # % upside/downside to mean target
+    # Price momentum
+    price_52w_high: Optional[float] = None
+    price_52w_low: Optional[float] = None
+    pct_off_52w_high: Optional[float] = None              # negative = below 52w high
+    return_1yr: Optional[float] = None                    # 1-year price return %
+    # Margin trends (YoY change in percentage points; positive = expanding)
+    operating_margin_delta: Optional[float] = None
+    gross_margin_delta: Optional[float] = None
 
 
 @dataclass

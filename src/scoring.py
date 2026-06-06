@@ -842,14 +842,26 @@ def determine_verdict(
     ev = f.ev_ebitda or 0
     expensive = (pe > 80 or ev > 60) and (f.free_cash_flow_margin or 0) < 15
 
+    # Analyst divergence — if Street is materially bearish vs. our high score,
+    # surface as RESEARCH_FURTHER rather than a clean buy signal.
+    # Rationale: our model has an independent view, but 3+ analysts saying "sell"
+    # is a red flag that warrants extra diligence, not a veto.
+    analyst_rec = getattr(f, "analyst_recommendation", None)
+    analyst_n   = getattr(f, "analyst_count", 0) or 0
+    street_bearish = analyst_rec in ("sell", "underperform") and analyst_n >= 3
+
     if final_score >= t["strong_candidate"]:
         if expensive:
             return Verdict.HIGH_QUALITY_BUT_EXPENSIVE
+        if street_bearish:
+            return Verdict.RESEARCH_FURTHER
         return Verdict.STRONG_CANDIDATE
 
     if final_score >= t["potentially_attractive"]:
         if expensive:
             return Verdict.HIGH_QUALITY_BUT_EXPENSIVE
+        if street_bearish:
+            return Verdict.RESEARCH_FURTHER
         return Verdict.POTENTIALLY_ATTRACTIVE
 
     if final_score >= t["watchlist"]:
@@ -896,6 +908,29 @@ def score_company(
         if final > cap:
             final = cap
             all_flags.append(f"Final score capped at {cap} — dangerous balance sheet")
+
+    # Analyst divergence flag — Street is bearish while our model is positive
+    analyst_rec = getattr(f, "analyst_recommendation", None)
+    analyst_n   = getattr(f, "analyst_count", 0) or 0
+    if analyst_rec in ("sell", "underperform") and analyst_n >= 3:
+        all_flags.append(
+            f"Analyst consensus: '{analyst_rec}' ({analyst_n} analysts) — "
+            "Street is negative; our score diverges; verify thesis independently"
+        )
+
+    # Margin contraction flags — early warning for quality deterioration
+    op_delta = getattr(f, "operating_margin_delta", None)
+    gm_delta = getattr(f, "gross_margin_delta", None)
+    if op_delta is not None and op_delta < -3.0:
+        all_flags.append(
+            f"Operating margin contracting {op_delta:+.1f}pp YoY — "
+            "cost pressures or contract mix shift; verify in latest 10-Q"
+        )
+    if gm_delta is not None and gm_delta < -2.0:
+        all_flags.append(
+            f"Gross margin contracting {gm_delta:+.1f}pp YoY — "
+            "pricing power erosion or input cost inflation"
+        )
 
     # Specialist tier scoring — apply bonus/penalty before verdict
     specialist = score_specialist_tier(ticker, f, contracts)
@@ -979,7 +1014,8 @@ def score_company(
         why_it_might_not_matter=why_not,
         key_risks=risks,
         what_to_verify=verify,
-        red_flags=[f for f in all_flags if "cap" in f.lower() or "dangerous" in f.lower() or "dilution" in f.lower() or "negative" in f.lower()],
+        red_flags=[f for f in all_flags if any(kw in f.lower() for kw in
+            ["cap", "dangerous", "dilution", "negative", "contracting", "consensus"])],
         low_ticker_confidence=any(c.ticker_confidence < OVERRIDE_RULES["low_ticker_confidence_flag_threshold"] for c in contracts if c.ticker == ticker),
         specialist=specialist,
         dcf=dcf,

@@ -12,7 +12,7 @@ from src.models import CompanyScore, Contract, Verdict, Sector, SpecialistTierSt
 
 VERDICT_EMOJI = {
     Verdict.STRONG_CANDIDATE: "🟢",
-    Verdict.RESEARCH_FURTHER: "🟢",
+    Verdict.RESEARCH_FURTHER: "🟡",   # high score but analyst divergence — needs diligence
     Verdict.POTENTIALLY_ATTRACTIVE: "🟡",
     Verdict.WATCHLIST: "🔵",
     Verdict.HIGH_QUALITY_BUT_EXPENSIVE: "🟠",
@@ -223,9 +223,34 @@ def generate_report(
 
     for s in ranked_scores:
         emoji = VERDICT_EMOJI.get(s.verdict, "⚪")
+        f_ctx = (fundamentals_map or {}).get(s.ticker)
+        # Build market context line from live data when available
+        ctx_parts = []
+        if f_ctx:
+            if f_ctx.current_price:
+                ctx_parts.append(f"Price: **${f_ctx.current_price:.2f}**")
+            if f_ctx.price_52w_high and f_ctx.price_52w_low:
+                hi, lo = f_ctx.price_52w_high, f_ctx.price_52w_low
+                ctx_parts.append(f"52W: ${lo:.2f}–${hi:.2f}")
+                if f_ctx.pct_off_52w_high is not None:
+                    ctx_parts.append(f"({f_ctx.pct_off_52w_high:+.0f}% off high)")
+            if f_ctx.return_1yr is not None:
+                ctx_parts.append(f"1yr return: {f_ctx.return_1yr:+.1f}%")
+            if f_ctx.analyst_target_price:
+                ctx_parts.append(f"Analyst target: ${f_ctx.analyst_target_price:.2f}")
+                if f_ctx.upside_to_target is not None:
+                    ctx_parts.append(f"({f_ctx.upside_to_target:+.1f}% upside)")
+            if f_ctx.analyst_recommendation and f_ctx.analyst_count:
+                ctx_parts.append(
+                    f"Consensus: **{f_ctx.analyst_recommendation}** ({f_ctx.analyst_count} analysts)"
+                )
+        mkt_line = " | ".join(ctx_parts) if ctx_parts else "*Market data unavailable in this run mode*"
+
         lines += [
             f"### {emoji} {s.ticker} — {s.company_name}",
             f"**Sector:** {s.sector.value}  |  **Final Score: {s.final_score:.1f}/100**  |  **Verdict: {s.verdict.value}**",
+            "",
+            f"> {mkt_line}",
             "",
             "#### Score Breakdown",
             "",
@@ -411,6 +436,114 @@ def generate_report(
             for c in d.caveats:
                 lines.append(f"- {c}")
             lines.append("")
+
+    # ── 6d. Analyst Consensus & Price Momentum ───────────────────────────────
+    lines += [
+        "### 6d. Analyst Consensus & Price Momentum",
+        "",
+        "> **Why this matters:** Our scoring model is independent of the Street, but meaningful",
+        "> analyst divergence (high score + sell consensus) is a required diligence flag —",
+        "> not a veto, but a reason to understand *why* the Street disagrees before deploying capital.",
+        "> 52-week position context distinguishes temporary dislocation from structural decline.",
+        "",
+        "| Ticker | Price | 52W Low | 52W High | Off High | 1Yr Return | Target | Upside | # Analysts | Consensus |",
+        "|--------|-------|---------|----------|----------|------------|--------|--------|------------|-----------|",
+    ]
+    for s in ranked_scores:
+        f_a = (fundamentals_map or {}).get(s.ticker)
+        if not f_a:
+            lines.append(f"| {s.ticker} | — | — | — | — | — | — | — | — | — |")
+            continue
+        price_str = f"${f_a.current_price:.2f}" if f_a.current_price else "N/A"
+        lo_str    = f"${f_a.price_52w_low:.2f}" if f_a.price_52w_low else "N/A"
+        hi_str    = f"${f_a.price_52w_high:.2f}" if f_a.price_52w_high else "N/A"
+        off_str   = f"{f_a.pct_off_52w_high:+.0f}%" if f_a.pct_off_52w_high is not None else "N/A"
+        ret_str   = f"{f_a.return_1yr:+.1f}%" if f_a.return_1yr is not None else "N/A"
+        tgt_str   = f"${f_a.analyst_target_price:.2f}" if f_a.analyst_target_price else "N/A"
+        up_str    = f"{f_a.upside_to_target:+.1f}%" if f_a.upside_to_target is not None else "N/A"
+        n_str     = str(f_a.analyst_count) if f_a.analyst_count else "N/A"
+        rec_str   = f_a.analyst_recommendation or "N/A"
+        # Highlight concerning divergence
+        if f_a.analyst_recommendation in ("sell", "underperform") and s.final_score >= 65:
+            rec_str = f"⚠️ {rec_str}"
+        lines.append(
+            f"| {s.ticker} | {price_str} | {lo_str} | {hi_str} | {off_str} | {ret_str} "
+            f"| {tgt_str} | {up_str} | {n_str} | {rec_str} |"
+        )
+    lines += [""]
+
+    # ── 6e. Sector Peer Comparison (Relative Valuation) ──────────────────────
+    lines += [
+        "### 6e. Sector Peer Comparison — Relative Valuation",
+        "",
+        "> Each company's P/E, EV/EBITDA, and FCF yield are shown relative to the",
+        "> median of peers in the same sector appearing in this analysis.",
+        "> Premium = trading above sector median. Discount = below median.",
+        "> Sectors with only one company are excluded (no peer group to compare).",
+        "",
+    ]
+
+    from collections import defaultdict as _dd
+    import statistics as _stats
+
+    # Build sector buckets with fundamentals
+    sector_buckets: dict = _dd(list)
+    for s in ranked_scores:
+        f_s = (fundamentals_map or {}).get(s.ticker)
+        sector_buckets[s.sector.value].append((s, f_s))
+
+    peer_section_written = False
+    for sector_name, members in sorted(sector_buckets.items()):
+        if len(members) < 2:
+            continue
+        peer_section_written = True
+
+        # Compute sector medians (exclude None)
+        pes   = [f_s.pe_ratio   for _, f_s in members if f_s and f_s.pe_ratio   is not None]
+        evs   = [f_s.ev_ebitda  for _, f_s in members if f_s and f_s.ev_ebitda  is not None]
+        fcfys = [f_s.fcf_yield  for _, f_s in members if f_s and f_s.fcf_yield  is not None]
+
+        med_pe   = round(_stats.median(pes),   1) if len(pes)   >= 2 else None
+        med_ev   = round(_stats.median(evs),   1) if len(evs)   >= 2 else None
+        med_fcfy = round(_stats.median(fcfys), 1) if len(fcfys) >= 2 else None
+
+        med_str = []
+        if med_pe   is not None: med_str.append(f"P/E median: {med_pe:.1f}x")
+        if med_ev   is not None: med_str.append(f"EV/EBITDA median: {med_ev:.1f}x")
+        if med_fcfy is not None: med_str.append(f"FCF Yield median: {med_fcfy:.1f}%")
+
+        lines += [
+            f"#### {sector_name}",
+            f"*{' | '.join(med_str) if med_str else 'Insufficient data for medians'}*",
+            "",
+            "| Ticker | P/E | vs Median | EV/EBITDA | vs Median | FCF Yield | vs Median | Score |",
+            "|--------|-----|-----------|-----------|-----------|-----------|-----------|-------|",
+        ]
+        for s, f_s in sorted(members, key=lambda x: x[0].final_score, reverse=True):
+            pe_str  = f"{f_s.pe_ratio:.0f}x"   if f_s and f_s.pe_ratio   is not None else "N/A"
+            ev_str  = f"{f_s.ev_ebitda:.0f}x"  if f_s and f_s.ev_ebitda  is not None else "N/A"
+            fy_str  = f"{f_s.fcf_yield:.1f}%"  if f_s and f_s.fcf_yield  is not None else "N/A"
+
+            # Premium/discount vs sector median (percentage points for multiples)
+            def _vs(val, med, fmt_pct=False):
+                if val is None or med is None:
+                    return "—"
+                delta = val - med
+                sign  = "+" if delta >= 0 else ""
+                return f"{sign}{delta:.1f}%" if fmt_pct else f"{sign}{delta:.1f}x"
+
+            pe_vs  = _vs(f_s.pe_ratio   if f_s else None, med_pe)
+            ev_vs  = _vs(f_s.ev_ebitda  if f_s else None, med_ev)
+            fy_vs  = _vs(f_s.fcf_yield  if f_s else None, med_fcfy, fmt_pct=True)
+
+            lines.append(
+                f"| {s.ticker} | {pe_str} | {pe_vs} | {ev_str} | {ev_vs} | {fy_str} | {fy_vs} | {s.final_score:.1f} |"
+            )
+        lines.append("")
+
+    if not peer_section_written:
+        lines.append("*No sectors with multiple companies in this analysis — peer comparison not available.*")
+        lines.append("")
 
     lines += ["---", ""]
 

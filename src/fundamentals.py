@@ -133,6 +133,43 @@ def get_fundamentals_from_yfinance(ticker: str) -> Optional[CompanyFundamentals]
             if days_old > 180:
                 stale_note = f" ⚠️ STALE: most recent filing ~{int(days_old / 30)}mo ago — verify current data."
 
+        # ── Analyst consensus ─────────────────────────────────────────────────
+        analyst_count = info.get("numberOfAnalystOpinions")
+        analyst_target = info.get("targetMeanPrice")
+        analyst_rec    = info.get("recommendationKey")
+        upside_to_target = None
+        if analyst_target and price and price > 0:
+            upside_to_target = round((analyst_target - price) / price * 100, 1)
+
+        # ── Price momentum ────────────────────────────────────────────────────
+        high_52w = info.get("fiftyTwoWeekHigh")
+        low_52w  = info.get("fiftyTwoWeekLow")
+        pct_off_high = None
+        if high_52w and price and high_52w > 0:
+            pct_off_high = round((price - high_52w) / high_52w * 100, 1)
+        return_1yr = _pct(info.get("52WeekChange"))
+
+        # ── Margin trends (YoY delta in percentage points) ────────────────────
+        op_margin_delta = None
+        gross_margin_delta_val = None
+        try:
+            _inc = stock.income_stmt
+            if _inc is not None and not _inc.empty and len(_inc.columns) >= 2:
+                c0, c1 = _inc.columns[0], _inc.columns[1]
+                r0 = _row(_inc, ["Total Revenue", "Revenue"], c0)
+                r1 = _row(_inc, ["Total Revenue", "Revenue"], c1)
+                if r0 and r1 and r0 > 0 and r1 > 0:
+                    o0 = _row(_inc, ["Operating Income", "EBIT", "Operating Profit"], c0)
+                    o1 = _row(_inc, ["Operating Income", "EBIT", "Operating Profit"], c1)
+                    g0 = _row(_inc, ["Gross Profit"], c0)
+                    g1 = _row(_inc, ["Gross Profit"], c1)
+                    if o0 is not None and o1 is not None:
+                        op_margin_delta = round(o0 / r0 * 100 - o1 / r1 * 100, 1)
+                    if g0 is not None and g1 is not None:
+                        gross_margin_delta_val = round(g0 / r0 * 100 - g1 / r1 * 100, 1)
+        except Exception:
+            pass
+
         f_live = CompanyFundamentals(
             ticker=ticker,
             company_name=info.get("longName", ticker),
@@ -166,6 +203,16 @@ def get_fundamentals_from_yfinance(ticker: str) -> Optional[CompanyFundamentals]
             earnings_stability_years=earn_stability,
             data_source="yfinance",
             data_notes=(f"Live yfinance data. MarketCap=${mc_m:.0f}M." if mc_m else "Live yfinance data.") + stale_note,
+            analyst_count=analyst_count,
+            analyst_target_price=analyst_target,
+            analyst_recommendation=analyst_rec,
+            upside_to_target=upside_to_target,
+            price_52w_high=high_52w,
+            price_52w_low=low_52w,
+            pct_off_52w_high=pct_off_high,
+            return_1yr=return_1yr,
+            operating_margin_delta=op_margin_delta,
+            gross_margin_delta=gross_margin_delta_val,
         )
 
         # ── Overlay curated fields from mock ──────────────────────────────────
@@ -263,11 +310,15 @@ def _derive_revenue_growth(stock) -> Optional[float]:
 
 
 def _row(df, names: list, col) -> Optional[float]:
+    import math
     for name in names:
         if name in df.index:
             val = df.loc[name, col]
             try:
-                return float(val)
+                result = float(val)
+                if math.isnan(result) or math.isinf(result):
+                    continue
+                return result
             except (TypeError, ValueError):
                 continue
     return None

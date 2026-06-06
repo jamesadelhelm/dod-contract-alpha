@@ -151,7 +151,7 @@ def main():
     print("-" * 90)
     verdict_emoji_map = {
         Verdict.STRONG_CANDIDATE: "🟢",
-        Verdict.RESEARCH_FURTHER: "🟢",
+        Verdict.RESEARCH_FURTHER: "🟡",
         Verdict.POTENTIALLY_ATTRACTIVE: "🟡",
         Verdict.HIGH_QUALITY_BUT_EXPENSIVE: "🟠",
         Verdict.WATCHLIST: "🔵",
