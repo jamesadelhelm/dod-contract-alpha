@@ -29,7 +29,7 @@ from src.parse_contracts import load_and_enrich
 from src.fundamentals import get_fundamentals_or_stub
 from src.scoring import score_company
 from src.report import generate_report, save_report
-from src.models import CompanyScore, Verdict
+from src.models import CompanyScore, CompanyFundamentals, Verdict
 from config import REPORTS_DIR
 
 
@@ -91,6 +91,7 @@ def main():
     # ── Step 3: Score companies ───────────────────────────────────────────────
     print("[3/4] Scoring companies...")
     scores: list[CompanyScore] = []
+    fundamentals_map: dict[str, CompanyFundamentals] = {}
 
     for ticker, ticker_contracts in ticker_groups.items():
         # Use most common sector
@@ -103,6 +104,7 @@ def main():
         c0 = ticker_contracts[0]
         company_name = c0.parent_company or ticker
         f = get_fundamentals_or_stub(ticker, company_name, live=live)
+        fundamentals_map[ticker] = f
 
         # EDGAR overlay — fetch 10-K and update fundamentals with primary-source data
         if args.edgar:
@@ -145,21 +147,29 @@ def main():
 
     # ── Step 4: Print summary ─────────────────────────────────────────────────
     print("\n[4/4] Results\n")
-    print(f"{'#':<3} {'Ticker':<8} {'Score':>6} {'Verdict':<28} {'Sector'}")
-    print("-" * 80)
+    print(f"{'#':<3} {'Ticker':<8} {'Score':>6} {'Data':>5} {'MoS':>6}  {'Verdict':<28} {'Sector'}")
+    print("-" * 90)
+    verdict_emoji_map = {
+        Verdict.STRONG_CANDIDATE: "🟢",
+        Verdict.RESEARCH_FURTHER: "🟢",
+        Verdict.POTENTIALLY_ATTRACTIVE: "🟡",
+        Verdict.HIGH_QUALITY_BUT_EXPENSIVE: "🟠",
+        Verdict.WATCHLIST: "🔵",
+        Verdict.LOW_CONVICTION: "⚪",
+        Verdict.IGNORE: "🔴",
+    }
     for i, s in enumerate(scores, 1):
-        verdict_emoji = {
-            Verdict.STRONG_CANDIDATE: "🟢",
-            Verdict.RESEARCH_FURTHER: "🟢",
-            Verdict.POTENTIALLY_ATTRACTIVE: "🟡",
-            Verdict.HIGH_QUALITY_BUT_EXPENSIVE: "🟠",
-            Verdict.WATCHLIST: "🔵",
-            Verdict.LOW_CONVICTION: "⚪",
-            Verdict.IGNORE: "🔴",
-        }.get(s.verdict, " ")
-        print(f"{i:<3} {s.ticker:<8} {s.final_score:>6.1f}  {verdict_emoji} {s.verdict.value:<26} {s.sector.value}")
+        emoji = verdict_emoji_map.get(s.verdict, " ")
+        data_str = f"{s.data_completeness_pct:.0f}%"
+        if s.data_completeness_pct < 50:
+            data_str += "⚠"
+        mos_str = "N/A"
+        if s.dcf and s.dcf.margin_of_safety_base is not None:
+            mos_str = f"{s.dcf.margin_of_safety_base:+.0f}%"
+        print(f"{i:<3} {s.ticker:<8} {s.final_score:>6.1f} {data_str:>5} {mos_str:>6}  {emoji} {s.verdict.value:<26} {s.sector.value}")
 
-    print(f"\nPrivate/unmatched: {len(private_contracts)} contracts")
+    unmatched_value = sum(c.contract_value for c in private_contracts if c.contract_value)
+    print(f"\nPrivate/unmatched: {len(private_contracts)} contracts (${unmatched_value:.0f}M unresolved)")
 
     # ── JSON output ───────────────────────────────────────────────────────────
     if args.json:
@@ -197,6 +207,7 @@ def main():
             all_contracts=contracts,
             run_date=run_date,
             live=live,
+            fundamentals_map=fundamentals_map,
         )
         save_report(report_content, output_path)
         print(f"\nReport → {output_path}")

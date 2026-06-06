@@ -44,19 +44,23 @@ def generate_report(
     all_contracts: List[Contract],
     run_date: str = None,
     live: bool = True,
+    fundamentals_map: Dict = None,
 ) -> str:
     run_date = run_date or datetime.now().strftime("%Y-%m-%d %H:%M UTC")
 
     lines = []
 
     # ── Header ────────────────────────────────────────────────────────────────
+    unmatched_value = sum(c.contract_value for c in private_contracts if c.contract_value)
+    unmatched_str = f"${unmatched_value:.0f}M" if unmatched_value else "$0M"
+
     lines += [
         "# 📊 DoD Contract Intelligence Report",
         "",
         f"> **Generated:** {run_date}  ",
         f"> **Contracts Analyzed:** {len(all_contracts)}  ",
         f"> **Public Companies Identified:** {len(ranked_scores)}  ",
-        f"> **Private / No Ticker:** {len(private_contracts)}  ",
+        f"> **Private / No Ticker:** {len(private_contracts)} ({unmatched_str} unresolved — see Section 9)  ",
         "",
         "> ⚠️ **IMPORTANT DISCLAIMER:** This report is for research and informational purposes only.",
         "> It does not constitute investment advice, a recommendation to buy or sell any security,",
@@ -109,14 +113,24 @@ def generate_report(
     lines += [
         "## 2. Top Ranked Public Companies",
         "",
-        "| # | Ticker | Company | Sector | Score | Verdict |",
-        "|---|--------|---------|--------|-------|---------|",
+        "> **Data**: % of 16 key fundamental inputs that are real (non-stub) values.",
+        "> **MoS**: Margin of safety vs. DCF base-case intrinsic value. Positive = stock is cheap.",
+        "",
+        "| # | Ticker | Company | Sector | Score | Data | MoS | Verdict |",
+        "|---|--------|---------|--------|-------|------|-----|---------|",
     ]
     for i, s in enumerate(ranked_scores, 1):
         emoji = VERDICT_EMOJI.get(s.verdict, "⚪")
+        data_str = f"{s.data_completeness_pct:.0f}%"
+        if s.data_completeness_pct < 50:
+            data_str += " ⚠️"
+        mos_str = "N/A"
+        if s.dcf and s.dcf.margin_of_safety_base is not None:
+            mos_val = s.dcf.margin_of_safety_base
+            mos_str = f"{mos_val:+.0f}%"
         lines.append(
             f"| {i} | **{s.ticker}** | {s.company_name} | {s.sector.value} "
-            f"| **{s.final_score:.1f}** | {emoji} {s.verdict.value} |"
+            f"| **{s.final_score:.1f}** | {data_str} | {mos_str} | {emoji} {s.verdict.value} |"
         )
     lines += ["", "---", ""]
 
@@ -290,8 +304,10 @@ def generate_report(
         "|--------|-----------|-----------|-------------|------|-------------|---------------------|",
     ]
     for s in ranked_scores:
-        from src.fundamentals import get_fundamentals_or_stub
-        f = get_fundamentals_or_stub(s.ticker, live=live)
+        f = (fundamentals_map or {}).get(s.ticker)
+        if f is None:
+            from src.fundamentals import get_fundamentals_or_stub
+            f = get_fundamentals_or_stub(s.ticker, live=live)
         ss = "Yes" if any(c.is_sole_source for c in s.recent_contracts) else "No"
         dod_pct = f"{f.dod_revenue_pct:.0f}%" if f.dod_revenue_pct is not None else "N/A"
         gov_pct = f"{f.government_revenue_pct:.0f}%" if f.government_revenue_pct is not None else "N/A"
@@ -311,8 +327,10 @@ def generate_report(
         "|--------|-----|---------|-----------|-----------|-----|-------------|",
     ]
     for s in ranked_scores:
-        from src.fundamentals import get_fundamentals_or_stub
-        f = get_fundamentals_or_stub(s.ticker, live=live)
+        f = (fundamentals_map or {}).get(s.ticker)
+        if f is None:
+            from src.fundamentals import get_fundamentals_or_stub
+            f = get_fundamentals_or_stub(s.ticker, live=live)
         pe   = f"{f.pe_ratio:.0f}x"    if f.pe_ratio             else "N/A"
         fpe  = f"{f.forward_pe:.0f}x"  if f.forward_pe           else "N/A"
         ev   = f"{f.ev_ebitda:.0f}x"   if f.ev_ebitda            else "N/A"
@@ -440,6 +458,9 @@ def generate_report(
     # ── 9. Private Companies / No Ticker Found ────────────────────────────────
     lines += [
         "## 9. Private Companies / No Ticker Found",
+        "",
+        f"> **{len(private_contracts)} contracts totaling {unmatched_str} could not be matched to a public ticker.**",
+        "> This is your coverage gap. Review the table below — some may be resolvable via `ticker_map.yaml`.",
         "",
         "These awardees received contracts but no public ticker was identified.",
         "They may represent competitive intelligence about industry trends or future IPO candidates.",

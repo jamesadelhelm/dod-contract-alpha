@@ -35,6 +35,19 @@ def _safe(val: Optional[float], default: float = 0.0) -> float:
     return val if val is not None else default
 
 
+_COMPLETENESS_FIELDS = [
+    "pe_ratio", "forward_pe", "ev_ebitda", "fcf_yield", "price_to_book",
+    "current_ratio", "roic", "free_cash_flow_margin", "operating_margin",
+    "earnings_stability_years", "roe", "debt_equity", "debt_ebitda",
+    "interest_coverage", "dod_revenue_pct", "backlog_to_revenue",
+]
+
+
+def _compute_data_completeness(f) -> float:
+    populated = sum(1 for field in _COMPLETENESS_FIELDS if getattr(f, field, None) is not None)
+    return round(populated / len(_COMPLETENESS_FIELDS) * 100)
+
+
 def _score_bracket(value: float, brackets: list) -> float:
     """
     brackets: list of (threshold, score) tuples, sorted descending by threshold.
@@ -928,6 +941,8 @@ def score_company(
     # Narrative
     why_matters, why_not, risks, verify = _generate_narrative(ticker, f, contracts, sector, bq_raw, gv_raw, ds_raw)
 
+    data_completeness = _compute_data_completeness(f)
+
     return CompanyScore(
         ticker=ticker,
         company_name=f.company_name or company_name,
@@ -968,6 +983,7 @@ def score_company(
         low_ticker_confidence=any(c.ticker_confidence < OVERRIDE_RULES["low_ticker_confidence_flag_threshold"] for c in contracts if c.ticker == ticker),
         specialist=specialist,
         dcf=dcf,
+        data_completeness_pct=data_completeness,
     )
 
 

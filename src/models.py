@@ -137,6 +137,7 @@ class CompanyScore:
     low_ticker_confidence: bool = False
     specialist: object = None  # SpecialistProfile, set after scoring
     dcf: object = None           # DCFResult, set after scoring
+    data_completeness_pct: float = 0.0  # % of key fundamentals fields that are non-None
 
 
 class SpecialistTierStatus(str, Enum):

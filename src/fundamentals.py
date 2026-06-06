@@ -124,6 +124,15 @@ def get_fundamentals_from_yfinance(ticker: str) -> Optional[CompanyFundamentals]
         else:
             revenue_growth_1yr = _derive_revenue_growth(stock)
 
+        # Staleness check — warn if most recent filing > 180 days old
+        stale_note = ""
+        most_recent_ts = info.get("mostRecentQuarter") or info.get("lastFiscalYearEnd")
+        if most_recent_ts:
+            from datetime import datetime as _dt
+            days_old = (_dt.now().timestamp() - most_recent_ts) / 86400
+            if days_old > 180:
+                stale_note = f" ⚠️ STALE: most recent filing ~{int(days_old / 30)}mo ago — verify current data."
+
         f_live = CompanyFundamentals(
             ticker=ticker,
             company_name=info.get("longName", ticker),
@@ -156,7 +165,7 @@ def get_fundamentals_from_yfinance(ticker: str) -> Optional[CompanyFundamentals]
             insider_ownership_pct=insider_pct,
             earnings_stability_years=earn_stability,
             data_source="yfinance",
-            data_notes=f"Live yfinance data. MarketCap=${mc_m:.0f}M. " if mc_m else "Live yfinance data.",
+            data_notes=(f"Live yfinance data. MarketCap=${mc_m:.0f}M." if mc_m else "Live yfinance data.") + stale_note,
         )
 
         # ── Overlay curated fields from mock ──────────────────────────────────
