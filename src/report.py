@@ -58,7 +58,7 @@ def generate_report(
         f"> **Generated:** {run_date}  ",
         f"> **Contracts Analyzed:** {len(all_contracts)}  ",
         f"> **Public Companies Identified:** {len(ranked_scores)}  ",
-        f"> **Private / No Ticker:** {len(private_contracts)} ({unmatched_str} unresolved — see Section 9)  ",
+        f"> **Private / No Ticker:** {len(private_contracts)} ({unmatched_str} unresolved — see Section 10)  ",
         "",
         "> ⚠️ **IMPORTANT DISCLAIMER:** This report is for research and informational purposes only.",
         "> It does not constitute investment advice, a recommendation to buy or sell any security,",
@@ -151,9 +151,9 @@ def generate_report(
     lines += ["", "---", ""]
 
 
-    # ── 3b. Specialist Tier ────────────────────────────────────────────────────
+    # ── 4. Specialist Tier ────────────────────────────────────────────────────
     lines += [
-        '## 3b. Specialist Tier Analysis',
+        '## 4. Specialist Tier Analysis',
         '',
         'This section surfaces companies in the mid-cap, high-DoD-concentration sweet spot',
         'where contract signals are most actionable — before institutional coverage fully',
@@ -213,9 +213,9 @@ def generate_report(
 
     lines += ["---", ""]
 
-    # ── 4–6. Individual Company Deep Dives ───────────────────────────────────
+    # ── 5. Individual Company Deep Dives ─────────────────────────────────────
     lines += [
-        "## 4. Buffett/Graham Quality Review & Scoring Detail",
+        "## 5. Buffett/Graham Quality Review & Scoring Detail",
         "",
     ]
 
@@ -330,9 +330,9 @@ def generate_report(
 
         lines += ["", "---", ""]
 
-    # ── 5. Government Funding Durability Summary ──────────────────────────────
+    # ── 6. Government Funding Durability Summary ──────────────────────────────
     lines += [
-        "## 5. Government Funding Durability Summary",
+        "## 6. Government Funding Durability Summary",
         "",
         "| Ticker | DoD Rev % | Gov Rev % | Backlog/Rev | Moat | Sole Source | DoD Stability Score |",
         "|--------|-----------|-----------|-------------|------|-------------|---------------------|",
@@ -351,9 +351,9 @@ def generate_report(
         )
     lines += ["", "---", ""]
 
-    # ── 6. Valuation Notes + DCF ─────────────────────────────────────────────
+    # ── 7. Valuation Notes + DCF ─────────────────────────────────────────────
     lines += [
-        "## 6. Valuation Analysis",
+        "## 7. Valuation Analysis",
         "",
         "### 6a. Market Multiples",
         "",
@@ -579,8 +579,8 @@ def generate_report(
 
     lines += ["---", ""]
 
-    # ── 7. Red Flags ──────────────────────────────────────────────────────────
-    lines += ["## 7. Red Flags", ""]
+    # ── 8. Red Flags ──────────────────────────────────────────────────────────
+    lines += ["## 8. Red Flags", ""]
     has_flags = False
     for s in ranked_scores:
         if s.red_flags:
@@ -593,9 +593,9 @@ def generate_report(
         lines.append("No major red flags identified in this batch.")
     lines += ["", "---", ""]
 
-    # ── 8. Companies to Research Further ─────────────────────────────────────
+    # ── 9. Companies to Research Further ─────────────────────────────────────
     lines += [
-        "## 8. Companies to Research Further",
+        "## 9. Companies to Research Further",
         "",
     ]
     research = [s for s in ranked_scores if s.verdict in [
@@ -620,9 +620,9 @@ def generate_report(
         lines.append("No companies met the threshold for priority research in this batch.")
     lines += ["---", ""]
 
-    # ── 9. Private Companies / No Ticker Found ────────────────────────────────
+    # ── 10. Private Companies / No Ticker Found ───────────────────────────────
     lines += [
-        "## 9. Private Companies / No Ticker Found",
+        "## 10. Private Companies / No Ticker Found",
         "",
         f"> **{len(private_contracts)} contracts totaling {unmatched_str} could not be matched to a public ticker.**",
         "> This is your coverage gap. Review the table below — some may be resolvable via `ticker_map.yaml`.",
@@ -641,13 +641,13 @@ def generate_report(
         )
     lines += ["", "---", ""]
 
-    # ── 10. Data Quality Caveats ──────────────────────────────────────────────
+    # ── 11. Data Quality Caveats ──────────────────────────────────────────────
     if live:
         fundamentals_caveat = [
             "**Fundamentals data:**",
             "- Market prices, margins, ratios, and balance sheet figures are fetched live from **yfinance**.",
             "- Government revenue %, DoD revenue %, backlog/revenue, and moat rating come from a curated",
-            "  overlay (`fundamentals_overlay.json`) and should be verified against SEC filings.",
+            "  overlay (`data/mock_fundamentals.json`) and should be verified against SEC filings.",
             "- P/E, EV/EBITDA, FCF yield may differ slightly from Bloomberg/FactSet due to yfinance",
             "  calculation methodology — treat as directional indicators, not precision figures.",
         ]
@@ -661,7 +661,7 @@ def generate_report(
         ]
 
     lines += [
-        "## 10. Data Quality Caveats",
+        "## 11. Data Quality & Limitations",
         "",
     ] + fundamentals_caveat + [
         "",
@@ -691,7 +691,7 @@ def generate_report(
         "",
         "---",
         "",
-        f"*Report generated by DoD Contract Intelligence Agent v0.1 (MVP) | {run_date}*",
+        f"*Report generated by DoD Contract Intelligence Agent v1.0 | {run_date}*",
     ]
 
     return "\n".join(lines)

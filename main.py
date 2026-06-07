@@ -6,7 +6,7 @@ Usage:
   python main.py --days 90                 # Extend lookback window to 90 days
   python main.py --specialist-only         # Mid-cap, high-DoD companies only
   python main.py --min-score 65            # High-conviction threshold
-  python main.py --no-live                 # Offline: use mock fundamentals instead of yfinance
+  python main.py --no-live                 # Offline: use mock fundamentals only (no yfinance)
   python main.py --source mock             # Fully offline: mock contracts + mock fundamentals
   python main.py --output my_report.md
   python main.py --top 10
@@ -52,8 +52,6 @@ def parse_args():
                    help="Fetch 10-K data from SEC EDGAR to get real gov revenue %% and backlog")
     p.add_argument("--no-live", action="store_true", dest="no_live", default=False,
                    help="Use mock/offline fundamentals instead of yfinance (for offline testing)")
-    p.add_argument("--live", action="store_true", default=True,
-                   help="Fetch live fundamentals from yfinance (default: enabled)")
     p.add_argument("--specialist-only", action="store_true",
                    help="Filter to mid-cap, high-DoD-concentration companies only (sweet spot tier)")
     return p.parse_args()

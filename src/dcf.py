@@ -130,7 +130,7 @@ def run_dcf(
     if shares_millions is None and mc and current_price and current_price > 0:
         shares_millions = mc / current_price
     if current_price is None and mc and shares_millions and shares_millions > 0:
-        current_price = mc / shares_millions * 1_000_000  # back-calc; won't be exact
+        current_price = mc / shares_millions  # both in millions → ratio is $/share
 
     rev = f.annual_revenue_millions or 0
 

@@ -503,7 +503,12 @@ def get_fundamentals(ticker: str) -> Optional[CompanyFundamentals]:
     raw = _load_mock_raw().get(ticker.upper())
     if raw is None:
         return None
-    return CompanyFundamentals(ticker=ticker, data_source="mock", **raw)
+    # Filter to only valid CompanyFundamentals fields; guards against stale JSON keys
+    # that no longer exist in the dataclass (would raise TypeError on **raw).
+    import dataclasses
+    valid_fields = {f.name for f in dataclasses.fields(CompanyFundamentals)} - {"ticker", "data_source"}
+    filtered = {k: v for k, v in raw.items() if k in valid_fields}
+    return CompanyFundamentals(ticker=ticker, data_source="mock", **filtered)
 
 
 def get_fundamentals_or_stub(

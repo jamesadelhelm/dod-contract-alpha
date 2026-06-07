@@ -1128,8 +1128,8 @@ def _generate_narrative(
     risks = []
     if _safe(f.debt_ebitda) > 3.0:
         risks.append(f"Elevated leverage ({f.debt_ebitda:.1f}x Debt/EBITDA)")
-    if _safe(f.pe_ratio, 999) > 80:
-        risks.append(f"Very high valuation (P/E {f.pe_ratio or 999:.0f}x) requires sustained high growth")
+    if f.pe_ratio is not None and f.pe_ratio > 80:
+        risks.append(f"Very high valuation (P/E {f.pe_ratio:.0f}x) requires sustained high growth")
     if _safe(f.dod_revenue_pct) > 80:
         risks.append("High government concentration — vulnerable to budget cuts, CR, or program cancellation")
     if sector == Sector.MILITARY_HEALTHCARE:
