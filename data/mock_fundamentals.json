@@ -566,6 +566,159 @@
     "moat_rating": "Narrow",
     "data_notes": "Mock data. Deep government IT embedding and recompete track record. Margins are thin (cost-plus dominant). Leverage is elevated from acquisitions. Price ~$119 approx mid-2025."
   },
+  "RTX": {
+    "company_name": "RTX Corporation",
+    "government_revenue_pct": 67,
+    "dod_revenue_pct": 62,
+    "backlog_to_revenue": 1.9,
+    "moat_rating": "Wide",
+    "earnings_stability_years": 22,
+    "data_notes": "Estimates — verify via 10-K. Raytheon segment ~90% DoD; Collins Aerospace and Pratt & Whitney blend down the total. Patriot, Tomahawk, SM-series provide sole-source moat. F135 engine partner. Approx DoD% ~62%, backlog ~$205B FY2024."
+  },
+  "BA": {
+    "company_name": "Boeing Company",
+    "government_revenue_pct": 42,
+    "dod_revenue_pct": 40,
+    "backlog_to_revenue": 8.5,
+    "moat_rating": "Narrow",
+    "earnings_stability_years": 3,
+    "data_notes": "Estimates — verify via 10-K. BDS (Defense/Space/Security) ~40% of revenue; BCA commercial dominates backlog. Significant execution risk: quality control issues, labor disruption, and multi-year cash burn. Moat is narrowing — lost T-7, KC-46 problems, F-15 near end of production. Earnings_stability is low due to 2019-2023 net losses."
+  },
+  "LHX": {
+    "company_name": "L3Harris Technologies Inc",
+    "government_revenue_pct": 80,
+    "dod_revenue_pct": 78,
+    "backlog_to_revenue": 2.0,
+    "moat_rating": "Narrow",
+    "earnings_stability_years": 10,
+    "data_notes": "Estimates — verify via 10-K. Communications, electronic warfare, ISR, night vision. Merger of L3 + Harris 2019. High clearance/classified concentration. Moat: incumbency in tactical comms and EW pods. ~$21B revenue FY2024."
+  },
+  "TXT": {
+    "company_name": "Textron Inc",
+    "government_revenue_pct": 38,
+    "dod_revenue_pct": 35,
+    "backlog_to_revenue": 1.4,
+    "moat_rating": "Narrow",
+    "earnings_stability_years": 15,
+    "data_notes": "Estimates — verify via 10-K. Bell Textron (~60% DoD) is offset by commercial aviation (Cessna/Beechcraft), industrial (Kautex), and finance. Textron Aviation is commercial dominant. V-22 partner. FLRAA (V-280 Valor) award provides long-duration Bell exposure."
+  },
+  "CACI": {
+    "company_name": "CACI International Inc",
+    "government_revenue_pct": 98,
+    "dod_revenue_pct": 79,
+    "backlog_to_revenue": 1.5,
+    "moat_rating": "Narrow",
+    "earnings_stability_years": 15,
+    "data_notes": "Estimates — verify via 10-K. Intelligence community and DoD IT services, cyber, and C2. Clearance-based moat: significant portion of work is TS/SCI-classified, creating real switching costs. ~$7.7B revenue FY2024. Strong organic growth track record."
+  },
+  "AVAV": {
+    "company_name": "AeroVironment Inc",
+    "government_revenue_pct": 92,
+    "dod_revenue_pct": 88,
+    "backlog_to_revenue": 0.9,
+    "moat_rating": "Narrow",
+    "earnings_stability_years": 8,
+    "data_notes": "Estimates — verify via 10-K. Raven, Puma, Switchblade UAS are DoD sole-source programs. Ukraine demand drove significant revenue acceleration. High DoD concentration creates both durability and budget risk. ~$700M revenue; small-cap risk for position sizing."
+  },
+  "PANW": {
+    "company_name": "Palo Alto Networks Inc",
+    "government_revenue_pct": 20,
+    "dod_revenue_pct": 15,
+    "backlog_to_revenue": 2.2,
+    "moat_rating": "Wide",
+    "earnings_stability_years": 3,
+    "data_notes": "Estimates — verify via 10-K. Platform consolidation strategy creating high switching costs — moat is widening. Government/DoD exposure is growing (Cortex XDR, XSIAM authorized at DoD) but primary thesis is commercial enterprise. Valuation requires strong execution."
+  },
+  "KBR": {
+    "company_name": "KBR Inc",
+    "government_revenue_pct": 65,
+    "dod_revenue_pct": 45,
+    "backlog_to_revenue": 1.8,
+    "moat_rating": "Narrow",
+    "earnings_stability_years": 12,
+    "data_notes": "Estimates — verify via 10-K. Government Services segment dominates; includes DoD logistics, science/space (NASA), and intel community. Sustainable Technology Solutions is commercial but growing. Strong pipeline in UK defence market. ~$7.8B revenue FY2024."
+  },
+  "VVX": {
+    "company_name": "V2X Inc",
+    "government_revenue_pct": 98,
+    "dod_revenue_pct": 95,
+    "backlog_to_revenue": 1.6,
+    "moat_rating": "None",
+    "earnings_stability_years": 5,
+    "data_notes": "Estimates — verify via 10-K. Formed 2022 from Vectrus + Vertex Aerospace merger. Aviation sustainment, base operations, logistics. Virtually 100% US government revenue. Margins are thin (cost-plus dominant). High leverage from merger. ~$4B revenue. Not sole-source."
+  },
+  "AMTM": {
+    "company_name": "Amentum Holdings Inc",
+    "government_revenue_pct": 95,
+    "dod_revenue_pct": 70,
+    "backlog_to_revenue": 1.4,
+    "moat_rating": "None",
+    "earnings_stability_years": 2,
+    "data_notes": "Estimates — verify via 10-K. Spun from AECOM in 2023, became independent public company 2024. Management and operations services, environmental, intelligence. ~$13B revenue estimate. Very limited earnings history as standalone. High leverage from spin. Needs several years of clean public reporting before reliable fundamentals available."
+  },
+  "FLR": {
+    "company_name": "Fluor Corporation",
+    "government_revenue_pct": 25,
+    "dod_revenue_pct": 15,
+    "backlog_to_revenue": 2.3,
+    "moat_rating": "Narrow",
+    "earnings_stability_years": 10,
+    "data_notes": "Estimates — verify via 10-K. Mission Solutions segment handles DoD (Fluor Marine Propulsion naval nuclear JV, environmental remediation). Energy Solutions is the larger commercial segment. Significant execution risk on fixed-price contracts in recent years — accounting charges have dented track record. ~$16B revenue."
+  },
+  "GE": {
+    "company_name": "GE Aerospace",
+    "government_revenue_pct": 43,
+    "dod_revenue_pct": 42,
+    "backlog_to_revenue": 5.5,
+    "moat_rating": "Wide",
+    "earnings_stability_years": 10,
+    "data_notes": "Estimates — verify via 10-K. Post-Vernova spin (2024), GE is purely aerospace. Jet engines are a duopoly (GE + P&W/RTX). Military: F414, F110, T700, F404. Commercial: LEAP, GE9X. Enormous order backlog provides 5+ year revenue visibility. Wide moat from engine certification economics. ~$38B revenue FY2024."
+  },
+  "TDG": {
+    "company_name": "TransDigm Group Inc",
+    "government_revenue_pct": 38,
+    "dod_revenue_pct": 35,
+    "backlog_to_revenue": 0.5,
+    "moat_rating": "Wide",
+    "earnings_stability_years": 18,
+    "data_notes": "Estimates — verify via 10-K. ~75% of revenue is sole-source proprietary aftermarket parts. 80%+ gross margins on many components. DoD is a significant customer but commercial MRO drives pricing power. Serial acquirer of niche aerospace component businesses. Very high leverage by design (private equity heritage). ~$7.9B revenue FY2024."
+  },
+  "HEI": {
+    "company_name": "HEICO Corporation",
+    "government_revenue_pct": 32,
+    "dod_revenue_pct": 30,
+    "backlog_to_revenue": 0.5,
+    "moat_rating": "Narrow",
+    "earnings_stability_years": 20,
+    "data_notes": "Estimates — verify via 10-K. FAA-PMA (Parts Manufacturer Approval) aftermarket parts provide niche moat — approved alternatives to OEM parts at 40-60% discount. Profitable every year since IPO 1990. Electronic Technologies Group serves defense/space. Smaller DoD exposure than TDG. ~$3.8B revenue FY2024."
+  },
+  "CW": {
+    "company_name": "Curtiss-Wright Corporation",
+    "government_revenue_pct": 65,
+    "dod_revenue_pct": 62,
+    "backlog_to_revenue": 1.6,
+    "moat_rating": "Narrow",
+    "earnings_stability_years": 18,
+    "data_notes": "Estimates — verify via 10-K. Defense electronics, sensors, and naval systems. Naval valves and pumps for nuclear-powered ships provide specialized sole-source elements. Defense Industrial Group handles flight test and ground vehicle electronics. ~$2.9B revenue FY2024. Specialist mid-cap sweet spot."
+  },
+  "IBM": {
+    "company_name": "International Business Machines Corp",
+    "government_revenue_pct": 22,
+    "dod_revenue_pct": 18,
+    "backlog_to_revenue": 0.8,
+    "moat_rating": "Narrow",
+    "earnings_stability_years": 20,
+    "data_notes": "Estimates — verify via 10-K. Federal government is a significant IBM customer (mainframe, cloud, consulting). DoD uses IBM systems across classified and unclassified networks. Moat: mainframe lock-in for legacy workloads, but cloud/consulting is competitive. Large commercial base means individual DoD contracts are not material to thesis. ~$62B revenue FY2024."
+  },
+  "OLN": {
+    "company_name": "Olin Corporation",
+    "government_revenue_pct": 12,
+    "dod_revenue_pct": 12,
+    "backlog_to_revenue": 0.3,
+    "moat_rating": "Narrow",
+    "earnings_stability_years": 14,
+    "data_notes": "Estimates — verify via 10-K. Winchester (ammunition) is the DoD-relevant segment. Chemical manufacturing (chlorine/caustic soda) is the larger business. Winchester has a long Army contract for small-caliber ammunition and Lake City management contract. DoD% is approximately the Winchester contribution (~$1.5B of $7.2B total revenue). Commodity chemical cycles drive most of earnings volatility."
+  },
   "ACN": {
     "company_name": "Accenture plc",
     "market_cap_millions": 210000,

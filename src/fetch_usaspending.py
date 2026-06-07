@@ -288,10 +288,27 @@ def load_from_usaspending(days_back: int = 30, min_amount_millions: float = 5.0)
             print(f"[USAspending] Normalized {len(normalized)} contracts")
             return normalized
         else:
-            print("[USAspending] No results — falling back to mock data")
+            # Zero results almost always means a network or lag issue, not
+            # a genuinely empty dataset. Failing loudly prevents a report
+            # generated from stale mock data from being mistaken for live output.
+            print()
+            print("=" * 60)
+            print("  ⚠️  WARNING: USAspending returned 0 results.")
+            print("  This usually indicates a network issue, API outage,")
+            print("  or USAspending data lag. The report below is based on")
+            print("  MOCK (sample) data, NOT live contract awards.")
+            print("  Re-run when connectivity is confirmed before acting on output.")
+            print("=" * 60)
+            print()
             return _load_mock_fallback()
     except Exception as e:
-        print(f"[USAspending] Failed ({e}) — falling back to mock data")
+        print()
+        print("=" * 60)
+        print(f"  ⚠️  WARNING: USAspending fetch failed: {e}")
+        print("  Report is based on MOCK (sample) data, NOT live contract awards.")
+        print("  Do not act on this output until live data is confirmed.")
+        print("=" * 60)
+        print()
         return _load_mock_fallback()
 
 
