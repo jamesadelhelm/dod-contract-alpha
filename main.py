@@ -23,7 +23,6 @@ from pathlib import Path
 from collections import defaultdict
 
 # Allow imports from project root
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from src.parse_contracts import load_and_enrich
 from src.fundamentals import get_fundamentals_or_stub

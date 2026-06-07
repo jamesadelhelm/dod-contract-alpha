@@ -14,8 +14,6 @@ Scoring is fully deterministic and transparent.
 """
 
 from __future__ import annotations
-import sys, os
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from typing import List, Tuple, Optional
 from src.dcf import run_dcf as _run_dcf
 from src.models import (
@@ -474,55 +472,74 @@ def score_management(f: CompanyFundamentals) -> Tuple[float, str, List[str]]:
     """
     Measures whether management acts like good stewards of capital.
     Max: 100. Weight: 15%.
+
+    Intentionally distinct from Buffett Quality: focuses on stewardship signals
+    (ROIC as returns on investment, share count discipline, FCF execution, skin
+    in the game, debt restraint) rather than business quality signals (moat, margins).
+    earnings_stability is NOT used here — it already appears in Buffett and Graham.
     """
     flags = []
     points = 0.0
     details = []
 
-    # ROIC as capital allocation signal — 30 pts
+    # ROIC as capital allocation signal — 25 pts
     roic = _safe(f.roic)
     if roic >= 18:
-        r_pts = 30
+        r_pts = 25
     elif roic >= 13:
-        r_pts = 24
+        r_pts = 20
     elif roic >= 9:
-        r_pts = 18
+        r_pts = 15
     elif roic >= 6:
-        r_pts = 10
+        r_pts = 8
     elif roic > 0:
-        r_pts = 4
+        r_pts = 3
     else:
         r_pts = 0
         flags.append("ROIC not positive — capital allocation quality unproven")
     points += r_pts
     details.append(f"ROIC {roic:.1f}% (+{r_pts:.0f})")
 
-    # Earnings stability as operational consistency — 25 pts
-    stab = _safe(f.earnings_stability_years)
-    if stab >= 15:
-        s_pts = 25
-    elif stab >= 10:
-        s_pts = 20
-    elif stab >= 7:
-        s_pts = 14
-    elif stab >= 4:
-        s_pts = 8
+    # Share count discipline — 25 pts
+    # Buybacks = management returning capital; dilution = management consuming it.
+    # This is a distinct management signal not captured anywhere else in the framework.
+    shares_chg = getattr(f, "shares_chg_1yr_pct", None)
+    if shares_chg is not None:
+        if shares_chg < -5:
+            sc_pts = 25
+            details.append(f"Shares {shares_chg:+.1f}% YoY — meaningful buyback (+25)")
+        elif shares_chg < -2:
+            sc_pts = 20
+            details.append(f"Shares {shares_chg:+.1f}% YoY — modest buyback (+20)")
+        elif shares_chg <= 1:
+            sc_pts = 15
+            details.append(f"Shares ~flat YoY (+15)")
+        elif shares_chg <= 3:
+            sc_pts = 8
+            details.append(f"Shares {shares_chg:+.1f}% YoY — minor dilution (+8)")
+        elif shares_chg <= 7:
+            sc_pts = 3
+            details.append(f"Shares {shares_chg:+.1f}% YoY — material dilution (+3)")
+            flags.append(f"Material share dilution ({shares_chg:+.1f}% YoY) — equity value erosion")
+        else:
+            sc_pts = 0
+            details.append(f"Shares {shares_chg:+.1f}% YoY — aggressive dilution (+0)")
+            flags.append(f"Aggressive dilution ({shares_chg:+.1f}% YoY) — destroying equity value")
     else:
-        s_pts = 2
-        flags.append("Short earnings track record limits management quality assessment")
-    points += s_pts
-    details.append(f"Earnings consistency {stab:.0f} yrs (+{s_pts:.0f})")
+        sc_pts = 10  # unknown: neutral default, no bonus, no penalty
+        details.append("Share count change N/A (+10)")
+    points += sc_pts
 
-    # FCF margin as execution quality — 20 pts
+    # FCF margin as execution quality — 25 pts
     fcf = _safe(f.free_cash_flow_margin)
     if fcf >= 12:
-        f_pts = 20
+        f_pts = 25
     elif fcf >= 8:
-        f_pts = 15
+        f_pts = 19
     elif fcf >= 5:
-        f_pts = 10
+        f_pts = 13
     elif fcf >= 2:
-        f_pts = 5
+        f_pts = 7
     elif fcf >= 0:
         f_pts = 2
     else:
@@ -531,7 +548,7 @@ def score_management(f: CompanyFundamentals) -> Tuple[float, str, List[str]]:
     points += f_pts
     details.append(f"FCF margin {fcf:.1f}% (+{f_pts:.0f})")
 
-    # Insider ownership — 15 pts
+    # Insider ownership — skin in the game — 15 pts
     insider = _safe(f.insider_ownership_pct)
     if insider >= 10:
         i_pts = 15
@@ -587,16 +604,18 @@ def score_contract_catalyst(
     if not contracts:
         return 0.0, "No contracts to evaluate.", ["No contracts found"]
 
-    # Use largest contract by funded amount (or contract value if funded N/A)
+    # Use largest contract for type/funding/duration details
     best = max(contracts, key=lambda c: c.funded_amount or c.contract_value or 0)
+    # Use total portfolio value for revenue and market cap materiality signals
+    total_value = sum(c.contract_value or 0 for c in contracts)
 
-    value = best.contract_value or 0
-    funded = best.funded_amount or value
+    funded = best.funded_amount or (best.contract_value or 0)
+    best_value = best.contract_value or 0
     rev = _safe(f.annual_revenue_millions, 1)
     mc = _safe(f.market_cap_millions, 1)
 
-    # Contract value / annual revenue — 25 pts
-    val_to_rev = (value / rev * 100) if rev > 0 else 0
+    # Total contract portfolio / annual revenue — 25 pts
+    val_to_rev = (total_value / rev * 100) if rev > 0 else 0
     if val_to_rev >= 15:
         vr_pts = 25
     elif val_to_rev >= 8:
@@ -609,11 +628,12 @@ def score_contract_catalyst(
         vr_pts = 3
     else:
         vr_pts = 1
-    details.append(f"Contract/Revenue {val_to_rev:.1f}% (+{vr_pts:.0f})")
+    n_contracts = len(contracts)
+    details.append(f"Portfolio({n_contracts} contracts ${total_value:.0f}M)/Revenue {val_to_rev:.1f}% (+{vr_pts:.0f})")
 
-    # Funded amount / contract value (IDIQ haircut) — 20 pts
-    if value > 0:
-        funded_ratio = funded / value
+    # Funded amount / best contract value (IDIQ haircut on most significant award) — 20 pts
+    if best_value > 0:
+        funded_ratio = funded / best_value
     else:
         funded_ratio = 1.0
 
@@ -621,7 +641,7 @@ def score_contract_catalyst(
         idiq_pts = 4
         details.append(f"IDIQ: funded {funded_ratio*100:.0f}% of ceiling (+{idiq_pts:.0f})")
         flags.append(
-            f"IDIQ contract: only ${funded:.0f}M funded of ${value:.0f}M ceiling "
+            f"IDIQ contract: only ${funded:.0f}M funded of ${best_value:.0f}M ceiling "
             f"({funded_ratio*100:.0f}%). Ceiling is aspirational — cap catalyst score."
         )
         # Apply IDIQ ceiling cap
@@ -653,8 +673,8 @@ def score_contract_catalyst(
         ct_pts = 4
         details.append(f"Contract type: {best.contract_type.value} (+4)")
 
-    # Contract value / market cap signal — 20 pts
-    val_to_mc = (value / mc * 100) if mc > 0 else 0
+    # Total contract portfolio / market cap signal — 20 pts
+    val_to_mc = (total_value / mc * 100) if mc > 0 else 0
     if val_to_mc >= 5:
         mc_pts = 20
     elif val_to_mc >= 2:
@@ -690,7 +710,7 @@ def score_contract_catalyst(
 
     explanation = (
         f"Contract Catalyst Score: {score:.0f}/100. "
-        + f"Best contract: {best.awardee_name} ${value:.0f}M ({best.contract_type.value}). "
+        + f"Best contract: {best.awardee_name} ${best_value:.0f}M ({best.contract_type.value}). "
         + " | ".join(details)
     )
     return _clamp(score), explanation, flags
@@ -795,12 +815,11 @@ def score_balance_sheet(f: CompanyFundamentals) -> Tuple[float, str, List[str]]:
 
     score = _clamp(points)
 
-    # Cap if balance sheet is dangerous
+    # Cap the component score when balance sheet is distressed
     if _safe(f.current_ratio, 1.5) < 1.0 and de > 4.0:
-        cap = OVERRIDE_RULES["dangerous_balance_sheet_max_final"]
-        if score > 75:
+        if score > 40:
             score = 40
-            flags.append("Balance sheet is distressed — score capped")
+            flags.append("Balance sheet is distressed — component score capped at 40")
 
     explanation = (
         f"Balance Sheet Score: {score:.0f}/100. "
@@ -1050,9 +1069,10 @@ def score_company(
         why_it_might_not_matter=why_not,
         key_risks=risks,
         what_to_verify=verify,
-        red_flags=[f for f in all_flags if any(kw in f.lower() for kw in
-            ["cap", "dangerous", "dilution", "negative", "contracting", "consensus",
-             "short interest", "destroying", "binary catalyst"])],
+        red_flags=[flag for flag in all_flags if any(kw in flag.lower() for kw in
+            ["score capped", "capped at", "dangerous", "dilution", "negative fcf",
+             "negative roe", "contracting", "consensus", "short interest",
+             "destroying", "binary catalyst", "distressed"])],
         low_ticker_confidence=any(c.ticker_confidence < OVERRIDE_RULES["low_ticker_confidence_flag_threshold"] for c in contracts if c.ticker == ticker),
         specialist=specialist,
         dcf=dcf,

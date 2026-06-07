@@ -3,8 +3,6 @@ Report generator: produces a detailed markdown analyst-style report.
 """
 
 from __future__ import annotations
-import sys, os
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from datetime import datetime
 from typing import List, Dict
 from src.models import CompanyScore, Contract, Verdict, Sector, SpecialistTierStatus

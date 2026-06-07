@@ -12,7 +12,6 @@ from pathlib import Path
 from typing import List, Optional
 import sys
 import os
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from src.models import Contract, ContractType, Sector
 from src.entity_resolution import resolve_ticker

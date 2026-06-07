@@ -17,8 +17,6 @@ from __future__ import annotations
 import json
 import time
 import datetime
-import sys, os
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from typing import List, Dict, Optional
 import requests
 from config import SAMPLE_CONTRACTS_PATH

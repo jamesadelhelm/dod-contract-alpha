@@ -23,8 +23,6 @@ from __future__ import annotations
 import re
 import json
 import time
-import sys, os
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from typing import Optional, Dict, List, Tuple
 from dataclasses import dataclass, field
 import requests

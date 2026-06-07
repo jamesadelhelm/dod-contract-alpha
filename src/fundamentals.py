@@ -18,8 +18,6 @@ Usage:
 
 from __future__ import annotations
 import json
-import sys, os
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from typing import Optional, Dict
 from src.models import CompanyFundamentals
 from config import MOCK_FUNDAMENTALS_PATH
