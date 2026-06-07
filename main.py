@@ -28,8 +28,8 @@ from src.parse_contracts import load_and_enrich
 from src.fundamentals import get_fundamentals_or_stub
 from src.scoring import score_company
 from src.report import generate_report, save_report
-from src.models import CompanyScore, CompanyFundamentals, Verdict
-from config import REPORTS_DIR
+from src.models import CompanyScore, CompanyFundamentals, Verdict, Sector
+from config import REPORTS_DIR, TICKER_SECTOR_OVERRIDES
 
 
 def parse_args():
@@ -98,6 +98,15 @@ def main():
         for c in ticker_contracts:
             sector_votes[c.sector] += (c.contract_value or 0)
         dominant_sector = max(sector_votes, key=lambda k: sector_votes[k])
+
+        # Apply ticker-level sector override for companies whose USAspending
+        # contract descriptions systematically mislabel their primary sector
+        # (e.g. BAH intelligence contracts → Space; RTX IDIQ with vague text → Unclear).
+        if ticker.upper() in TICKER_SECTOR_OVERRIDES:
+            try:
+                dominant_sector = Sector(TICKER_SECTOR_OVERRIDES[ticker.upper()])
+            except ValueError:
+                pass  # keep voted sector if override value is stale
 
         # Get fundamentals
         c0 = ticker_contracts[0]

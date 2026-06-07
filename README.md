@@ -77,15 +77,17 @@ Final Score = Buffett(25%) + Graham(20%) + DoD(20%) + Management(15%) + Catalyst
 
 | Score | Verdict |
 |-------|---------|
-| >= 85 | 🟢 Strong Candidate |
-| >= 75, Street bearish (sell/underperform, >= 3 analysts) | 🟡 Research Further |
-| >= 75, expensive (P/E > 80x or EV/EBITDA > 60x) and FCF margin < 15% | 🟠 High Quality But Expensive |
-| 75–84 | 🟡 Potentially Attractive |
-| 65–74 | 🔵 Watchlist |
-| 50–64 | ⚪ Low Conviction |
-| < 50 | 🔴 Ignore |
+| >= 78 | 🟢 Strong Candidate |
+| >= 68, Street bearish (sell/underperform, >= 3 analysts) | 🟡 Research Further |
+| >= 68, expensive (P/E > 80x or EV/EBITDA > 60x) and FCF margin < 15% | 🟠 High Quality But Expensive |
+| 68–77 | 🟡 Potentially Attractive |
+| 58–67 | 🔵 Watchlist |
+| 48–57 | ⚪ Low Conviction |
+| < 48 | 🔴 Ignore |
 
-Override verdicts (Research Further, High Quality But Expensive) take priority at any score >= 75.
+Override verdicts (Research Further, High Quality But Expensive) take priority at any score >= 68.
+
+> **Threshold note:** These are calibrated for the defense/government services universe, not Graham's 1930s absolute standards. Defense primes legitimately trade at 18–30x P/E — a 25x P/E company earns partial Graham credit, pushing the scoring ceiling to ~72–80 rather than 85–90. Thresholds are set 5–7 pts below general-market baselines so the tool produces actionable signals within this universe.
 
 ### Score Caps
 
@@ -222,7 +224,7 @@ Fields yfinance provides live — do not duplicate: price, P/E, Fwd P/E, EV/EBIT
 | Sector classification | Keyword-based on short USAspending descriptions. Many fall through to "Unclear." Sector determines DCF growth assumptions and terminal growth rate — misclassification compounds. |
 | EDGAR false positives | Fuzzy matching can resolve a private defense company to an unrelated public company with a similar name. Explicit `null` entries in `ticker_map.yaml` suppress known bad matches. |
 | Earnings stability cap | yfinance returns 4 years of income statement history maximum. `earnings_stability_years` is capped at 4 for companies not in the curated overlay — a 50-year track record scores the same as a 4-year-old company. Set this field in `mock_fundamentals.json` for all established primes. |
-| Graham score calibration | P/E brackets follow Graham's 1930s value criteria (≤12x = full marks). Defense primes legitimately trade at 18–30x. The Graham score should be read as a relative comparison within a sector cohort, not an absolute quality gate. |
+| Graham score calibration | P/E brackets follow Graham's 1930s value criteria (≤12x = full marks). Defense primes legitimately trade at 18–30x. The Graham score should be read as a relative comparison within the defense cohort, not an absolute quality gate. Verdict thresholds are calibrated down 5–7 pts to account for this. |
 | DCF is a thinking framework | The 3-scenario DCF produces intrinsic value estimates, not predictions. Terminal value typically accounts for 60–80% of the total. Small changes in discount rate or terminal growth produce large swings in output. Use the reverse DCF (implied growth rate) as the primary sanity check. |
 | No backtesting | Scoring weights (25%/20%/20%/15%/10%/10%) are constructed from first principles. There is no empirical evidence that higher scores have historically predicted better returns in this universe. This is the single most important limitation. |
 | Scores are algorithmic | First-pass screen only. Not a substitute for reading the 10-K, listening to earnings calls, or building your own model. |

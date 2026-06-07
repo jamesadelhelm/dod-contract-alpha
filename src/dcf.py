@@ -121,9 +121,18 @@ def run_dcf(
         )
 
     # ── FCF margin scenarios ──────────────────────────────────────────────────
-    fcf_base   = _safe(f.free_cash_flow_margin, 8.0)
-    fcf_bear   = max(fcf_base * 0.75, 2.0)
-    fcf_bull   = min(fcf_base * 1.25, 35.0)
+    fcf_base = _safe(f.free_cash_flow_margin, 8.0)
+    if fcf_base >= 0:
+        # Profitable: bear = 25% margin compression, bull = 25% expansion
+        fcf_bear = max(fcf_base * 0.75, 2.0)
+        fcf_bull = min(fcf_base * 1.25, 35.0)
+    else:
+        # Unprofitable: must NOT invert ordering.
+        # max(negative * 0.75, 2.0) would give bear a *positive* FCF floor while
+        # min(negative * 1.25, 35.0) gives bull an *even more negative* margin —
+        # completely backwards. Instead: bear = losses deepen, bull = losses narrow.
+        fcf_bear = fcf_base * 1.25   # 25% worse (more negative)
+        fcf_bull = fcf_base * 0.50   # 50% improvement (less negative, toward breakeven)
 
     # ── Shares + price ────────────────────────────────────────────────────────
     mc = f.market_cap_millions

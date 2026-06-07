@@ -61,5 +61,6 @@ def classify_sector(contract: Contract) -> Sector:
         "Infrastructure / Construction": Sector.INFRASTRUCTURE_CONSTRUCTION,
         "Traditional Defense Prime": Sector.TRADITIONAL_DEFENSE_PRIME,
         "Industrial Components": Sector.INDUSTRIAL_COMPONENTS,
+        "Consulting / Services": Sector.CONSULTING_SERVICES,  # was missing — fell through to UNCLEAR
     }
     return _MAP.get(best, Sector.UNCLEAR)

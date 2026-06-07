@@ -31,11 +31,18 @@ SCORE_WEIGHTS = {
 }
 
 # ── Verdict Thresholds ────────────────────────────────────────────────────────
+# Calibrated for the defense / government services universe. Graham's original
+# framework (1930s) assumed P/E ≤ 12x as "cheap". Defense primes legitimately
+# trade at 18–30x — a 25x P/E Lockheed or General Dynamics earns 10/20 Graham
+# P/E points vs. 20/20 for a net-net stock. The natural scoring ceiling for a
+# quality defense company is ~72–78, not 85–90 like a consumer compounder with
+# low multiples. Thresholds are set 5–7 pts lower than Graham-absolute baselines
+# so the tool produces actionable signals within this universe.
 VERDICT_THRESHOLDS = {
-    "strong_candidate": 85,
-    "potentially_attractive": 75,
-    "watchlist": 65,
-    "low_conviction": 50,
+    "strong_candidate": 78,
+    "potentially_attractive": 68,
+    "watchlist": 58,
+    "low_conviction": 48,
 }
 
 # ── Score Override Rules ──────────────────────────────────────────────────────
@@ -85,6 +92,33 @@ SPECIALIST_TIER = {
 # institutional knowledge. Used to suppress specialist bonus even if they
 # somehow fit the size filter.
 LARGE_CAP_PRIMES = {"LMT", "NOC", "RTX", "GD", "BA", "HII", "LHX", "TXT", "L3H"}
+
+# ── Ticker → Sector Override ──────────────────────────────────────────────────
+# The keyword classifier reads USAspending contract *descriptions*, which often
+# don't reflect a company's primary sector. For example, a BAH intelligence
+# contract says "reconnaissance support" → triggers Space keywords. A SAIC IT
+# contract says "facility maintenance" → triggers Infrastructure keywords.
+# These overrides apply AFTER the per-contract keyword vote and ensure the DCF
+# growth assumptions, terminal rate, and stability score use the right sector.
+TICKER_SECTOR_OVERRIDES = {
+    # IT / analytics / consulting — descriptions rarely contain "cloud" or "IT services"
+    "BAH":  "AI / Data / Software",       # analytics-dominant; intelligence ≠ space company
+    "SAIC": "Cloud / IT Services",         # enterprise IT services, not construction
+    "CACI": "Consulting / Services",       # government IT consulting
+    "ACN":  "Cloud / IT Services",         # IT consulting
+    "PLTR": "AI / Data / Software",        # data analytics platform
+    "AMTM": "Consulting / Services",       # government operations/maintenance services
+    # Defense primes misclassified as Unclear or wrong sector
+    "RTX":  "Traditional Defense Prime",
+    "BA":   "Aerospace",
+    "TXT":  "Aerospace",
+    "LHX":  "Traditional Defense Prime",
+    "AVAV": "Aerospace",                   # UAS/drone manufacturer
+    # Healthcare managed care
+    "HUM":  "Military Healthcare",
+    # Space / satellite comms
+    "VSAT": "Space",
+}
 
 # ── Sector Keywords ───────────────────────────────────────────────────────────
 SECTOR_KEYWORDS = {
