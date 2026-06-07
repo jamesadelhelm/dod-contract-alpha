@@ -173,6 +173,27 @@ def run_dcf(
 
     bear_s, base_s, bull_s = scenarios
 
+    # ── EV → Equity Value adjustment ─────────────────────────────────────────
+    # _dcf_calc discounts free cash flows to the firm → Enterprise Value.
+    # Equity Value = EV − Net Debt. Per-share figures must reflect this.
+    # Net cash (negative net_debt) increases equity value above EV.
+    net_debt = f.net_debt_millions or 0
+    if net_debt != 0 and shares_millions and shares_millions > 0:
+        adj_per_share = net_debt / shares_millions  # positive = reduces equity IV
+        for s in [bear_s, base_s, bull_s]:
+            if s.intrinsic_value_per_share is not None:
+                s.intrinsic_value_per_share = round(
+                    s.intrinsic_value_per_share - adj_per_share, 2
+                )
+                if current_price and current_price > 0:
+                    s.margin_of_safety_pct = round(
+                        (s.intrinsic_value_per_share - current_price) / current_price * 100, 1
+                    )
+        label = f"${abs(net_debt):.0f}M net {'debt' if net_debt > 0 else 'cash'}"
+        caveats.append(
+            f"{label} deducted from EV to compute equity intrinsic value per share."
+        )
+
     # ── Implied growth rate (reverse DCF) ────────────────────────────────────
     implied_g = None
     if current_price and oe_millions and oe_millions > 0 and shares_millions:
@@ -183,6 +204,7 @@ def run_dcf(
             discount_rate=wacc,
             terminal_growth=terminal_g,
             fcf_margin=fcf_base,
+            net_debt_millions=net_debt,
         )
 
     # ── Verdict ───────────────────────────────────────────────────────────────
@@ -464,15 +486,20 @@ def _reverse_dcf(
     discount_rate: float,
     terminal_growth: float,
     fcf_margin: float,
+    net_debt_millions: float = 0.0,
 ) -> Optional[float]:
     """
     Binary search: what constant growth rate makes DCF = current market price?
     Returns implied annual growth rate (%) for years 1-10.
+
+    The DCF produces Enterprise Value. We solve for the growth rate that makes
+    EV = equity market cap + net debt (i.e., current Enterprise Value).
     """
     if shares_millions <= 0 or base_earnings <= 0:
         return None
 
-    target_iv = current_price * shares_millions  # total market cap equivalent
+    # Target is enterprise value (equity market cap + net debt)
+    target_iv = current_price * shares_millions + (net_debt_millions or 0)
 
     lo, hi = -5.0, 50.0
     for _ in range(50):

@@ -93,10 +93,12 @@ def main():
     fundamentals_map: dict[str, CompanyFundamentals] = {}
 
     for ticker, ticker_contracts in ticker_groups.items():
-        # Use most common sector
-        sector_votes = defaultdict(int)
+        # Use sector weighted by contract value, not count.
+        # A company with one $200M energy contract and ten $5M logistics
+        # contracts should be classified as Energy, not Logistics.
+        sector_votes = defaultdict(float)
         for c in ticker_contracts:
-            sector_votes[c.sector] += 1
+            sector_votes[c.sector] += (c.contract_value or 0)
         dominant_sector = max(sector_votes, key=lambda k: sector_votes[k])
 
         # Get fundamentals

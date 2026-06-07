@@ -397,7 +397,15 @@ def _interest_coverage(info: dict, stock) -> Optional[float]:
 
 
 def _earnings_stability(stock) -> Optional[int]:
-    """Count consecutive years of positive net income."""
+    """
+    Count consecutive years of positive net income.
+
+    LIMITATION: yfinance returns at most 4 years of income statement history.
+    The maximum this function can return is 4, regardless of actual track record.
+    Companies with 20+ year records score identically to 4-year-old companies
+    unless overridden via mock_fundamentals.json (earnings_stability_years field).
+    Always provide this field in the curated overlay for established defense primes.
+    """
     try:
         inc = stock.income_stmt
         if inc is None or inc.empty:

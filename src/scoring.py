@@ -815,8 +815,10 @@ def score_balance_sheet(f: CompanyFundamentals) -> Tuple[float, str, List[str]]:
 
     score = _clamp(points)
 
-    # Cap the component score when balance sheet is distressed
-    if _safe(f.current_ratio, 1.5) < 1.0 and de > 4.0:
+    # Cap the component score when balance sheet is distressed.
+    # Only apply when current_ratio is actually known — missing data should not
+    # default to 1.5 (passing) and silently skip the cap for leveraged companies.
+    if f.current_ratio is not None and f.current_ratio < 1.0 and de > 4.0:
         if score > 40:
             score = 40
             flags.append("Balance sheet is distressed — component score capped at 40")
@@ -921,8 +923,10 @@ def score_company(
     final = compute_final_score(bq_raw, gv_raw, ds_raw, mq_raw, cc_raw, bs_raw)
     all_flags = bq_flags + gv_flags + ds_flags + mq_flags + cc_flags + bs_flags
 
-    # Balance sheet danger override on final
-    if _safe(f.current_ratio, 1.5) < 1.0 and _safe(f.debt_ebitda) > 4.0:
+    # Balance sheet danger override on final.
+    # Require actual current_ratio data — missing data must not default to 1.5
+    # and silently allow a 5x-leveraged company to skip this cap.
+    if f.current_ratio is not None and f.current_ratio < 1.0 and _safe(f.debt_ebitda) > 4.0:
         cap = OVERRIDE_RULES["dangerous_balance_sheet_max_final"]
         if final > cap:
             final = cap

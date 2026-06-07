@@ -218,9 +218,13 @@ Fields yfinance provides live — do not duplicate: price, P/E, Fwd P/E, EV/EBIT
 | USAspending data lag | 30–90 days. Fiscal year mode captures all major awards but contracts from the last ~6 weeks may be missing. |
 | yfinance accuracy | P/E, EV/EBITDA, FCF yield can diverge from Bloomberg/FactSet. Treat as directional. |
 | Curated overlay staleness | DoD %, backlog, moat rating are manually maintained — verify against the latest 10-K or earnings call. |
-| IDIQ ceilings | Contract values are announced ceilings, not obligated funding. Check actual task order obligations on USAspending before using in a thesis. |
-| Sector classification | Keyword-based on short USAspending descriptions. Many fall through to "Unclear." |
+| IDIQ ceilings | USAspending "Award Amount" reflects obligated amounts (task orders placed), not ceiling. Ceiling is not available via the search API. |
+| Sector classification | Keyword-based on short USAspending descriptions. Many fall through to "Unclear." Sector determines DCF growth assumptions and terminal growth rate — misclassification compounds. |
 | EDGAR false positives | Fuzzy matching can resolve a private defense company to an unrelated public company with a similar name. Explicit `null` entries in `ticker_map.yaml` suppress known bad matches. |
+| Earnings stability cap | yfinance returns 4 years of income statement history maximum. `earnings_stability_years` is capped at 4 for companies not in the curated overlay — a 50-year track record scores the same as a 4-year-old company. Set this field in `mock_fundamentals.json` for all established primes. |
+| Graham score calibration | P/E brackets follow Graham's 1930s value criteria (≤12x = full marks). Defense primes legitimately trade at 18–30x. The Graham score should be read as a relative comparison within a sector cohort, not an absolute quality gate. |
+| DCF is a thinking framework | The 3-scenario DCF produces intrinsic value estimates, not predictions. Terminal value typically accounts for 60–80% of the total. Small changes in discount rate or terminal growth produce large swings in output. Use the reverse DCF (implied growth rate) as the primary sanity check. |
+| No backtesting | Scoring weights (25%/20%/20%/15%/10%/10%) are constructed from first principles. There is no empirical evidence that higher scores have historically predicted better returns in this universe. This is the single most important limitation. |
 | Scores are algorithmic | First-pass screen only. Not a substitute for reading the 10-K, listening to earnings calls, or building your own model. |
 
 ---
