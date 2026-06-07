@@ -3,7 +3,7 @@
 An automated equity research pipeline that ingests U.S. Department of Defense contract awards
 from USAspending.gov, resolves awardees to public tickers, fetches live market fundamentals,
 and scores each company through a Buffett/Graham value framework — delivering a ranked analyst
-report in under 5 minutes.
+report in under 30 seconds.
 
 > **Research tool only. Not investment advice.**
 
