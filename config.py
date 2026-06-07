@@ -104,18 +104,25 @@ TICKER_SECTOR_OVERRIDES = {
     # IT / analytics / consulting — descriptions rarely contain "cloud" or "IT services"
     "BAH":  "AI / Data / Software",       # analytics-dominant; intelligence ≠ space company
     "SAIC": "Cloud / IT Services",         # enterprise IT services, not construction
+    "LDOS": "Cloud / IT Services",         # Leidos: IT/technology services, not logistics
     "CACI": "Consulting / Services",       # government IT consulting
     "ACN":  "Cloud / IT Services",         # IT consulting
     "PLTR": "AI / Data / Software",        # data analytics platform
     "AMTM": "Consulting / Services",       # government operations/maintenance services
+    # Engineering & infrastructure
+    "ACM":  "Infrastructure / Construction",  # AECOM: engineering/construction firm
     # Defense primes misclassified as Unclear or wrong sector
     "RTX":  "Traditional Defense Prime",
     "BA":   "Aerospace",
     "TXT":  "Aerospace",
     "LHX":  "Traditional Defense Prime",
     "AVAV": "Aerospace",                   # UAS/drone manufacturer
+    "OLN":  "Industrial Components",       # Olin/Winchester: ammunition and propellants
+    "OSK":  "Industrial Components",       # Oshkosh: defense vehicles and equipment
     # Healthcare managed care
     "HUM":  "Military Healthcare",
+    "CNC":  "Military Healthcare",         # Centene/Health Net Federal: TRICARE managed care
+    "UNH":  "Military Healthcare",         # UnitedHealth/UMVS: TRICARE East contract
     # Space / satellite comms
     "VSAT": "Space",
 }
