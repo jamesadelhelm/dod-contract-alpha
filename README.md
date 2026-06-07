@@ -55,7 +55,7 @@ python3 main.py --edgar                 # pull gov revenue % and backlog from SE
 ## What It Does
 
 1. **Fetches DoD contract awards** from USAspending.gov — current fiscal year (Oct 1 → today), up to 1,000 contracts sorted by value descending. Uses fiscal year mode by default because USAspending has a 30-90 day processing lag; a "last N days" window often returns near-zero results.
-2. **Resolves awardees to public tickers** via a 3-pass pipeline: exact match in a curated subsidiary map (700+ entries) → prefix/fuzzy match → SEC EDGAR company index fallback.
+2. **Resolves awardees to public tickers** via a 3-pass pipeline: exact match in a curated subsidiary map (210 entries) → prefix/fuzzy match → SEC EDGAR company index fallback.
 3. **Fetches live fundamentals** from yfinance: prices, margins, multiples, short interest, dividend yield, share count change YoY, next earnings date, analyst consensus, 52-week range.
 4. **Scores each company** on 6 weighted components (0–100 scale each).
 5. **Runs a 3-scenario DCF** (bear/base/bull) with growth anchored to the company's actual recent revenue growth blended with sector defaults.
@@ -83,12 +83,14 @@ Final Score = Buffett(25%) + Graham(20%) + DoD(20%) + Management(15%) + Catalyst
 | Score | Verdict |
 |-------|---------|
 | >= 85 | 🟢 Strong Candidate |
+| >= 75, Street bearish (sell/underperform, >= 3 analysts) | 🟡 Research Further — quality conflicts with analyst consensus |
+| >= 75, (P/E > 80x or EV/EBITDA > 60x) and FCF margin < 15% | 🟠 High Quality But Expensive |
 | 75–84 | 🟡 Potentially Attractive |
-| 75–84 (Street bearish) | 🟡 Research Further — quality conflicts with analyst consensus |
-| 75–84 (P/E > 80x or EV/EBITDA > 60x) | 🟠 High Quality But Expensive |
 | 65–74 | 🔵 Watchlist |
 | 50–64 | ⚪ Low Conviction |
 | < 50 | 🔴 Ignore |
+
+> Override verdicts (Research Further, High Quality But Expensive) take priority over the base score verdict at any score >= 75.
 
 ### Score Override Rules
 
@@ -139,7 +141,7 @@ Reports include a caveat noting when growth is company-anchored, with explicit b
 
 Awardee names in USAspending are often subsidiaries, divisions, or legacy entity names. Resolution runs in 3 passes:
 
-1. **Exact match** in `data/ticker_map.yaml` (700+ entries, normalized lowercase)
+1. **Exact match** in `data/ticker_map.yaml` (210 entries: 161 public tickers, 49 private/null suppressions, normalized lowercase)
 2. **Prefix/fuzzy match** — catches parent brand at the start of subsidiary names. Forces similarity >= 0.55 when the parent key is >= 6 characters and the awardee starts with it (e.g., `HUMANA GOVERNMENT BUSINESS INC` → HUM).
 3. **SEC EDGAR fallback** — queries the full SEC company index (~10,000+ tickers), cached locally in `data/resolved_cache.json`
 
@@ -227,7 +229,7 @@ dod_contract_agent/
 ├── config.py                      # Scoring weights, thresholds, specialist tier config
 ├── requirements.txt
 ├── data/
-│   ├── ticker_map.yaml            # 700+ awardee -> ticker mappings (editable)
+│   ├── ticker_map.yaml            # 210 awardee -> ticker mappings (editable)
 │   ├── mock_fundamentals.json     # Curated overlay: gov%, DoD%, backlog, moat
 │   ├── sample_contracts.json      # Mock contract data for offline testing
 │   ├── edgar_company_index.json   # Auto-generated: SEC company index cache
