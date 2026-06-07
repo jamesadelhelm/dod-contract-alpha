@@ -89,13 +89,23 @@ def generate_report(
         mos_str = "—"
         if s.dcf and s.dcf.margin_of_safety_base is not None:
             mos_val = s.dcf.margin_of_safety_base
-            mos_str = f"{mos_val:+.0f}%"
+            # Suppress positive MoS for Ignore-rated companies: a high MoS driven by
+            # FCF yield (e.g. CNC +278%) on a low-quality name looks like a buy signal
+            # in a summary table. The detail is still available in Section 2b.
+            if s.verdict == Verdict.IGNORE and mos_val > 0:
+                mos_str = "—†"
+            else:
+                mos_str = f"{mos_val:+.0f}%"
         lines.append(
             f"| {i} | **{s.ticker}** | {s.company_name} | {s.sector.value} "
             f"| **{s.final_score:.1f}** | {mos_str} | {data_str} | {emoji} {s.verdict.value} |"
         )
 
     lines += [
+        "",
+        "† MoS suppressed for Ignore-rated companies — high MoS on a low-quality name"
+        " is usually a DCF artifact (e.g. high FCF yield from non-DoD business lines)."
+        " Full DCF detail in Section 2b.",
         "",
         "**Signal counts:**",
         f"- 🟢 Strong Candidate / Research Further: **{len(strong)}**",

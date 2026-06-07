@@ -54,6 +54,8 @@ def parse_args():
                    help="Use mock/offline fundamentals instead of yfinance (for offline testing)")
     p.add_argument("--specialist-only", action="store_true",
                    help="Filter to mid-cap, high-DoD-concentration companies only (sweet spot tier)")
+    p.add_argument("--min-market-cap", type=float, default=0.0, dest="min_market_cap",
+                   help="Exclude companies with market cap below this value in millions (e.g. 500 = $500M)")
     return p.parse_args()
 
 
@@ -145,6 +147,17 @@ def main():
     # Apply filters
     if args.min_score > 0:
         scores = [s for s in scores if s.final_score >= args.min_score]
+    if args.min_market_cap > 0:
+        before = len(scores)
+        def _above_cap_floor(s):
+            f = fundamentals_map.get(s.ticker)
+            if f is None or f.market_cap_millions is None:
+                return True  # no data — pass through rather than silently drop
+            return f.market_cap_millions >= args.min_market_cap
+        scores = [s for s in scores if _above_cap_floor(s)]
+        dropped = before - len(scores)
+        if dropped:
+            print(f'Market cap filter (>=${args.min_market_cap:.0f}M) dropped {dropped} company/companies.')
     if args.specialist_only:
         scores = [s for s in scores
                   if s.specialist and s.specialist.status.value in ('In Tier', 'Near Tier')]

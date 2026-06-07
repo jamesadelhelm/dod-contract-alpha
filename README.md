@@ -191,6 +191,7 @@ python3 main.py
 python3 main.py --min-score 65         # only companies scoring >= 65
 python3 main.py --top 10               # top 10 by score
 python3 main.py --specialist-only      # mid-cap, high-DoD-concentration only
+python3 main.py --min-market-cap 500   # drop micro-caps below $500M market cap
 
 # Output
 python3 main.py --output my_report.md  # custom output path
