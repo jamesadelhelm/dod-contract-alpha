@@ -102,7 +102,7 @@ python3 main.py --source mock --no-live
 
 Output: `reports/report_YYYYMMDD_HHMM.md` — open in VS Code, Obsidian, or any markdown viewer.
 
-**Typical run time:** 2–5 minutes (1,000 contracts, 25–35 public companies, live yfinance)
+**Typical run time:** ~30 seconds — 1,000 contracts fetched, resolved, scored, and reported.
 
 ---
 
