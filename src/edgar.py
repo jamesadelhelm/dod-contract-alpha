@@ -140,38 +140,8 @@ def fetch_edgar_data(ticker: str) -> EdgarResult:
 # ── CIK resolution ────────────────────────────────────────────────────────────
 
 def _get_cik(ticker: str) -> Optional[str]:
-    """Resolve ticker to CIK via EDGAR company search."""
-    time.sleep(RATE_LIMIT)
-    try:
-        url = f"https://efts.sec.gov/LATEST/search-index?q=%22{ticker}%22&dateRange=custom&startdt=2020-01-01&forms=10-K"
-        # Better: use the ticker→CIK map EDGAR provides
-        r = requests.get(
-            "https://www.sec.gov/cgi-bin/browse-edgar",
-            params={"company": "", "CIK": ticker, "type": "10-K",
-                    "dateb": "", "owner": "include", "count": "1",
-                    "search_text": "", "action": "getcompany", "output": "atom"},
-            headers={"User-Agent": "dod-contract-research-agent research@example.com"},
-            timeout=10,
-        )
-        # Extract CIK from the atom feed
-        cik_match = re.search(r'/cgi-bin/browse-edgar\?action=getcompany&CIK=(\d+)', r.text)
-        if cik_match:
-            return cik_match.group(1).zfill(10)
-
-        # Fallback: use EDGAR submissions API with ticker
-        time.sleep(RATE_LIMIT)
-        r2 = requests.get(
-            "https://efts.sec.gov/LATEST/search-index?q=%22%22&forms=10-K",
-            params={"q": f'"{ticker}"', "forms": "10-K", "dateRange": "custom",
-                    "startdt": "2023-01-01"},
-            headers=SEARCH_HEADERS, timeout=10,
-        )
-        return None  # will be resolved via tickers.json below
-
-    except Exception:
-        pass
-
-    # Best fallback: EDGAR's company_tickers.json (maps ticker → CIK)
+    """Resolve ticker to CIK using EDGAR's company_tickers.json (authoritative)."""
+    # Primary: EDGAR's official ticker→CIK map — most reliable, no scraping
     try:
         time.sleep(RATE_LIMIT)
         r = requests.get(
@@ -187,7 +157,26 @@ def _get_cik(ticker: str) -> Optional[str]:
     except Exception:
         pass
 
+    # Secondary: browse-edgar CGI atom feed (may fail if EDGAR changes format)
+    try:
+        time.sleep(RATE_LIMIT)
+        r = requests.get(
+            "https://www.sec.gov/cgi-bin/browse-edgar",
+            params={"company": "", "CIK": ticker, "type": "10-K",
+                    "dateb": "", "owner": "include", "count": "1",
+                    "search_text": "", "action": "getcompany", "output": "atom"},
+            headers={"User-Agent": "dod-contract-research-agent research@example.com"},
+            timeout=10,
+        )
+        cik_match = re.search(r'/cgi-bin/browse-edgar\?action=getcompany&CIK=(\d+)', r.text)
+        if cik_match:
+            return cik_match.group(1).zfill(10)
+    except Exception:
+        pass
+
     return None
+
+
 
 
 # ── Filing list ───────────────────────────────────────────────────────────────
@@ -545,3 +534,151 @@ def overlay_edgar_into_fundamentals(
     # Flag pension risk in data notes
     if edgar.pension_liability_millions and edgar.pension_liability_millions > 500:
         f.data_notes += f" ⚠️ Pension liability: ${edgar.pension_liability_millions:.0f}M."
+
+
+# ── XBRL structured data (fast, no HTML scraping) ────────────────────────────
+
+def fetch_xbrl_financials(ticker: str) -> Dict[str, any]:
+    """
+    Fetch structured financial data from EDGAR's XBRL API.
+    Much faster and more reliable than HTML scraping.
+    Returns a dict with primary-source annual financials.
+    Never raises — returns empty dict on failure.
+
+    Key outputs:
+      revenues        [(year_str, dollars)] last 5 FY
+      backlog         float | None  (most recent FY, dollars)
+      op_cash_flows   [(year_str, dollars)] last 5 FY
+      capex           [(year_str, dollars)] last 5 FY (payments, positive)
+      backlog_to_rev  float | None  (backlog / most_recent_revenue)
+      fcf_margin_3yr  float | None  (3-yr avg FCF / revenue, in % form)
+      rev_cagr_3yr    float | None  (3yr CAGR in %, e.g. 5.2 = 5.2%)
+      latest_rev      float | None  (dollars)
+    """
+    cik = _get_cik(ticker)
+    if not cik:
+        return {}
+
+    try:
+        time.sleep(RATE_LIMIT)
+        r = requests.get(
+            f"https://data.sec.gov/api/xbrl/companyfacts/CIK{cik}.json",
+            headers={"User-Agent": "dod-contract-research-agent research@example.com"},
+            timeout=25,
+        )
+        if r.status_code != 200:
+            return {}
+
+        facts = r.json().get("facts", {}).get("us-gaap", {})
+
+        def get_fy_values(concept: str, units: str = "USD") -> list:
+            data = facts.get(concept, {}).get("units", {}).get(units, [])
+            annual = [x for x in data
+                      if x.get("form") in ("10-K", "10-K/A") and x.get("fp") == "FY"]
+            return sorted(annual, key=lambda x: x["end"])
+
+        def dedup_by_year(rows: list) -> list:
+            """For each fiscal year, keep the entry with the largest value.
+            Handles amended 10-K/A filings and companies with non-Dec fiscal years
+            that sometimes generate duplicate year-end entries."""
+            by_year: dict[str, int] = {}
+            for x in rows:
+                yr = x["end"][:4]
+                if yr not in by_year or x["val"] > by_year[yr]:
+                    by_year[yr] = x["val"]
+            return sorted(by_year.items())  # [(year_str, value), ...]
+
+        # Revenue — try multiple GAAP concepts
+        rev_rows = (
+            get_fy_values("Revenues") or
+            get_fy_values("RevenueFromContractWithCustomerExcludingAssessedTax") or
+            get_fy_values("SalesRevenueNet") or
+            get_fy_values("SalesRevenueGoodsNet")
+        )
+        revenues = dedup_by_year(rev_rows)[-5:] if rev_rows else []
+
+        # Backlog (Remaining Performance Obligations = contractual backlog)
+        rpo_rows = get_fy_values("RevenueRemainingPerformanceObligation")
+        backlog = rpo_rows[-1]["val"] if rpo_rows else None
+
+        # Operating cash flow
+        ocf_rows = get_fy_values("NetCashProvidedByUsedInOperatingActivities")
+        op_cash_flows = dedup_by_year(ocf_rows)[-5:] if ocf_rows else []
+
+        # Capex — merge both standard concepts; dedup picks max per year so the
+        # more recent (and usually larger) "productive assets" figure wins for LMT.
+        capex_rows = (
+            get_fy_values("PaymentsToAcquirePropertyPlantAndEquipment") +
+            get_fy_values("PaymentsToAcquireProductiveAssets")
+        )
+        capex_vals = dedup_by_year(capex_rows)[-5:] if capex_rows else []
+
+        # Derived: backlog / revenue
+        latest_rev = revenues[-1][1] if revenues else None
+        latest_year = int(revenues[-1][0]) if revenues else 0
+        _stale = latest_year < 2022  # Revenue data older than 3 years gives unreliable ratios
+        backlog_to_rev = (backlog / latest_rev) if (backlog and latest_rev and latest_rev > 0 and not _stale) else None
+
+        # Derived: 3-year normalized FCF margin (skip if data is stale)
+        fcf_margin_3yr = None
+        if not _stale and op_cash_flows and capex_vals and revenues:
+            ocf_by_yr = dict(op_cash_flows)
+            cap_by_yr = dict(capex_vals)
+            rev_by_yr = dict(revenues)
+            margins = []
+            for yr, rev in sorted(rev_by_yr.items())[-3:]:
+                if yr in ocf_by_yr and yr in cap_by_yr and rev > 0:
+                    fcf = ocf_by_yr[yr] - cap_by_yr[yr]
+                    margins.append(fcf / rev * 100)
+            if margins:
+                fcf_margin_3yr = sum(margins) / len(margins)
+
+        # Derived: 3-year revenue CAGR using actual year span (skip if data is stale)
+        rev_cagr_3yr = None
+        if not _stale and len(revenues) >= 4:
+            yr_start, r_start = revenues[-4]
+            yr_end,   r_end   = revenues[-1]
+            n_years = int(yr_end) - int(yr_start)
+            # Require the span to be 2-4 years (guard against M&A / XBRL gaps)
+            if r_start > 0 and r_end > 0 and 2 <= n_years <= 4:
+                rev_cagr_3yr = ((r_end / r_start) ** (1 / n_years) - 1) * 100
+
+        return {
+            "cik": cik,
+            "revenues": revenues,
+            "backlog": backlog,
+            "op_cash_flows": op_cash_flows,
+            "capex": capex_vals,
+            "backlog_to_rev": backlog_to_rev,
+            "fcf_margin_3yr": fcf_margin_3yr,
+            "rev_cagr_3yr": rev_cagr_3yr,
+            "latest_rev": latest_rev,
+        }
+
+    except Exception:
+        return {}
+
+
+def overlay_xbrl_into_fundamentals(f: "CompanyFundamentals", xbrl: Dict) -> None:
+    """
+    Overlay XBRL-derived primary-source data into CompanyFundamentals.
+    XBRL is authoritative for backlog and 3-year normalized FCF.
+    """
+    if not xbrl:
+        return
+
+    # Backlog — EDGAR XBRL is primary source
+    if xbrl.get("backlog_to_rev") is not None:
+        f.backlog_to_revenue = xbrl["backlog_to_rev"]
+
+    # 3-year normalized FCF margin — more reliable than TTM
+    if xbrl.get("fcf_margin_3yr") is not None:
+        f.fcf_margin = xbrl["fcf_margin_3yr"]
+
+    # 3-year revenue CAGR as a context signal (overrides 1yr if available)
+    if xbrl.get("rev_cagr_3yr") is not None and hasattr(f, "revenue_growth_3yr"):
+        f.revenue_growth_3yr = xbrl["rev_cagr_3yr"]
+
+    # Revenue sanity check
+    if xbrl.get("latest_rev") and f.annual_revenue_millions is None:
+        f.annual_revenue_millions = xbrl["latest_rev"] / 1e6

@@ -50,6 +50,8 @@ def parse_args():
                    help="Days back to fetch from USAspending (default: 30, used with --source usaspending)")
     p.add_argument("--edgar", action="store_true",
                    help="Fetch 10-K data from SEC EDGAR to get real gov revenue %% and backlog")
+    p.add_argument("--xbrl", action="store_true",
+                   help="Fetch EDGAR XBRL structured data: 3-yr normalized FCF + backlog for shipbuilding sectors")
     p.add_argument("--no-live", action="store_true", dest="no_live", default=False,
                    help="Use mock/offline fundamentals instead of yfinance (for offline testing)")
     p.add_argument("--specialist-only", action="store_true",
@@ -130,6 +132,35 @@ def main():
                 print(f" conf={conf} | gov={gov} | dod={dod} | backlog={backlog}")
             except Exception as e:
                 print(f" EDGAR failed: {e}")
+
+        # XBRL overlay — structured EDGAR data: 3yr normalized FCF + backlog for capital-intensive sectors
+        if args.xbrl:
+            try:
+                from src.edgar import fetch_xbrl_financials, overlay_xbrl_into_fundamentals
+                from src.models import Sector as _Sector
+                print(f"  [XBRL] {ticker}...", end="", flush=True)
+                xbrl = fetch_xbrl_financials(ticker)
+                if xbrl:
+                    # Only use XBRL backlog for capital-intensive sectors where
+                    # RevenueRemainingPerformanceObligation ≈ management backlog.
+                    # For IT services (BAH, LDOS, SAIC), RPO is much smaller than
+                    # management-reported backlog (which includes unfunded orders).
+                    _SERVICES_SECTORS = {
+                        _Sector.AI_DATA_SOFTWARE, _Sector.CLOUD_IT_SERVICES, _Sector.CONSULTING_SERVICES
+                    }
+                    xbrl_for_overlay = dict(xbrl)
+                    if dominant_sector in _SERVICES_SECTORS:
+                        xbrl_for_overlay.pop("backlog_to_rev", None)  # keep FCF, drop backlog
+                    overlay_xbrl_into_fundamentals(f, xbrl_for_overlay)
+                    b2r = f"{xbrl.get('backlog_to_rev'):.2f}x" if xbrl.get('backlog_to_rev') is not None else "n/a"
+                    fcf3 = f"{xbrl.get('fcf_margin_3yr'):.1f}%" if xbrl.get('fcf_margin_3yr') is not None else "n/a"
+                    cagr = f"{xbrl.get('rev_cagr_3yr'):.1f}%" if xbrl.get('rev_cagr_3yr') is not None else "n/a"
+                    svc_note = "(backlog suppressed for services)" if dominant_sector in _SERVICES_SECTORS else ""
+                    print(f" backlog={b2r} fcf3yr={fcf3} cagr3yr={cagr} {svc_note}")
+                else:
+                    print(" no data")
+            except Exception as e:
+                print(f" XBRL failed: {e}")
 
         score = score_company(
             ticker=ticker,
