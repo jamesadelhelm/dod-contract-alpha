@@ -121,6 +121,11 @@ huntington ingalls:
   ticker: HII
   parent: Huntington Ingalls Industries
   confidence: 1.0
+huntington ingalls incorporated:
+  ticker: HII
+  parent: Huntington Ingalls Industries
+  confidence: 1.0
+  notes: HII's legal incorporated entity name on USAspending
 newport news shipbuilding:
   ticker: HII
   parent: Huntington Ingalls Industries
@@ -257,6 +262,11 @@ palantir:
   ticker: PLTR
   parent: Palantir Technologies
   confidence: 1.0
+palantir usg inc:
+  ticker: PLTR
+  parent: Palantir Technologies
+  confidence: 1.0
+  notes: Palantir's US Government subsidiary entity for classified contracts
 
 kratos defense & security solutions:
   ticker: KTOS
@@ -413,6 +423,15 @@ urs federal services:
   ticker: ACM
   parent: AECOM
   confidence: 0.9
+urs federal services international:
+  ticker: ACM
+  parent: AECOM
+  confidence: 1.0
+  notes: URS Federal Services International Inc — AECOM subsidiary, international government contracts
+urs federal services international, inc:
+  ticker: ACM
+  parent: AECOM
+  confidence: 1.0
 
 jacobs solutions:
   ticker: J
@@ -656,6 +675,15 @@ caci international:
   parent: CACI International
   confidence: 1.0
 caci:
+  ticker: CACI
+  parent: CACI International
+  confidence: 1.0
+caci nss:
+  ticker: CACI
+  parent: CACI International
+  confidence: 1.0
+  notes: CACI NSS, LLC — National Security Solutions subsidiary
+caci nss, llc:
   ticker: CACI
   parent: CACI International
   confidence: 1.0
@@ -1051,6 +1079,11 @@ general electric:
   parent: GE Aerospace
   confidence: 0.9
   notes: Now GE Aerospace post spin-offs
+general electric company:
+  ticker: GE
+  parent: GE Aerospace
+  confidence: 1.0
+  notes: Historical legal name; still used in USAspending contracts
 ge aerospace:
   ticker: GE
   parent: GE Aerospace

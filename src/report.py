@@ -18,6 +18,38 @@ VERDICT_EMOJI = {
     Verdict.IGNORE: "🔴",
 }
 
+# ── Position sizing constants ─────────────────────────────────────────────────
+_DOGE_CLUSTER     = {"BAH", "LDOS", "SAIC", "ACN", "CACI", "AMTM", "PLTR"}
+_AEROSPACE_CLUSTER = {"LMT", "NOC", "GE", "TXT", "RTX", "BA", "HII", "AVAV"}
+_DOGE_CAP_PCT     = 10.0
+_AEROSPACE_CAP_PCT = 15.0
+_BASE_POSITION_PCT = 6.0  # full-conviction PA+ max per name
+
+
+def _compute_position_size(s: CompanyScore) -> tuple[float, str]:
+    """Return (size_pct, sizing_rationale) for a single company.
+    Base 6% per PA+ name, scaled by bear-case MoS severity."""
+    is_pa_plus = s.verdict in (
+        Verdict.STRONG_CANDIDATE, Verdict.POTENTIALLY_ATTRACTIVE, Verdict.RESEARCH_FURTHER
+    )
+    b_mos = s.dcf.bear_mos if s.dcf else None
+    is_overvalued = any(
+        "overvalued at" in f.lower() or "dcf:" in f.lower()
+        for f in (s.red_flags or [])
+    )
+    if not is_pa_plus or is_overvalued:
+        return 0.0, ""
+    if b_mos is None:
+        return 3.0, "Half-size (no bear MoS data)"
+    elif b_mos > 0:
+        return 6.0, "Full — bear case confirms MoS"
+    elif b_mos >= -15:
+        return 4.5, "75% — mild tail risk"
+    elif b_mos >= -30:
+        return 3.0, "50% — elevated tail risk"
+    else:
+        return 1.5, "25% — survive the bear scenario"
+
 SCORE_BAR_CHARS = 20
 
 
@@ -57,6 +89,51 @@ def generate_report(
     expensive= [s for s in ranked_scores if s.verdict == Verdict.HIGH_QUALITY_BUT_EXPENSIVE]
     watchlist= [s for s in ranked_scores if s.verdict == Verdict.WATCHLIST]
 
+    # Pre-compute tiers for executive summary
+    _pa_plus = [s for s in ranked_scores if s.verdict in (
+        Verdict.STRONG_CANDIDATE, Verdict.POTENTIALLY_ATTRACTIVE, Verdict.RESEARCH_FURTHER
+    )]
+    _tier1_ex = [s for s in _pa_plus
+                 if s.dcf and s.dcf.bear_mos is not None and s.dcf.bear_mos > 0
+                 and not any("overvalued at" in f.lower() or "dcf:" in f.lower() for f in (s.red_flags or []))]
+    _tier2_ex = [s for s in _pa_plus if s not in _tier1_ex
+                 and not any("overvalued at" in f.lower() or "dcf:" in f.lower() for f in (s.red_flags or []))]
+    _deploy_rows_ex = [(s, *_compute_position_size(s)) for s in ranked_scores]
+    _total_pct_ex   = sum(pct for _, pct, _ in _deploy_rows_ex if pct > 0)
+
+    # Auto-generate executive summary
+    exec_parts = []
+    if _tier1_ex:
+        top = _tier1_ex[0]
+        b = top.dcf.bear_mos if top.dcf else None
+        bstr = f"🛡️ +{b:.0f}% bear MoS" if b and b > 0 else ""
+        if top.dcf:
+            exec_parts.append(
+                f"**{top.ticker}** is the highest-conviction name "
+                f"(score {top.final_score:.0f}, +{top.dcf.margin_of_safety_base:.0f}% base MoS, "
+                f"{bstr}): the market is pricing in only "
+                f"{top.dcf.implied_growth_rate:.0f}%/yr growth "
+                "despite a strong and growing defense franchise."
+            )
+        else:
+            exec_parts.append(f"**{top.ticker}** is the highest-conviction name: score {top.final_score:.0f}.")
+    if _tier2_ex:
+        names = ", ".join(
+            f"**{s.ticker}** (base +{s.dcf.margin_of_safety_base:.0f}%, bear {s.dcf.bear_mos:.0f}%)"
+            if s.dcf else f"**{s.ticker}**"
+            for s in _tier2_ex
+        )
+        exec_parts.append(
+            f"Research Priority names with base-case undervaluation but meaningful tail risk: {names}."
+        )
+    total_pa = len(_pa_plus)
+    if total_pa == 0:
+        exec_parts.append("No Potentially Attractive names in this batch — hold cash and wait.")
+    exec_parts.append(
+        f"Recommended deployment: **{_total_pct_ex:.1f}% (${_total_pct_ex:.1f}M of $100M)** — "
+        "high cash position reflects limited actionable opportunities in this snapshot."
+    )
+
     lines += [
         "# DoD Contract Intelligence Report",
         "",
@@ -70,7 +147,13 @@ def generate_report(
         "",
         "---",
         "",
+        "## Executive Summary",
+        "",
     ]
+    for part in exec_parts:
+        lines.append(part)
+        lines.append("")
+    lines += ["---", ""]
 
     # ── 1. Action Summary ─────────────────────────────────────────────────────
     lines += [
@@ -177,7 +260,10 @@ def generate_report(
         b_mos = s.dcf.bear_mos if s.dcf else None
         base_mos = s.dcf.margin_of_safety_base if s.dcf else None
         is_overvalued = any("overvalued at" in f.lower() or "dcf:" in f.lower() for f in (s.red_flags or []))
-        if is_overvalued:
+        # Only flag as "Wait for Entry" if quality is Watchlist+; Low Conviction/Ignore
+        # with high DCF multiples isn't a "wait for entry" — it's just a pass.
+        is_quality_enough = s.verdict not in (Verdict.LOW_CONVICTION, Verdict.IGNORE)
+        if is_overvalued and is_quality_enough:
             tier4.append(s.ticker)
         elif is_pa_plus and b_mos is not None and b_mos > 0:
             tier1.append(s.ticker)
@@ -200,6 +286,77 @@ def generate_report(
             "",
             "> Signal tiers summarize the above signals. Not investment advice.",
             "> Verify all DCF assumptions and 10-K before any capital deployment.",
+            "",
+        ]
+
+    # ── Capital Deployment Guidance ───────────────────────────────────────────
+    # Convert signal tiers into a concrete position sizing table.
+    # Base: 6% per PA+ name, scaled by bear-MoS severity.
+    # Cluster caps prevent correlated exposure from exceeding concentration limits.
+    deployable_rows = []
+    for s in ranked_scores:
+        size_pct, rationale = _compute_position_size(s)
+        if size_pct > 0:
+            b_mos = s.dcf.bear_mos if s.dcf else None
+            tier_label = (
+                "🟢 Highest Conviction" if (b_mos is not None and b_mos > 0)
+                else "🟡 Research Priority"
+            )
+            bmos_str = (f"🛡️ {b_mos:+.0f}%" if b_mos > 0 else f"{b_mos:+.0f}%") if b_mos is not None else "—"
+            deployable_rows.append((s.ticker, tier_label, bmos_str, rationale, size_pct))
+
+    if deployable_rows:
+        total_pct = sum(r[4] for r in deployable_rows)
+        cash_pct = 100.0 - total_pct
+
+        lines += [
+            "**Capital deployment guidance ($100M portfolio):**",
+            "",
+            "| Ticker | Tier | Bear MoS | Sizing Logic | Position | $100M |",
+            "|--------|------|:--------:|:-------------|:--------:|------:|",
+        ]
+        for ticker, tier_label, bmos_str, rationale, size_pct in deployable_rows:
+            dollar = size_pct * 1_000_000
+            lines.append(
+                f"| {ticker} | {tier_label} | {bmos_str} | {rationale} "
+                f"| {size_pct:.1f}% | ${dollar/1e6:.1f}M |"
+            )
+        lines += [
+            "",
+            f"**Deployed: {total_pct:.1f}% (${total_pct:.1f}M) &nbsp;|&nbsp; "
+            f"Cash / T-bills: {cash_pct:.1f}% (${cash_pct:.1f}M)**",
+            "",
+        ]
+
+        # Cluster cap reporting
+        doge_pct  = sum(r[4] for r in deployable_rows if r[0] in _DOGE_CLUSTER)
+        aero_pct  = sum(r[4] for r in deployable_rows if r[0] in _AEROSPACE_CLUSTER)
+        doge_tickers = [r[0] for r in deployable_rows if r[0] in _DOGE_CLUSTER]
+        aero_tickers = [r[0] for r in deployable_rows if r[0] in _AEROSPACE_CLUSTER]
+        cluster_lines = []
+        if doge_tickers:
+            flag = "⚠️ EXCEEDS CAP — scale back proportionally" if doge_pct > _DOGE_CAP_PCT else "✅"
+            comp_str = " + ".join(f"{t} {next(r[4] for r in deployable_rows if r[0]==t):.1f}%" for t in doge_tickers)
+            cluster_lines.append(
+                f"- Federal IT / DOGE risk (cap {_DOGE_CAP_PCT:.0f}%): "
+                f"{comp_str} = {doge_pct:.1f}% {flag}"
+            )
+        if aero_tickers:
+            flag = "⚠️ EXCEEDS CAP — scale back proportionally" if aero_pct > _AEROSPACE_CAP_PCT else "✅"
+            comp_str = " + ".join(f"{t} {next(r[4] for r in deployable_rows if r[0]==t):.1f}%" for t in aero_tickers)
+            cluster_lines.append(
+                f"- Aerospace / Defense Prime (cap {_AEROSPACE_CAP_PCT:.0f}%): "
+                f"{comp_str} = {aero_pct:.1f}% {flag}"
+            )
+        if cluster_lines:
+            lines.append("Cluster concentration caps:")
+            lines += cluster_lines
+            lines.append("")
+
+        lines += [
+            "> Sizing: 6% max per PA+ name. Scaled by bear-MoS: >0% → 100%, −15% → 75%, −30% → 50%, <−30% → 25%.",
+            "> High cash position is correct discipline — deploy into better entry points or next batch.",
+            "> This is a sizing framework, not investment advice. Verify 10-K before any capital deployment.",
             "",
         ]
 
@@ -531,6 +688,62 @@ def generate_report(
                 lines.append("**DCF caveats:**")
                 for c in d.caveats:
                     lines.append(f"- {c}")
+                lines.append("")
+
+        # Key signals callout for PA+ companies
+        is_pa_plus = s.verdict in (
+            Verdict.STRONG_CANDIDATE, Verdict.POTENTIALLY_ATTRACTIVE, Verdict.RESEARCH_FURTHER
+        )
+        if is_pa_plus and s.dcf:
+            d = s.dcf
+            key_sigs = []
+            if d.implied_growth_rate is not None and d.base_growth is not None:
+                actual_growth = None
+                f_ksc = (fundamentals_map or {}).get(s.ticker)
+                if f_ksc and hasattr(f_ksc, "revenue_growth_1yr") and f_ksc.revenue_growth_1yr is not None:
+                    actual_growth = f_ksc.revenue_growth_1yr  # already in % form (e.g. 3.7 = 3.7%)
+                implied = d.implied_growth_rate
+                base_g  = d.base_growth
+                if actual_growth is not None and implied < actual_growth - 3:
+                    key_sigs.append(
+                        f"Market prices in only **{implied:.0f}%/yr growth**; "
+                        f"actual YoY revenue growth is {actual_growth:+.1f}%. "
+                        f"The stock prices in near-stagnation — if the business merely sustains "
+                        f"at {base_g:.0f}%/yr (base case), intrinsic value is "
+                        f"${d.base_iv:.0f}/share (+{d.margin_of_safety_base:.0f}% MoS)."
+                    )
+                elif implied < base_g - 2:
+                    key_sigs.append(
+                        f"Market prices in {implied:.0f}%/yr growth vs. base-case assumption of "
+                        f"{base_g:.0f}%/yr — the current price embeds a meaningful pessimism premium."
+                    )
+            if d.bear_mos is not None:
+                if d.bear_mos > 0:
+                    key_sigs.append(
+                        f"🛡️ **Bear-case downside protection confirmed**: even in the downside scenario "
+                        f"({d.bear_growth:.0f}%/yr growth), intrinsic value exceeds the current price "
+                        f"by {d.bear_mos:.0f}%. This is the strongest class of entry signal."
+                    )
+                elif d.bear_mos > -20:
+                    key_sigs.append(
+                        f"Bear-case MoS {d.bear_mos:.0f}% — modest tail risk. Base case remains "
+                        f"attractive; size position to absorb a {abs(d.bear_mos):.0f}% drawdown."
+                    )
+                else:
+                    key_sigs.append(
+                        f"Bear-case MoS {d.bear_mos:.0f}% — significant tail risk if thesis disappoints. "
+                        "Size at 25%–50% of full position (see Capital Deployment section)."
+                    )
+            sz, sz_logic = _compute_position_size(s)
+            if sz > 0:
+                key_sigs.append(
+                    f"Recommended position: **{sz:.1f}%** of portfolio "
+                    f"(${sz*1e6/1e6:.1f}M per $100M) — {sz_logic}."
+                )
+            if key_sigs:
+                lines += ["#### Key Signals", ""]
+                for sig in key_sigs:
+                    lines.append(f"> {sig}")
                 lines.append("")
 
         # Recent contracts

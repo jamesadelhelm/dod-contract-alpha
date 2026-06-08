@@ -948,6 +948,22 @@ def determine_verdict(
 
 # ── Top-level: score a company ────────────────────────────────────────────────
 
+def _is_low_confidence(contracts, ticker: str, threshold: float) -> bool:
+    """Flag low ticker confidence only when >25% of total contract value comes
+    from low-confidence matches. A single low-confidence contract among dozens
+    of solid matches should not disqualify the whole company."""
+    own = [c for c in contracts if c.ticker == ticker]
+    if not own:
+        return False
+    total_val = sum(c.contract_value or 0 for c in own)
+    if total_val == 0:
+        # No dollar value — fall back to count-based (majority must be low-conf)
+        low_count = sum(1 for c in own if c.ticker_confidence < threshold)
+        return low_count > len(own) * 0.5
+    low_val = sum(c.contract_value or 0 for c in own if c.ticker_confidence < threshold)
+    return (low_val / total_val) > 0.25
+
+
 def score_company(
     ticker: str,
     company_name: str,
@@ -1184,7 +1200,7 @@ def score_company(
              "negative roe", "contracting", "consensus", "short interest",
              "destroying", "binary catalyst", "distressed", "dcf:", "overvalued at",
              "bear case"])],
-        low_ticker_confidence=any(c.ticker_confidence < OVERRIDE_RULES["low_ticker_confidence_flag_threshold"] for c in contracts if c.ticker == ticker),
+        low_ticker_confidence=_is_low_confidence(contracts, ticker, OVERRIDE_RULES["low_ticker_confidence_flag_threshold"]),
         specialist=specialist,
         dcf=dcf,
         data_completeness_pct=data_completeness,
