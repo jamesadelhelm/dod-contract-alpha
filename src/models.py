@@ -96,6 +96,7 @@ class CompanyFundamentals:
     net_debt_millions: Optional[float] = None
     debt_ebitda: Optional[float] = None
     insider_ownership_pct: Optional[float] = None
+    insider_net_pct_6m: Optional[float] = None        # net % of held shares bought (positive=buying)
     earnings_stability_years: Optional[int] = None
     moat_rating: Optional[str] = None
     gross_margin: Optional[float] = None          # % gross profit / revenue

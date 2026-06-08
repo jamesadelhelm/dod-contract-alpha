@@ -110,6 +110,22 @@ def get_fundamentals_from_yfinance(ticker: str) -> Optional[CompanyFundamentals]
         # ── Ownership ─────────────────────────────────────────────────────────
         insider_pct = _pct(info.get("heldPercentInsiders"))
 
+        # Net insider buying (last 6 months) — % of held shares net purchased.
+        # Positive = insiders buying on open market; negative = net selling.
+        # yfinance.insider_purchases has a summary row "% Net Shares Purchased (Sold)".
+        insider_net_pct = None
+        try:
+            _ip = stock.insider_purchases
+            if _ip is not None and not _ip.empty:
+                _mask = _ip.iloc[:, 0].astype(str).str.strip() == "% Net Shares Purchased (Sold)"
+                if _mask.any():
+                    _v = _ip[_mask].iloc[0, 1]
+                    import pandas as _pd
+                    if _pd.notna(_v):
+                        insider_net_pct = round(float(_v), 4)  # already a fraction (0.273 = 27.3%)
+        except Exception:
+            pass
+
         # Share count and price for DCF
         shares_m = None
         price = info.get("currentPrice") or info.get("regularMarketPrice")
@@ -236,6 +252,7 @@ def get_fundamentals_from_yfinance(ticker: str) -> Optional[CompanyFundamentals]
             net_debt_millions=net_debt_m,
             debt_ebitda=debt_ebitda,
             insider_ownership_pct=insider_pct,
+            insider_net_pct_6m=insider_net_pct,
             earnings_stability_years=earn_stability,
             data_source="yfinance",
             data_notes=(f"Live yfinance data. MarketCap=${mc_m:.0f}M." if mc_m else "Live yfinance data.") + stale_note,

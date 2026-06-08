@@ -583,6 +583,33 @@ def score_management(f: CompanyFundamentals) -> Tuple[float, str, List[str]]:
     if insider < 1 and f.insider_ownership_pct is not None:
         flags.append(f"Very low insider ownership ({insider:.1f}%) — management incentive alignment weak")
 
+    # Net insider buying (6 months) — up to 8 pts
+    # Open-market purchases are the strongest insider signal: insiders have full information
+    # and are spending their own money. Net buying ≥10% of held shares = high conviction.
+    net_buy = getattr(f, "insider_net_pct_6m", None)
+    if net_buy is not None:
+        net_buy_pct = net_buy * 100  # convert fraction to percent
+        if net_buy_pct >= 20:
+            nb_pts = 8
+        elif net_buy_pct >= 10:
+            nb_pts = 5
+        elif net_buy_pct >= 5:
+            nb_pts = 3
+        elif net_buy_pct >= 0:
+            nb_pts = 1
+        else:
+            nb_pts = 0
+            if net_buy_pct < -10:
+                flags.append(
+                    f"Net insider selling {net_buy_pct:.0f}% of held shares (6m) — "
+                    "insiders reducing exposure; verify if routine diversification or thesis concern"
+                )
+        points += nb_pts
+        if nb_pts > 0:
+            details.append(f"Net insider buying {net_buy_pct:+.0f}% of held shares 6m (+{nb_pts})")
+        else:
+            details.append(f"Net insider selling {net_buy_pct:.0f}% of held shares 6m (+0)")
+
     # Debt discipline — 10 pts
     de = _safe(f.debt_equity)
     debt_ebitda = _safe(f.debt_ebitda)
