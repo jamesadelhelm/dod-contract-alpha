@@ -248,8 +248,8 @@ def main():
     # ── Step 4: Print summary ─────────────────────────────────────────────────
     last_scores = _load_last_scores()
     print("\n[4/4] Results\n")
-    print(f"{'#':<3} {'Ticker':<8} {'Score':>6} {'Chg':>5} {'Data':>5} {'MoS':>6} {'Bear':>6}  {'Verdict':<28} {'Sector'}")
-    print("-" * 105)
+    print(f"{'#':<3} {'Ticker':<8} {'Score':>6} {'Chg':>5} {'Price':>7} {'Data':>5} {'MoS':>6} {'Bear':>6}  {'Verdict':<28} {'Sector'}")
+    print("-" * 115)
     verdict_emoji_map = {
         Verdict.STRONG_CANDIDATE: "🟢",
         Verdict.RESEARCH_FURTHER: "🟡",
@@ -283,13 +283,15 @@ def main():
                 bear_str = f"🛡{bm:+.0f}%"
             else:
                 bear_str = "+0%" if abs(bm) < 0.5 else f"{bm:+.0f}%"
+        f_row = fundamentals_map.get(s.ticker)
+        price_str = f"${f_row.current_price:.0f}" if f_row and f_row.current_price else "  —"
         prev = last_scores.get(s.ticker)
         if prev:
             delta = s.final_score - prev["score"]
             chg_str = f"{delta:+.1f}" if abs(delta) >= 0.1 else "  ="
         else:
             chg_str = " new"
-        print(f"{i:<3} {s.ticker:<8} {s.final_score:>6.1f} {chg_str:>5} {data_str:>5} {mos_str:>6} {bear_str:>7}  {emoji} {s.verdict.value:<26} {s.sector.value}")
+        print(f"{i:<3} {s.ticker:<8} {s.final_score:>6.1f} {chg_str:>5} {price_str:>7} {data_str:>5} {mos_str:>6} {bear_str:>7}  {emoji} {s.verdict.value:<26} {s.sector.value}")
 
     # Save scores for next-run delta comparison (only when live and not mock)
     if live and args.source != "mock":

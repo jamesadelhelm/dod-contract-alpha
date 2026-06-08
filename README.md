@@ -134,19 +134,19 @@ Output: `reports/report_YYYYMMDD_HHMM.md` — open in VS Code, Obsidian, or any 
 
 [4/4] Results
 
-#   Ticker    Score   Chg  Data    MoS   Bear  Verdict                      Sector
------------------------------------------------------------------------------------------------------------
-1   BAH        71.8     =  100%   +54%    -24%  Potentially Attractive       AI / Data / Software
-2   LDOS       70.6     =  100%   +29%    -12%  Potentially Attractive       Cloud / IT Services
-3   GD         70.2     =  100%   +37%  S+12%   Potentially Attractive       Shipbuilding
-4   SAIC       65.7     =  100%    +0%    -33%  Watchlist                    Cloud / IT Services
-5   LMT        64.8     =  100%   -58%    -66%  Watchlist                    Aerospace
-6   NOC        64.7     =  100%   -64%    -73%  Watchlist                    Aerospace
+#   Ticker    Score   Chg    Price  Data    MoS   Bear  Verdict                      Sector
+-------------------------------------------------------------------------------------------------------------------
+1   BAH        71.8     =     $79  100%   +54%    -24%  Potentially Attractive       AI / Data / Software
+2   LDOS       70.6     =    $123  100%   +29%    -12%  Potentially Attractive       Cloud / IT Services
+3   GD         70.2     =    $341  100%   +37%  S+12%   Potentially Attractive       Shipbuilding
+4   SAIC       65.7     =    $113  100%    +0%    -33%  Watchlist                    Cloud / IT Services
+5   LMT        64.8     =    $520  100%   -58%    -66%  Watchlist                    Aerospace
+6   NOC        64.7     =    $541  100%   -64%    -73%  Watchlist                    Aerospace
 ...
-29  CNC        42.1     =   94%     -+      -+  Ignore                       Military Healthcare
-30  VSAT       40.6     =   94%   -92%    N/A   Ignore                       Space
-31  BA         38.1     =   94%   -88%    -97%  Ignore                       Aerospace
-32  SHIM       27.6   new   69%    N/A     N/A  Ignore                       Infrastructure
+29  CNC        42.1     =     $60   94%     -+      -+  Ignore                       Military Healthcare
+30  VSAT       40.6     =      —    94%   -92%    N/A   Ignore                       Space
+31  BA         38.1     =    $195   94%   -88%    -97%  Ignore                       Aerospace
+32  SHIM       27.6   new      $4   69%    N/A     N/A  Ignore                       Infrastructure
 
 Private/unmatched: 341 contracts ($242,863M unresolved)
 
