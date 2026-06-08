@@ -31,10 +31,10 @@ def _get_map() -> dict:
 def _normalize(name: str) -> str:
     """Normalize a company name for lookup."""
     name = name.lower().strip()
-    # Remove common suffixes
+    # Remove common corporate suffixes (both comma-preceded and space-preceded forms)
     suffixes = [
         r",\s*(inc\.?|llc\.?|corp\.?|ltd\.?|co\.?|incorporated|corporation|limited|l\.l\.c\.?)$",
-        r"\s+(inc\.?|llc\.?|corp\.?|ltd\.?|co\.?)$",
+        r"\s+(inc\.?|llc\.?|corp\.?|ltd\.?|co\.?|l\.p\.?|lp|l\.l\.p\.?)$",
     ]
     for suffix in suffixes:
         name = re.sub(suffix, "", name, flags=re.IGNORECASE).strip()

@@ -778,14 +778,16 @@
     "dividend_yield": 0.0
   },
   "KBR": {
-    "company_name": "KBR Inc",
-    "government_revenue_pct": 65,
-    "dod_revenue_pct": 45,
-    "backlog_to_revenue": 1.8,
+    "ticker": "KBR",
+    "company_name": "KBR, Inc.",
+    "government_revenue_pct": 92,
+    "dod_revenue_pct": 55,
+    "backlog_to_revenue": 1.3,
     "moat_rating": "Narrow",
-    "earnings_stability_years": 12,
-    "data_notes": "Estimates \u2014 verify via 10-K. Government Services segment dominates; includes DoD logistics, science/space (NASA), and intel community. Sustainable Technology Solutions is commercial but growing. Strong pipeline in UK defence market. ~$7.8B revenue FY2024.",
-    "dividend_yield": 0.7
+    "earnings_stability_years": 10,
+    "dividend_yield": 0.7,
+    "data_source": "curated_overlay",
+    "data_notes": "KBR: government engineering/operations services. ~55% DoD (LOGCAP, army sustainment, Ft Bliss). Backlog est. from 2024 10-K."
   },
   "VVX": {
     "company_name": "V2X Inc",
@@ -1174,5 +1176,17 @@
     "dividend_yield": 0.0,
     "shares_millions": 140,
     "data_notes": "Curated overlay. Satellite broadband + government satcom. ViaSat-3 satellite partial failure (2023) severely damaged growth outlook. Inmarsat acquisition added debt and integration complexity. Government/DoD provides stable revenue base but not enough to offset commercial satcom losses. Negative FCF from capex overhang. Debt/EBITDA ~5x is distressed. Moat narrowing vs SpaceX Starlink. Price ~$18 mid-2026."
+  },
+  "CI": {
+    "ticker": "CI",
+    "company_name": "The Cigna Group",
+    "government_revenue_pct": 3,
+    "dod_revenue_pct": 1,
+    "backlog_to_revenue": 0.1,
+    "moat_rating": "Narrow",
+    "earnings_stability_years": 10,
+    "dividend_yield": 0.0,
+    "data_source": "curated_overlay",
+    "data_notes": "Cigna/Evernorth: TRICARE pharmacy is <1% of ~$278B total revenue. DoD contract signal not investable at this scale."
   }
 }

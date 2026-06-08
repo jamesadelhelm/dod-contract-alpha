@@ -150,6 +150,20 @@ harris corporation:
   ticker: LHX
   parent: L3Harris Technologies
   confidence: 0.9
+l3harris technologies integrated systems l.p.:
+  ticker: LHX
+  parent: L3Harris Technologies
+  confidence: 1.0
+  notes: L3Harris electronic warfare / ISR systems subsidiary
+l3harris technologies integrated systems:
+  ticker: LHX
+  parent: L3Harris Technologies
+  confidence: 1.0
+l3harris interstate electronics corporation:
+  ticker: LHX
+  parent: L3Harris Technologies
+  confidence: 1.0
+  notes: L3Harris radio frequency / satellite subsidiary
 
 textron inc:
   ticker: TXT
@@ -478,6 +492,15 @@ kbr inc:
   parent: KBR
   confidence: 1.0
 kbr:
+  ticker: KBR
+  parent: KBR
+  confidence: 1.0
+kbr services, llc:
+  ticker: KBR
+  parent: KBR
+  confidence: 1.0
+  notes: KBR government services subsidiary
+kbr services:
   ticker: KBR
   parent: KBR
   confidence: 1.0
@@ -861,6 +884,21 @@ health net:
   parent: Centene
   confidence: 0.9
   notes: Health Net was acquired by Centene in 2016
+
+# Evernorth — Cigna's pharmacy benefits / healthcare services subsidiary
+evernorth federal services inc:
+  ticker: CI
+  parent: Cigna
+  confidence: 1.0
+  notes: Evernorth is Cigna's health services subsidiary; TRICARE pharmacy services
+evernorth federal services:
+  ticker: CI
+  parent: Cigna
+  confidence: 1.0
+evernorth:
+  ticker: CI
+  parent: Cigna
+  confidence: 0.9
 
 # TriWest Healthcare Alliance — private company (TRICARE contractor, lost West region)
 triwest healthcare alliance corp:

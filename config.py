@@ -111,6 +111,9 @@ TICKER_SECTOR_OVERRIDES = {
     "AMTM": "Consulting / Services",       # government operations/maintenance services
     # Engineering & infrastructure
     "ACM":  "Infrastructure / Construction",  # AECOM: engineering/construction firm
+    "KBR":  "Infrastructure / Construction",  # KBR: engineering, construction, operations
+    # Healthcare managed care
+    "CI":   "Military Healthcare",            # Cigna/Evernorth: TRICARE pharmacy services
     # Defense primes misclassified as Unclear or wrong sector
     "RTX":  "Traditional Defense Prime",
     "BA":   "Aerospace",
