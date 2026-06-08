@@ -20,7 +20,7 @@ from __future__ import annotations
 import json
 from typing import Optional, Dict
 from src.models import CompanyFundamentals
-from config import MOCK_FUNDAMENTALS_PATH
+from config import MOCK_FUNDAMENTALS_PATH, CURATED_GOV_REVENUE_PCT
 
 # ── Mock cache ────────────────────────────────────────────────────────────────
 _MOCK_CACHE: Dict[str, dict] = {}        # raw dicts from JSON
@@ -299,6 +299,15 @@ def get_fundamentals_from_yfinance(ticker: str) -> Optional[CompanyFundamentals]
             _overlay(f_live, mock_raw)
             f_live.data_source = "yfinance+overlay"
             f_live.data_notes += " Curated overlay: gov_rev%, DoD%, backlog, moat, ROIC."
+
+        # ── Apply curated government revenue % table ──────────────────────────
+        # Mock JSON can override this (more specific), but sector estimates never should.
+        # CURATED_GOV_REVENUE_PCT provides verified 10-K values for all 32 tickers;
+        # without it, scoring.py falls back to sector guess * 0.55 discount.
+        if f_live.dod_revenue_pct is None:
+            curated = CURATED_GOV_REVENUE_PCT.get(ticker.upper())
+            if curated is not None:
+                f_live.dod_revenue_pct = curated
 
         return f_live
 

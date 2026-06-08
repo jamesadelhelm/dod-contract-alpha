@@ -182,8 +182,9 @@ def generate_report(
                 mos_str = f"{mos_val:+.0f}%"
         if s.dcf and s.dcf.bear_mos is not None:
             bm = s.dcf.bear_mos
-            # 🛡️ prefix when bear case still shows margin of safety (downside protected)
-            bear_str = f"🛡️{bm:+.0f}%" if bm > 0 else f"{bm:+.0f}%"
+            is_pa_plus = s.verdict in (Verdict.STRONG_CANDIDATE, Verdict.POTENTIALLY_ATTRACTIVE, Verdict.RESEARCH_FURTHER)
+            # 🛡️ only for PA+ companies — bear MoS on a Watchlist name is informational, not actionable
+            bear_str = f"🛡️{bm:+.0f}%" if (bm > 0 and is_pa_plus) else f"{bm:+.0f}%"
         lines.append(
             f"| {i} | **{s.ticker}** | {s.company_name} | {s.sector.value} "
             f"| **{s.final_score:.1f}** | {mos_str} | {bear_str} | {data_str} | {emoji} {s.verdict.value} |"

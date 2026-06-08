@@ -300,7 +300,10 @@ def _discount_rate(
     rate = 9.0
     adj = []
 
-    # DoD concentration durability discount
+    # DoD concentration durability discount / commercial risk premium
+    # The tool's DCF is calibrated for government contract cash flows (durable, sole-source,
+    # cost-plus). A company whose business is >75% commercial gets model-risk premium because
+    # the DCF's growth and terminal-value assumptions don't translate cleanly to commercial cycles.
     dod = f.dod_revenue_pct or 0
     if dod >= 70 and sole_source:
         rate -= 1.0
@@ -308,9 +311,15 @@ def _discount_rate(
     elif dod >= 50:
         rate -= 0.5
         adj.append("−0.5%: Solid DoD concentration (≥50%) → meaningful revenue stability")
-    elif dod < 20 and f.government_revenue_pct and f.government_revenue_pct < 30:
+    elif dod < 15:
+        rate += 3.0
+        adj.append(f"+3.0%: Very low DoD concentration ({dod:.0f}%) — DCF model risk: commercial revenue not calibrated for defense sector framework")
+    elif dod < 25:
+        rate += 1.0
+        adj.append(f"+1.0%: Low DoD concentration ({dod:.0f}%) — commercial revenue risk premium")
+    elif dod < 40:
         rate += 0.5
-        adj.append("+0.5%: Low government revenue concentration → less durable for this thesis")
+        adj.append(f"+0.5%: Below-average DoD concentration ({dod:.0f}%) → lower revenue durability")
 
     # Moat
     moat = (f.moat_rating or "None").strip()

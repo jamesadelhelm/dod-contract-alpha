@@ -1188,5 +1188,14 @@
     "dividend_yield": 0.0,
     "data_source": "curated_overlay",
     "data_notes": "Cigna/Evernorth: TRICARE pharmacy is <1% of ~$278B total revenue. DoD contract signal not investable at this scale."
+  },
+  "SHIM": {
+    "company_name": "Shimmick Corporation",
+    "government_revenue_pct": 65,
+    "dod_revenue_pct": 25,
+    "backlog_to_revenue": 2.8,
+    "moat_rating": "None",
+    "earnings_stability_years": 3,
+    "data_notes": "Small-cap federal construction contractor. Recent IPO 2023. Revenue ~$700M. Primarily USACE and DoD facility construction."
   }
 }

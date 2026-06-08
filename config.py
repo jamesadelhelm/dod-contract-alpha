@@ -93,6 +93,50 @@ SPECIALIST_TIER = {
 # somehow fit the size filter.
 LARGE_CAP_PRIMES = {"LMT", "NOC", "RTX", "GD", "BA", "HII", "LHX", "TXT", "L3H"}
 
+# ── Curated DoD / US-Government Revenue % ────────────────────────────────────
+# Sourced from most recent 10-K filings. Using total US-government revenue %
+# (DoD + IC + civil agencies) since the DoD Stability score measures contract
+# revenue durability, not narrowly DoD-only exposure.
+# Update annually or when a company's business mix changes materially.
+CURATED_GOV_REVENUE_PCT: dict[str, float] = {
+    # Pure government / effectively all DoD
+    "LMT":  97.0,   # 97% US government (2025 10-K); ~84% DoD
+    "HII":  97.0,   # 97% US government; virtually all US Navy
+    "BAH":  97.0,   # 97% US government (defense + civil agencies)
+    "SAIC": 99.0,   # 99% US government, primarily DoD
+    "CACI": 95.0,   # 95%+ US government (DoD + IC)
+    "VVX":  95.0,   # ~95% government services
+    "AMTM": 90.0,   # ~90% US government (Amentum)
+    "AVAV": 93.0,   # ~93% US government / allied defense
+    "LHX":  86.0,   # 86% US government (L3Harris)
+    "NOC":  85.0,   # 85% DoD (Northrop Grumman 2024 10-K)
+    "PSN":  80.0,   # ~80% US government (Parsons)
+    # High concentration
+    "LDOS": 87.0,   # 87% US government (Leidos 2026 10-K, direct text extraction)
+    "GD":   68.0,   # 68% US government (GD 2025 10-K, direct text extraction)
+    "RTX":  60.0,   # ~60% US government (Raytheon + Pratt & Collins commercial)
+    "PLTR": 55.0,   # ~55% government (US + international classified)
+    # Mixed
+    "KBR":  40.0,   # ~40% US government / DoD services
+    "OSK":  40.0,   # ~40% DoD (JLTV, HEMTT) + municipal / commercial trucks
+    "GE":   35.0,   # ~35% military engines + commercial aviation dominant
+    "BA":   38.0,   # ~38% defense (BDS) as fraction of total Boeing revenue
+    "TXT":  35.0,   # ~35% DoD (Bell helicopter + Cessna commercial aviation)
+    "FLR":  25.0,   # ~25% US government / mission solutions segment
+    "VSAT": 30.0,   # ~30% government satellite comms
+    "HON":  30.0,   # ~30% government (Honeywell industrial mix)
+    # Low concentration — commercial / diversified
+    "ACM":  20.0,   # ~20% US government engineering (AECOM; mostly international/commercial)
+    "HUM":  22.0,   # ~22% government (TRICARE + Medicare)
+    "UNH":  20.0,   # ~20% government (TRICARE East + Medicare)
+    "CI":   15.0,   # ~15% government (TRICARE pharmacy + Medicare)
+    "SHIM": 25.0,   # ~25% DoD / USACE contracts (Shimmick)
+    "IBM":  10.0,   # ~10% US government IT (small vs $60B+ total)
+    "ACN":  12.0,   # ~12% US government (small fraction of $70B commercial consulting)
+    "CNC":   8.0,   # ~8% federal (state Medicaid dominates; Health Net Federal)
+    "OLN":  15.0,   # ~15% government ammunition / propellants
+}
+
 # ── Ticker → Sector Override ──────────────────────────────────────────────────
 # The keyword classifier reads USAspending contract *descriptions*, which often
 # don't reflect a company's primary sector. For example, a BAH intelligence

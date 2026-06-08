@@ -588,13 +588,18 @@ def fetch_xbrl_financials(ticker: str) -> Dict[str, any]:
                     by_year[yr] = x["val"]
             return sorted(by_year.items())  # [(year_str, value), ...]
 
-        # Revenue — try multiple GAAP concepts
-        rev_rows = (
-            get_fy_values("Revenues") or
-            get_fy_values("RevenueFromContractWithCustomerExcludingAssessedTax") or
-            get_fy_values("SalesRevenueNet") or
-            get_fy_values("SalesRevenueGoodsNet")
-        )
+        # Revenue — try all concepts, pick the one with the most recent data.
+        # `or` short-circuits on non-empty lists, so a concept with stale 2009
+        # data blocks the fallback that has current 2025 data (e.g. HON).
+        _rev_candidates = [
+            get_fy_values("Revenues"),
+            get_fy_values("RevenueFromContractWithCustomerExcludingAssessedTax"),
+            get_fy_values("SalesRevenueNet"),
+            get_fy_values("SalesRevenueGoodsNet"),
+        ]
+        def _latest_year(rows: list) -> int:
+            return max((int(x["end"][:4]) for x in rows), default=0)
+        rev_rows = max(_rev_candidates, key=_latest_year) if any(_rev_candidates) else []
         revenues = dedup_by_year(rev_rows)[-5:] if rev_rows else []
 
         # Backlog (Remaining Performance Obligations = contractual backlog)

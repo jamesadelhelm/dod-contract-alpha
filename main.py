@@ -221,7 +221,8 @@ def main():
         bear_str = "N/A"
         if s.dcf and s.dcf.bear_mos is not None:
             bm = s.dcf.bear_mos
-            bear_str = f"🛡{bm:+.0f}%" if bm > 0 else f"{bm:+.0f}%"
+            is_pa_plus = s.verdict in (Verdict.STRONG_CANDIDATE, Verdict.POTENTIALLY_ATTRACTIVE, Verdict.RESEARCH_FURTHER)
+            bear_str = f"🛡{bm:+.0f}%" if (bm > 0 and is_pa_plus) else f"{bm:+.0f}%"
         print(f"{i:<3} {s.ticker:<8} {s.final_score:>6.1f} {data_str:>5} {mos_str:>6} {bear_str:>7}  {emoji} {s.verdict.value:<26} {s.sector.value}")
 
     unmatched_value = sum(c.contract_value for c in private_contracts if c.contract_value)
