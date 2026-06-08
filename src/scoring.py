@@ -1124,6 +1124,20 @@ def score_company(
                 "No margin of safety — consider lower entry points or smaller position sizing."
             )
 
+    # ── Bear-case tail risk flag ──────────────────────────────────────────────
+    # For Potentially Attractive / Strong Candidate companies, flag when the
+    # bear-case DCF shows severe downside (< -30%). The composite score captures
+    # business quality; this flag captures the asymmetric downside if the thesis
+    # goes wrong. Investors can have a positive base-case MoS and still carry
+    # significant downside risk if growth assumptions disappoint.
+    if dcf is not None and dcf.bear_mos is not None:
+        if (verdict in (Verdict.POTENTIALLY_ATTRACTIVE, Verdict.STRONG_CANDIDATE, Verdict.RESEARCH_FURTHER)
+                and dcf.bear_mos < -30):
+            all_flags.append(
+                f"DCF bear case: {dcf.bear_mos:.0f}% downside if thesis is wrong. "
+                "Positive base-case MoS assumes growth holds — size position to survive the bear scenario."
+            )
+
     # Narrative
     why_matters, why_not, risks, verify = _generate_narrative(ticker, f, contracts, sector, bq_raw, gv_raw, ds_raw)
 
@@ -1168,7 +1182,8 @@ def score_company(
         red_flags=[flag for flag in all_flags if any(kw in flag.lower() for kw in
             ["score capped", "capped at", "dangerous", "dilution", "negative fcf",
              "negative roe", "contracting", "consensus", "short interest",
-             "destroying", "binary catalyst", "distressed", "dcf:", "overvalued at"])],
+             "destroying", "binary catalyst", "distressed", "dcf:", "overvalued at",
+             "bear case"])],
         low_ticker_confidence=any(c.ticker_confidence < OVERRIDE_RULES["low_ticker_confidence_flag_threshold"] for c in contracts if c.ticker == ticker),
         specialist=specialist,
         dcf=dcf,
