@@ -154,14 +154,21 @@ def get_fundamentals_from_yfinance(ticker: str) -> Optional[CompanyFundamentals]
             short_ratio = None  # yfinance sometimes returns junk values
 
         # ── Capital return ────────────────────────────────────────────────────
-        # yfinance dividendYield is inconsistent: sometimes a fraction (0.015),
-        # sometimes already a percent (1.5). Normalize by treating values > 0.3
-        # as already-in-percent; cap at 30 to discard junk values.
-        _dy_raw = info.get("dividendYield")
-        if _dy_raw is not None:
+        # yfinance has two dividend yield fields:
+        #   trailingAnnualDividendYield — consistently fractional (0.025 = 2.5%); preferred
+        #   dividendYield               — inconsistent format; some tickers return 0.09 for 9%,
+        #                                 others return 0.09 for 0.09% (TXT bug: actual 0.088%)
+        # Prefer trailingAnnualDividendYield; fall back to dividendYield with heuristic.
+        # Cap at 20% — defense/industrial yields above that are data errors.
+        _trailing_dy = info.get("trailingAnnualDividendYield")
+        _dy_raw      = info.get("dividendYield")
+        if _trailing_dy is not None:
+            _tdy = float(_trailing_dy) * 100  # fractional → percent
+            div_yield = round(_tdy, 2) if 0 <= _tdy <= 20 else None
+        elif _dy_raw is not None:
             _dy = float(_dy_raw)
             div_yield = round(_dy if _dy > 0.3 else _dy * 100, 2)
-            div_yield = div_yield if div_yield <= 30 else None
+            div_yield = div_yield if div_yield <= 20 else None
         else:
             div_yield = None
         payout_rat  = _pct(info.get("payoutRatio"))
