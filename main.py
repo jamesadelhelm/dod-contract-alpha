@@ -321,6 +321,7 @@ def main():
             run_date=run_date,
             live=live,
             fundamentals_map=fundamentals_map,
+            last_scores=last_scores,
         )
         save_report(report_content, output_path)
         print(f"\nReport → {output_path}")

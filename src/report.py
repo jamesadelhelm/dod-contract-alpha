@@ -68,6 +68,91 @@ def _score_table_row(label: str, score: float, weight_pct: int) -> str:
     return f"| {label:<30} | {score:>6.1f}/100 | {weight_pct:>4}% | {_bar(score)} |"
 
 
+def _generate_changes_section(ranked_scores, last_scores, fundamentals_map) -> List[str]:
+    """Generate 'Changes Since Last Run' markdown lines from persisted last_scores.json."""
+    if not last_scores:
+        return ["*No prior run data — this is the first recorded run.*", ""]
+
+    run_dates = [v.get("date") for v in last_scores.values() if v.get("date")]
+    last_date = max(run_dates) if run_dates else "unknown"
+
+    current_tickers = {s.ticker for s in ranked_scores}
+    last_tickers = set(last_scores.keys())
+
+    changes = []
+    new_entries = []
+    for s in ranked_scores:
+        prev = last_scores.get(s.ticker)
+        if prev is None:
+            new_entries.append(s.ticker)
+            continue
+        score_delta = s.final_score - prev["score"]
+        verdict_changed = s.verdict.value != prev.get("verdict")
+        old_bear = prev.get("bear_mos")
+        new_bear = s.dcf.bear_mos if s.dcf else None
+        bear_flipped = (
+            old_bear is not None and new_bear is not None
+            and (old_bear > 0) != (new_bear > 0)
+        )
+        if abs(score_delta) >= 0.5 or verdict_changed or bear_flipped:
+            changes.append({
+                "ticker": s.ticker,
+                "score_delta": score_delta,
+                "old_score": prev["score"],
+                "new_score": s.final_score,
+                "old_verdict": prev.get("verdict", "—"),
+                "new_verdict": s.verdict.value,
+                "verdict_changed": verdict_changed,
+                "old_bear": old_bear,
+                "new_bear": new_bear,
+                "bear_flipped": bear_flipped,
+            })
+    removed = [t for t in last_tickers if t not in current_tickers]
+
+    if not changes and not new_entries and not removed:
+        return [f"*No significant changes since {last_date}.*", ""]
+
+    lines = [f"*Compared to run on {last_date}*", ""]
+
+    if changes:
+        changes.sort(key=lambda x: abs(x["score_delta"]), reverse=True)
+        lines += [
+            "| Ticker | Score Δ | Old → New Score | Verdict Change | Bear MoS Change |",
+            "|--------|--------:|----------------:|----------------|-----------------|",
+        ]
+        for ch in changes:
+            delta_str = f"{ch['score_delta']:+.1f}" if abs(ch['score_delta']) >= 0.1 else "="
+            verdict_str = (
+                f"{ch['old_verdict']} → **{ch['new_verdict']}**"
+                if ch["verdict_changed"] else ch["new_verdict"]
+            )
+            if ch["bear_flipped"]:
+                bear_str = f"**{ch['old_bear']:+.0f}% → {ch['new_bear']:+.0f}%** ⚠️ sign flip"
+            elif ch["old_bear"] is not None and ch["new_bear"] is not None:
+                bd = ch["new_bear"] - ch["old_bear"]
+                bear_str = (
+                    f"{ch['new_bear']:+.0f}% ({bd:+.0f})" if abs(bd) >= 1
+                    else f"{ch['new_bear']:+.0f}%"
+                )
+            else:
+                bear_str = "—"
+            lines.append(
+                f"| {ch['ticker']} | {delta_str} | "
+                f"{ch['old_score']:.1f} → {ch['new_score']:.1f} | "
+                f"{verdict_str} | {bear_str} |"
+            )
+        lines.append("")
+
+    if new_entries:
+        lines.append(f"**New in this run:** {', '.join(new_entries)}")
+        lines.append("")
+    if removed:
+        lines.append(f"**No longer appearing:** {', '.join(removed)}")
+        lines.append("")
+
+    return lines
+
+
 def generate_report(
     ranked_scores: List[CompanyScore],
     private_contracts: List[Contract],
@@ -75,6 +160,7 @@ def generate_report(
     run_date: str = None,
     live: bool = True,
     fundamentals_map: Dict = None,
+    last_scores: Dict = None,
 ) -> str:
     run_date = run_date or datetime.now().strftime("%Y-%m-%d %H:%M UTC")
 
@@ -153,6 +239,14 @@ def generate_report(
     for part in exec_parts:
         lines.append(part)
         lines.append("")
+    lines += ["---", ""]
+
+    # ── Changes Since Last Run ────────────────────────────────────────────────
+    lines += [
+        "## Changes Since Last Run",
+        "",
+    ]
+    lines += _generate_changes_section(ranked_scores, last_scores, fundamentals_map)
     lines += ["---", ""]
 
     # ── 1. Action Summary ─────────────────────────────────────────────────────
@@ -320,22 +414,33 @@ def generate_report(
                 entry_str = f"${bear_iv:.0f} (bear IV)"
             else:
                 entry_str = "—"
-            deployable_rows.append((s.ticker, tier_label, bmos_str, entry_str, rationale, size_pct, cur_price))
+            # Explicit action label: removes ambiguity about what to do right now.
+            if b_mos is not None and b_mos > 0:
+                action_str = "**BUY**"
+            elif b_mos is not None and b_mos >= -15:
+                action_str = "Start 75%"
+            elif b_mos is not None and b_mos >= -30:
+                action_str = "Start 50%"
+            elif b_mos is not None:
+                action_str = "Speculative 25%"
+            else:
+                action_str = "—"
+            deployable_rows.append((s.ticker, tier_label, bmos_str, entry_str, action_str, rationale, size_pct, cur_price))
 
     if deployable_rows:
-        total_pct = sum(r[5] for r in deployable_rows)
+        total_pct = sum(r[6] for r in deployable_rows)
         cash_pct = 100.0 - total_pct
 
         lines += [
             "**Position sizing guidance (% of equity portfolio):**",
             "",
-            "| Ticker | Now | Entry Target | Tier | Bear MoS | Sizing Logic | Weight |",
-            "|--------|----:|-------------:|------|:--------:|:-------------|-------:|",
+            "| Ticker | Now | Entry Target | Action | Tier | Bear MoS | Sizing Logic | Weight |",
+            "|--------|----:|-------------:|:------:|------|:--------:|:-------------|-------:|",
         ]
-        for ticker, tier_label, bmos_str, entry_str, rationale, size_pct, cur_price in deployable_rows:
+        for ticker, tier_label, bmos_str, entry_str, action_str, rationale, size_pct, cur_price in deployable_rows:
             price_str = f"${cur_price:.0f}" if cur_price else "—"
             lines.append(
-                f"| {ticker} | {price_str} | {entry_str} | {tier_label} | {bmos_str} | {rationale} | {size_pct:.1f}% |"
+                f"| {ticker} | {price_str} | {entry_str} | {action_str} | {tier_label} | {bmos_str} | {rationale} | {size_pct:.1f}% |"
             )
         lines += [
             "",
@@ -344,22 +449,22 @@ def generate_report(
             "",
         ]
 
-        # Cluster cap reporting (size_pct is index 5 now)
-        doge_pct  = sum(r[5] for r in deployable_rows if r[0] in _DOGE_CLUSTER)
-        aero_pct  = sum(r[5] for r in deployable_rows if r[0] in _AEROSPACE_CLUSTER)
+        # Cluster cap reporting (size_pct is index 6 now — after action_str was added at index 4)
+        doge_pct  = sum(r[6] for r in deployable_rows if r[0] in _DOGE_CLUSTER)
+        aero_pct  = sum(r[6] for r in deployable_rows if r[0] in _AEROSPACE_CLUSTER)
         doge_tickers = [r[0] for r in deployable_rows if r[0] in _DOGE_CLUSTER]
         aero_tickers = [r[0] for r in deployable_rows if r[0] in _AEROSPACE_CLUSTER]
         cluster_lines = []
         if doge_tickers:
             flag = "⚠️ EXCEEDS CAP — scale back proportionally" if doge_pct > _DOGE_CAP_PCT else "✅"
-            comp_str = " + ".join(f"{t} {next(r[5] for r in deployable_rows if r[0]==t):.1f}%" for t in doge_tickers)
+            comp_str = " + ".join(f"{t} {next(r[6] for r in deployable_rows if r[0]==t):.1f}%" for t in doge_tickers)
             cluster_lines.append(
                 f"- Federal IT / DOGE risk (cap {_DOGE_CAP_PCT:.0f}%): "
                 f"{comp_str} = {doge_pct:.1f}% {flag}"
             )
         if aero_tickers:
             flag = "⚠️ EXCEEDS CAP — scale back proportionally" if aero_pct > _AEROSPACE_CAP_PCT else "✅"
-            comp_str = " + ".join(f"{t} {next(r[5] for r in deployable_rows if r[0]==t):.1f}%" for t in aero_tickers)
+            comp_str = " + ".join(f"{t} {next(r[6] for r in deployable_rows if r[0]==t):.1f}%" for t in aero_tickers)
             cluster_lines.append(
                 f"- Aerospace / Defense Prime (cap {_AEROSPACE_CAP_PCT:.0f}%): "
                 f"{comp_str} = {aero_pct:.1f}% {flag}"

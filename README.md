@@ -71,9 +71,10 @@ tickers, fetching live fundamentals, running a DCF, and ranking every company by
                                    |
 +----------------------------------v------------------------------------------+
 |  STEP 5: REPORT                                                             |
-|  Ranked markdown report with 11 sections:                                  |
+|  Ranked markdown report with 12 sections:                                  |
+|  Changes Since Last Run  (score/verdict/bear MoS deltas vs. prior run)   |
 |   1. Action Summary  (price, score, MoS, bear MoS, signal tiers,         |
-|                        position sizing table with entry prices)            |
+|                        entry prices, BUY/Start 75%/50% action labels)     |
 |   2. Valuation Snapshot (multiples + full DCF table)                      |
 |   3. Red Flags                                                             |
 |   4. Market Context (consensus, short interest, price momentum)           |
@@ -133,19 +134,19 @@ Output: `reports/report_YYYYMMDD_HHMM.md` — open in VS Code, Obsidian, or any 
 
 [4/4] Results
 
-#   Ticker    Score  Data    MoS   Bear  Verdict                      Sector
---------------------------------------------------------------------------------------------------
-1   BAH        71.8  100%   +54%    -24%  Potentially Attractive       AI / Data / Software
-2   LDOS       70.6  100%   +29%    -12%  Potentially Attractive       Cloud / IT Services
-3   GD         70.2  100%   +37%  S+12%   Potentially Attractive       Shipbuilding
-4   SAIC       65.7  100%    +0%    -33%  Watchlist                    Cloud / IT Services
-5   LMT        64.8  100%   -58%    -66%  Watchlist                    Aerospace
-6   NOC        64.7  100%   -64%    -73%  Watchlist                    Aerospace
+#   Ticker    Score   Chg  Data    MoS   Bear  Verdict                      Sector
+-----------------------------------------------------------------------------------------------------------
+1   BAH        71.8     =  100%   +54%    -24%  Potentially Attractive       AI / Data / Software
+2   LDOS       70.6     =  100%   +29%    -12%  Potentially Attractive       Cloud / IT Services
+3   GD         70.2     =  100%   +37%  S+12%   Potentially Attractive       Shipbuilding
+4   SAIC       65.7     =  100%    +0%    -33%  Watchlist                    Cloud / IT Services
+5   LMT        64.8     =  100%   -58%    -66%  Watchlist                    Aerospace
+6   NOC        64.7     =  100%   -64%    -73%  Watchlist                    Aerospace
 ...
-29  CNC        42.1   94%     -+      -+  Ignore                       Military Healthcare
-30  VSAT       40.6   94%   -92%    N/A   Ignore                       Space
-31  BA         38.1   94%   -88%    -97%  Ignore                       Aerospace
-32  SHIM       27.6   69%    N/A     N/A  Ignore                       Infrastructure
+29  CNC        42.1     =   94%     -+      -+  Ignore                       Military Healthcare
+30  VSAT       40.6     =   94%   -92%    N/A   Ignore                       Space
+31  BA         38.1     =   94%   -88%    -97%  Ignore                       Aerospace
+32  SHIM       27.6   new   69%    N/A     N/A  Ignore                       Infrastructure
 
 Private/unmatched: 341 contracts ($242,863M unresolved)
 
@@ -154,7 +155,9 @@ Report -> reports/report_20260608_HHMM.md
 
 > `S` = bear MoS shield (🛡️ in terminal). `-+` = MoS suppressed for Ignore-rated companies —
 > high MoS on a low-quality name is a DCF artifact, not a signal (e.g. CNC's commercial FCF yield).
-> `+0%` = rounds to zero, not a display bug.
+> `+0%` = rounds to zero, not a display bug. `Chg` column shows score delta vs. prior run
+> (`=` = no change, `new` = first appearance, `+/-X.X` = score moved). Scores persist in
+> `data/last_scores.json` after each live run.
 
 ### What the report looks like (Section 1 — Action Summary)
 
@@ -238,6 +241,9 @@ python3 main.py --source live             # scrape defense.gov instead of USAspe
 
 # EDGAR enrichment (slow — fetches 10-K for each ticker)
 python3 main.py --edgar
+
+# EDGAR XBRL (recommended for production) — 3-yr normalized FCF + shipbuilding backlog
+python3 main.py --xbrl
 ```
 
 ---
@@ -256,13 +262,19 @@ The Action Summary produces a Signal Tiers box that organizes actionable names:
 The tier labels directly answer "what do I do today?" without requiring cross-referencing multiple
 report sections. They're derived from composite scores, base MoS, and bear-case MoS.
 
-**Position Sizing Table** in Section 1 now also includes:
+**Position Sizing Table** in Section 1 now includes:
 - **Now** — current market price (entry price anchor)
 - **Entry Target** — bear IV: the price at which even the pessimistic DCF scenario breaks even.
   For Highest Conviction names (positive bear MoS), bear IV > current price; you are already
   "inside" the bear case safety margin. For Research Priority names, bear IV shows the "back up
   the truck" price where the thesis becomes risk-free.
-- **Score delta** — console shows change vs. previous run (e.g., GD: 70.2 -> 69.2 = -1.0)
+- **Action** — explicit label: **BUY** (bear MoS positive → enter now), **Start 75%** (mild
+  tail risk: -15% to 0%), **Start 50%** (elevated tail risk: -30% to -15%),
+  **Speculative 25%** (severe tail: below -30%)
+- **Score delta (console)** — `Chg` column shows change vs. prior run; persisted in
+  `data/last_scores.json`
+- **Changes Since Last Run (report)** — dedicated section flags score moves ≥ 0.5 pts,
+  verdict upgrades/downgrades, and bear MoS sign flips (most critical signal)
 
 ---
 
@@ -492,7 +504,7 @@ Sector drives the DCF growth assumptions and terminal rate — misclassification
 | **Large commercial companies** | ACN, IBM, HON have strong scores driven by business quality, but DoD contracts are marginal to their investment thesis. When DoD revenue < 20% and market cap > $15B, the tool adds an explicit ⚠ caveat to the DCF section and caps the valuation score at 45. A separate DoD concentration cap applies to the final composite score: < 15% DoD → capped at 60, 15–24% DoD → capped at 65. This prevents a pristine commercial compounder from ranking above a pure-DoD specialist. Read the "Why It Might Not Matter" section for these names. |
 | **MoS for non-defense companies** | Companies like CNC, HUM, UNH have high FCF from their commercial business (Medicaid, Medicare Advantage) that inflates the DCF Margin of Safety. MoS is suppressed (`—†`) in the Action Summary for Ignore-rated companies to prevent this from being mistaken for a buy signal. |
 | **Negative intrinsic value** | Companies with persistent negative FCF (SHIM, AVAV in down cycles) produce negative DCF intrinsic values. The tool replaces the misleading MoS% with "Negative IV — capital destruction risk" and shows `—` in all tables — a solvency alert, not a valuation alert. |
-| **FCF margin fallback** | yfinance's `freeCashflow` info field is sometimes missing even when the cashflow statement has the data (e.g., LHX). The tool now reads the cashflow statement directly as fallback, fixing silently missing data that was depressing scores for quality primes. |
+| **FCF margin fallback** | yfinance's `freeCashflow` info field is sometimes missing even when the cashflow statement has the data. The tool reads the cashflow statement directly as fallback. For production runs, use `--xbrl` to source a 3-year normalized FCF margin from SEC EDGAR XBRL data — more stable than any single yfinance TTM figure. |
 | **Dividend yield normalization** | yfinance's `dividendYield` is inconsistently formatted across tickers; the tool now prefers `trailingAnnualDividendYield` (always fractional) and falls back to `dividendYield` only when needed. |
 | **Graham calibration** | P/E brackets calibrated for 18–30x defense universe. Dividend yield replaces current ratio in Graham Value to avoid double-counting with the Balance Sheet component. |
 | **DCF sensitivity** | Terminal value is 60–80% of the total intrinsic value. Use the reverse DCF (implied growth rate) as the primary sanity check — not the absolute scenario IVs. |
