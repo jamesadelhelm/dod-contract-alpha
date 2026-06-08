@@ -680,9 +680,15 @@ def overlay_xbrl_into_fundamentals(f: "CompanyFundamentals", xbrl: Dict) -> None
     if xbrl.get("fcf_margin_3yr") is not None:
         f.fcf_margin = xbrl["fcf_margin_3yr"]
 
-    # 3-year revenue CAGR as a context signal (overrides 1yr if available)
-    if xbrl.get("rev_cagr_3yr") is not None and hasattr(f, "revenue_growth_3yr"):
-        f.revenue_growth_3yr = xbrl["rev_cagr_3yr"]
+    # 3-year revenue CAGR as narrative context signal.
+    # Guard: suppress extreme negative CAGRs that result from corporate restructuring
+    # (e.g. GE Aerospace after Vernova spinoff: old GE revenue ~$74B → ~$38B = -15.7% CAGR
+    # with no organic decline). If CAGR < -12% the signal is likely a spinoff/divestiture
+    # artifact and would corrupt the "why it might not matter" narrative.
+    cagr = xbrl.get("rev_cagr_3yr")
+    if cagr is not None and hasattr(f, "revenue_cagr_3yr"):
+        if cagr >= -12.0:
+            f.revenue_cagr_3yr = cagr
 
     # Revenue sanity check
     if xbrl.get("latest_rev") and f.annual_revenue_millions is None:

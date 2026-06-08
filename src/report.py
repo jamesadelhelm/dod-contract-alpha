@@ -161,32 +161,38 @@ def generate_report(
         "",
         "Highest-priority companies from this contract batch, ranked by composite score.",
         "",
-        "| # | Ticker | Company | Sector | Score | MoS | Bear | Data | Verdict |",
-        "|---|--------|---------|--------|------:|----:|-----:|-----:|---------|",
+        "| # | Ticker | Price | Company | Sector | Score | MoS | Bear | Data | Verdict |",
+        "|---|--------|------:|---------|--------|------:|----:|-----:|-----:|---------|",
     ]
     for i, s in enumerate(ranked_scores, 1):
         emoji = VERDICT_EMOJI.get(s.verdict, "⚪")
         data_str = f"{s.data_completeness_pct:.0f}%"
         if s.data_completeness_pct < 50:
             data_str += "⚠"
+        f_ctx = (fundamentals_map or {}).get(s.ticker)
+        price_str = f"${f_ctx.current_price:.0f}" if f_ctx and f_ctx.current_price else "—"
         mos_str = "—"
         bear_str = "—"
+        is_ignore = s.verdict == Verdict.IGNORE
+        is_pa_plus = s.verdict in (Verdict.STRONG_CANDIDATE, Verdict.POTENTIALLY_ATTRACTIVE, Verdict.RESEARCH_FURTHER)
         if s.dcf and s.dcf.margin_of_safety_base is not None:
             mos_val = s.dcf.margin_of_safety_base
-            # Suppress positive MoS for Ignore-rated companies: a high MoS driven by
-            # FCF yield (e.g. CNC +278%) on a low-quality name looks like a buy signal
-            # in a summary table. The detail is still available in Section 2b.
-            if s.verdict == Verdict.IGNORE and mos_val > 0:
+            # Suppress positive MoS for Ignore-rated: high MoS on a low-quality name looks
+            # like a buy signal but is usually a DCF artifact (e.g. CNC commercial FCF).
+            if is_ignore and mos_val > 0:
                 mos_str = "—†"
             else:
-                mos_str = f"{mos_val:+.0f}%"
+                mos_str = "+0%" if abs(mos_val) < 0.5 else f"{mos_val:+.0f}%"
         if s.dcf and s.dcf.bear_mos is not None:
             bm = s.dcf.bear_mos
-            is_pa_plus = s.verdict in (Verdict.STRONG_CANDIDATE, Verdict.POTENTIALLY_ATTRACTIVE, Verdict.RESEARCH_FURTHER)
-            # 🛡️ only for PA+ companies — bear MoS on a Watchlist name is informational, not actionable
-            bear_str = f"🛡️{bm:+.0f}%" if (bm > 0 and is_pa_plus) else f"{bm:+.0f}%"
+            if is_ignore and bm > 0:
+                bear_str = "—†"  # same logic: suppress commercial bear MoS artifact
+            elif bm > 0 and is_pa_plus:
+                bear_str = f"🛡️{bm:+.0f}%"
+            else:
+                bear_str = "+0%" if abs(bm) < 0.5 else f"{bm:+.0f}%"
         lines.append(
-            f"| {i} | **{s.ticker}** | {s.company_name} | {s.sector.value} "
+            f"| {i} | **{s.ticker}** | {price_str} | {s.company_name} | {s.sector.value} "
             f"| **{s.final_score:.1f}** | {mos_str} | {bear_str} | {data_str} | {emoji} {s.verdict.value} |"
         )
 

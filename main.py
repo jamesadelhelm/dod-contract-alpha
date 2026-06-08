@@ -155,8 +155,10 @@ def main():
                     b2r = f"{xbrl.get('backlog_to_rev'):.2f}x" if xbrl.get('backlog_to_rev') is not None else "n/a"
                     fcf3 = f"{xbrl.get('fcf_margin_3yr'):.1f}%" if xbrl.get('fcf_margin_3yr') is not None else "n/a"
                     cagr = f"{xbrl.get('rev_cagr_3yr'):.1f}%" if xbrl.get('rev_cagr_3yr') is not None else "n/a"
-                    svc_note = "(backlog suppressed for services)" if dominant_sector in _SERVICES_SECTORS else ""
-                    print(f" backlog={b2r} fcf3yr={fcf3} cagr3yr={cagr} {svc_note}")
+                    svc_note = " (backlog suppressed for services)" if dominant_sector in _SERVICES_SECTORS else ""
+                    raw_cagr = xbrl.get("rev_cagr_3yr")
+                    cagr_note = " ⚠ spinoff/divestiture artifact — suppressed" if raw_cagr is not None and raw_cagr < -12 else ""
+                    print(f" backlog={b2r} fcf3yr={fcf3} cagr3yr={cagr}{svc_note}{cagr_note}")
                 else:
                     print(" no data")
             except Exception as e:
@@ -217,12 +219,23 @@ def main():
             data_str += "⚠"
         mos_str = "N/A"
         if s.dcf and s.dcf.margin_of_safety_base is not None:
-            mos_str = f"{s.dcf.margin_of_safety_base:+.0f}%"
+            mv = s.dcf.margin_of_safety_base
+            is_ignore = s.verdict == Verdict.IGNORE
+            if is_ignore and mv > 0:
+                mos_str = "—†"   # suppress: commercial DCF artifact, not a DoD signal
+            else:
+                mos_str = "+0%" if abs(mv) < 0.5 else f"{mv:+.0f}%"
         bear_str = "N/A"
         if s.dcf and s.dcf.bear_mos is not None:
             bm = s.dcf.bear_mos
             is_pa_plus = s.verdict in (Verdict.STRONG_CANDIDATE, Verdict.POTENTIALLY_ATTRACTIVE, Verdict.RESEARCH_FURTHER)
-            bear_str = f"🛡{bm:+.0f}%" if (bm > 0 and is_pa_plus) else f"{bm:+.0f}%"
+            is_ignore = s.verdict == Verdict.IGNORE
+            if is_ignore and bm > 0:
+                bear_str = "—†"  # suppress: same reason as MoS
+            elif bm > 0 and is_pa_plus:
+                bear_str = f"🛡{bm:+.0f}%"
+            else:
+                bear_str = "+0%" if abs(bm) < 0.5 else f"{bm:+.0f}%"
         print(f"{i:<3} {s.ticker:<8} {s.final_score:>6.1f} {data_str:>5} {mos_str:>6} {bear_str:>7}  {emoji} {s.verdict.value:<26} {s.sector.value}")
 
     unmatched_value = sum(c.contract_value for c in private_contracts if c.contract_value)

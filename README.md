@@ -24,66 +24,67 @@ tickers, fetching live fundamentals, running a DCF, and ranking every company by
 ## Pipeline Overview
 
 ```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│  STEP 1: FETCH                                                              │
-│  USAspending.gov API → current DoD fiscal year (Oct 1 → today)             │
-│  Up to 1,000 procurement contracts, ≥$5M, sorted by value descending       │
-└────────────────────────────────┬────────────────────────────────────────────┘
-                                 │
-┌────────────────────────────────▼────────────────────────────────────────────┐
-│  STEP 2: RESOLVE                                                            │
-│  Awardee name → public ticker (3-pass pipeline)                             │
-│   Pass 1: 210-entry curated subsidiary map  (ELECTRIC BOAT → GD)           │
-│   Pass 2: Prefix/fuzzy match  (HUMANA GOVERNMENT BUSINESS → HUM)           │
-│   Pass 3: SEC EDGAR company index fallback  (~10,000 tickers, cached)      │
-│  Unresolved names are flagged as private/unknown (shown in Coverage Gap)   │
-└────────────────────────────────┬────────────────────────────────────────────┘
-                                 │
-┌────────────────────────────────▼────────────────────────────────────────────┐
-│  STEP 3: ENRICH                                                             │
-│   yfinance (live):  price, P/E, Fwd P/E, EV/EBITDA, FCF yield, short %,   │
-│                     share count Δ, dividend yield, earnings calendar,       │
-│                     analyst consensus, 52-week range, ROIC (derived)       │
-│   Curated overlay:  44-entry database — DoD revenue %, gov revenue %,      │
-│                     backlog/revenue, moat rating, earnings stability years  │
-│                     (supplements or corrects yfinance for 44 defense and    │
-│                     adjacent companies including RTX, BA, LHX, CACI,       │
-│                     HON, OSK, CNC, UNH, VSAT, and all major primes)        │
-│  Sector classifier: keyword voting on contract descriptions → 15 sectors   │
-│  Ticker overrides:  correct systematic misclassifications (BAH→AI/Data,    │
-│                     LDOS→Cloud IT, RTX→Defense Prime, etc.)                │
-└────────────────────────────────┬────────────────────────────────────────────┘
-                                 │
-┌────────────────────────────────▼────────────────────────────────────────────┐
-│  STEP 4: SCORE                                                              │
-│  6-component framework (0–100 each, weighted):                              │
-│   Buffett Quality   25%  — ROIC, FCF margin, earnings stability, moat      │
-│   Graham Value      20%  — P/E, Fwd P/E, EV/EBITDA, FCF yield, P/B,       │
-│                            dividend yield (calibrated for defense universe) │
-│   DoD Stability     20%  — DoD revenue %, backlog, sole-source position    │
-│   Management        15%  — ROIC, FCF consistency, insider ownership        │
-│   Contract Catalyst 10%  — contract size vs. revenue, sole-source, IDIQ   │
-│   Balance Sheet     10%  — current ratio, Debt/EBITDA, interest coverage  │
-│                            (negative IC = operating loss → flagged)        │
-│  + 3-scenario DCF (bear/base/bull) with reverse DCF (implied growth rate) │
-│  + Specialist Tier bonus for mid-cap, high-DoD-concentration companies    │
-└────────────────────────────────┬────────────────────────────────────────────┘
-                                 │
-┌────────────────────────────────▼────────────────────────────────────────────┐
-│  STEP 5: REPORT                                                             │
-│  Ranked markdown report with 11 sections:                                  │
-│   1. Action Summary (ranked table + signal counts)                         │
-│   2. Valuation Snapshot (multiples + full DCF table)                       │
-│   3. Red Flags                                                              │
-│   4. Market Context (consensus, short interest, price momentum)             │
-│   5. Specialist Tier analysis                                               │
-│   6. Government Funding Durability                                          │
-│   7. Company Deep Dives (score breakdown + contracts + investment thesis)  │
-│   8. Private Companies / Coverage Gap                                      │
-│   9. Contract Awards (all 1,000 sorted by value)                           │
-│  10. Sector Peer Comparison                                                 │
-│  11. Data Quality & Limitations                                             │
-└─────────────────────────────────────────────────────────────────────────────┘
++-----------------------------------------------------------------------------+
+|  STEP 1: FETCH                                                              |
+|  USAspending.gov API -> current DoD fiscal year (Oct 1 -> today)           |
+|  Up to 1,000 procurement contracts, >=$5M, sorted by value descending      |
++----------------------------------+------------------------------------------+
+                                   |
++----------------------------------v------------------------------------------+
+|  STEP 2: RESOLVE                                                            |
+|  Awardee name -> public ticker (3-pass pipeline)                           |
+|   Pass 1: 210-entry curated subsidiary map  (ELECTRIC BOAT -> GD)         |
+|   Pass 2: Prefix/fuzzy match  (HUMANA GOVERNMENT BUSINESS -> HUM)         |
+|   Pass 3: SEC EDGAR company index fallback  (~10,000 tickers, cached)     |
+|  Unresolved names are flagged as private/unknown (shown in Coverage Gap)  |
++----------------------------------+------------------------------------------+
+                                   |
++----------------------------------v------------------------------------------+
+|  STEP 3: ENRICH                                                             |
+|   yfinance (live):  price, P/E, Fwd P/E, EV/EBITDA, FCF yield, short %,  |
+|                     share count chg, dividend yield, earnings calendar,    |
+|                     analyst consensus, 52-week range, ROIC (derived)      |
+|   Curated overlay:  44-entry database -- DoD revenue %, gov revenue %,    |
+|                     backlog/revenue, moat rating, earnings stability yrs   |
+|                     (supplements or corrects yfinance for 44 defense and  |
+|                     adjacent companies including RTX, BA, LHX, CACI,      |
+|                     HON, OSK, CNC, UNH, VSAT, and all major primes)       |
+|  Sector classifier: keyword voting on contract descriptions -> 15 sectors |
+|  Ticker overrides:  correct systematic misclassifications (BAH->AI/Data,  |
+|                     LDOS->Cloud IT, RTX->Defense Prime, etc.)             |
++----------------------------------+------------------------------------------+
+                                   |
++----------------------------------v------------------------------------------+
+|  STEP 4: SCORE                                                              |
+|  6-component framework (0-100 each, weighted):                             |
+|   Buffett Quality   25%  -- ROIC, FCF margin, earnings stability, moat    |
+|   Graham Value      20%  -- P/E, Fwd P/E, EV/EBITDA, FCF yield, P/B,     |
+|                             dividend yield (calibrated for defense univ.)  |
+|   DoD Stability     20%  -- DoD revenue %, backlog, sole-source position  |
+|   Management        15%  -- ROIC, FCF consistency, insider ownership      |
+|   Contract Catalyst 10%  -- contract size vs. revenue, sole-source, IDIQ |
+|   Balance Sheet     10%  -- current ratio, Debt/EBITDA, interest coverage |
+|                             (negative IC = operating loss -> flagged)      |
+|  + 3-scenario DCF (bear/base/bull) + reverse DCF (implied growth rate)   |
+|  + Specialist Tier bonus for mid-cap, high-DoD-concentration companies   |
++----------------------------------+------------------------------------------+
+                                   |
++----------------------------------v------------------------------------------+
+|  STEP 5: REPORT                                                             |
+|  Ranked markdown report with 11 sections:                                  |
+|   1. Action Summary  (price, score, MoS, bear MoS, signal tiers,         |
+|                        position sizing table with entry prices)            |
+|   2. Valuation Snapshot (multiples + full DCF table)                      |
+|   3. Red Flags                                                             |
+|   4. Market Context (consensus, short interest, price momentum)           |
+|   5. Specialist Tier analysis                                              |
+|   6. Government Funding Durability                                         |
+|   7. Company Deep Dives (score breakdown + contracts + thesis)            |
+|   8. Private Companies / Coverage Gap                                     |
+|   9. Contract Awards (all 1,000 sorted by value)                          |
+|  10. Sector Peer Comparison                                                |
+|  11. Data Quality & Limitations                                            |
++-----------------------------------------------------------------------------+
 ```
 
 ---
@@ -122,89 +123,95 @@ Output: `reports/report_YYYYMMDD_HHMM.md` — open in VS Code, Obsidian, or any 
   Contracts: usaspending | Fundamentals: yfinance (live)
 
 [1/4] Loading contracts (source=usaspending)...
-[USAspending] Fetching FY contracts (2025-10-01 → 2026-06-07, min $5M)
-[USAspending] Fetched 1000 awards
+[USAspending] Fetching FY contracts (2025-10-01 -> 2026-06-08, min $5M)
+[USAspending] Fetched 1000 awards (days_back=30)
+[USAspending] Normalized 1000 contracts
       Loaded 1000 contracts.
 [2/4] Grouping contracts by company...
-      Public tickers: 29 | Private/unknown: 354
+      Public tickers: 32 | Private/unknown: 341
 [3/4] Scoring companies...
 
 [4/4] Results
 
-#   Ticker    Score  Data    MoS  Verdict                      Sector
-------------------------------------------------------------------------------------------
-1   BAH        71.8  100%   +22%  🟡 Potentially Attractive     AI / Data / Software
-2   LDOS       70.6  100%   +22%  🟡 Potentially Attractive     Cloud / IT Services
-3   GD         70.2  100%   +53%  🟡 Potentially Attractive     Shipbuilding
-4   SAIC       65.7  100%    +4%  🔵 Watchlist                  Cloud / IT Services
-5   LMT        63.6  100%   -63%  🔵 Watchlist [🚩 DCF 63% overvalued]   Aerospace
-6   NOC        63.5  100%   -64%  🔵 Watchlist [🚩 DCF 64% overvalued]   Aerospace
-7   OSK        62.8  100%    -7%  🔵 Watchlist                  Industrial Components
-8   HII        62.8  100%   +34%  🔵 Watchlist                  Shipbuilding
-9   ACM        62.3  100%   -51%  🔵 Watchlist                  Infrastructure / Construction
-10  CACI       60.4  100%   -38%  🔵 Watchlist                  AI / Data / Software
-12  ACN        60.0  100%  +152%  🔵 Watchlist [capped: DoD 8%] Cloud / IT Services
+#   Ticker    Score  Data    MoS   Bear  Verdict                      Sector
+--------------------------------------------------------------------------------------------------
+1   BAH        71.8  100%   +54%    -24%  Potentially Attractive       AI / Data / Software
+2   LDOS       70.6  100%   +29%    -12%  Potentially Attractive       Cloud / IT Services
+3   GD         70.2  100%   +37%  S+12%   Potentially Attractive       Shipbuilding
+4   SAIC       65.7  100%    +0%    -33%  Watchlist                    Cloud / IT Services
+5   LMT        64.8  100%   -58%    -66%  Watchlist                    Aerospace
+6   NOC        64.7  100%   -64%    -73%  Watchlist                    Aerospace
 ...
-28  BA         36.9   94%   -87%  🔴 Ignore                     Aerospace
-29  SHIM       23.5   56%    N/A  🔴 Ignore                     Infrastructure / Construction
+29  CNC        42.1   94%     -+      -+  Ignore                       Military Healthcare
+30  VSAT       40.6   94%   -92%    N/A   Ignore                       Space
+31  BA         38.1   94%   -88%    -97%  Ignore                       Aerospace
+32  SHIM       27.6   69%    N/A     N/A  Ignore                       Infrastructure
 
-Private/unmatched: 353 contracts ($251,662M unresolved)
+Private/unmatched: 341 contracts ($242,863M unresolved)
 
-Report → reports/report_20260607_2240.md
+Report -> reports/report_20260608_HHMM.md
 ```
+
+> `S` = bear MoS shield (🛡️ in terminal). `-+` = MoS suppressed for Ignore-rated companies —
+> high MoS on a low-quality name is a DCF artifact, not a signal (e.g. CNC's commercial FCF yield).
+> `+0%` = rounds to zero, not a display bug.
 
 ### What the report looks like (Section 1 — Action Summary)
 
 ```
 ## 1. Action Summary
 
-| # | Ticker | Company                            | Sector              | Score | MoS   | Bear  | Data | Verdict                  |
-|---|--------|------------------------------------|---------------------|------:|------:|------:|-----:|--------------------------|
-| 1 | BAH    | Booz Allen Hamilton                | AI / Data / Software| 71.8  | +22%  | -39%  | 100% | 🟡 Potentially Attractive|
-| 2 | LDOS   | Leidos Holdings                    | Cloud / IT Services | 70.6  | +22%  | -15%  | 100% | 🟡 Potentially Attractive|
-| 3 | GD     | General Dynamics Corporation       | Shipbuilding        | 70.2  | +53%  | 🛡+13%| 100% | 🟡 Potentially Attractive|
-| 4 | SAIC   | Science Applications International | Cloud / IT Services | 65.7  | +4%   | -30%  | 100% | 🔵 Watchlist             |
+| # | Ticker | Price | Company                       | Sector               | Score | MoS  | Bear    | Data | Verdict                   |
+|---|--------|------:|-------------------------------|----------------------|------:|-----:|--------:|-----:|---------------------------|
+| 1 | BAH    | $79   | Booz Allen Hamilton           | AI / Data / Software | 71.8  | +54% | -24%    | 100% | Potentially Attractive    |
+| 2 | LDOS   | $123  | Leidos Holdings               | Cloud / IT Services  | 70.6  | +29% | -12%    | 100% | Potentially Attractive    |
+| 3 | GD     | $260  | General Dynamics Corporation  | Shipbuilding         | 70.2  | +37% | S+12%   | 100% | Potentially Attractive    |
+| 4 | SAIC   | $160  | Science Applications Intl     | Cloud / IT Services  | 65.7  | +0%  | -33%    | 100% | Watchlist                 |
+...
+|29 | CNC    | $60   | Centene Corporation           | Military Healthcare  | 42.1  | -+   | -+      |  94% | Ignore                    |
 ```
+
+> **Price column** — current market price at time of run. Use as the entry price anchor.
+> **MoS** = (Base IV - Price) / Price. Positive = stock below intrinsic value (base case).
+> **Bear** = margin of safety in the pessimistic scenario. S = shield (positive in bear case).
+> **-+** = MoS suppressed for Ignore-rated companies — see Section 2b for full DCF detail.
 
 ### What the report looks like (Section 2b — DCF Table)
 
 ```
 ## 2b. DCF Intrinsic Value Estimates
 
-| Ticker | Price | Bear IV | Base IV | Bull IV | Bear MoS | MoS (Base) | Reverse DCF | Discount Rate | DCF Verdict              |
-|--------|------:|--------:|--------:|--------:|----------:|-----------:|------------:|--------------:|--------------------------|
-| BAH    | $79   | $48     | $96     | $383    | -39%      | +22%       | 3%/yr       | 9.2%          | Undervalued              |
-| GD     | $342  | $387    | $523    | $772    | 🛡️ +13%  | +53%       | 1%/yr       | 7.8%          | Significantly Undervalued|
-| LDOS   | $123  | $104    | $151    | $255    | -15%      | +22%       | 3%/yr       | 8.5%          | Undervalued              |
-| LMT    | $518  | $155    | $193    | $343    | -70%      | -63%       | 15%/yr      | 8.8%          | Significantly Overvalued |
-| BA     | $195  | $6      | $22     | $39     | —         | -87%       | 30%/yr      | 10.5%         | Significantly Overvalued |
-| SHIM   | $4    | —       | —       | —       | —         | —          | —           | 13.5%         | Negative IV — capital destruction risk |
+| Ticker | Price | Bear IV | Base IV | Bull IV | Bear MoS  | MoS (Base) | Reverse DCF | Rate  | DCF Verdict               |
+|--------|------:|--------:|--------:|--------:|----------:|-----------:|------------:|------:|---------------------------|
+| GD     | $260  | $293    | $356    | $525    | S+12%     | +37%       | 1%/yr       | 7.8%  | Significantly Undervalued |
+| BAH    | $79   | $60     | $122    | $240    | -24%      | +54%       | 3%/yr       | 9.2%  | Significantly Undervalued |
+| LDOS   | $123  | $108    | $158    | $268    | -12%      | +29%       | 3%/yr       | 8.5%  | Undervalued               |
+| LMT    | $518  | $155    | $215    | $380    | -66%      | -58%       | 15%/yr      | 8.8%  | Significantly Overvalued  |
+| BA     | $195  | $6      | $22     | $39     | -97%      | -88%       | 30%/yr      | 10.5% | Significantly Overvalued  |
+| SHIM   | $4    | --      | --      | --      | --        | --         | --          | 13.5% | Negative IV               |
 ```
 
-> **Reading the DCF:** MoS = (Intrinsic Value − Price) / Price. Positive = stock trading below
-> what the model thinks it's worth. Reverse DCF answers "what growth rate does the current price
-> require?" BA's price implies 30%/yr growth for 10 years — the sanity check that flags it as a
-> pass regardless of any other signal.
+> **Reading the DCF:** MoS = (Intrinsic Value - Price) / Price. Positive = stock trading below
+> intrinsic value. Reverse DCF answers "what growth rate does the current price require?"
+> BA's price implies 30%/yr for 10 years — the sanity check that immediately flags it as a pass.
 >
-> **Bear MoS** = margin of safety in the bear-case scenario. 🛡️ = stock is still undervalued
-> even if bear-case assumptions materialize — the single most important signal for position sizing.
-> GD's 🛡️ +13% means the stock is undervalued even under the pessimistic growth scenario (3%/yr).
-> BAH's -39% means the thesis must be right for capital to be safe — DOGE cuts would destroy the
-> margin of safety and the bear-case shows meaningful downside.
+> **Bear MoS** = margin of safety in the bear-case scenario. S (Shield, displayed as 🛡️ in
+> terminal) = stock is still undervalued even in the pessimistic scenario — the single most
+> important signal for position sizing. GD's S+12% means you still have margin of safety
+> if growth disappoints. BAH's -24% means the thesis must hold; DOGE cuts would hurt.
 >
-> **ACN's +152% MoS** reflects its massive commercial FCF (DoD is ~8% of revenue) — not a
-> DoD thesis, just a quality business at a reasonable price. The tool caps ACN's final score
-> at 60 (Watchlist, not Potentially Attractive) because its DoD exposure is too small to
-> outrank pure-DoD plays. The DCF section adds an explicit ⚠ caveat when DoD revenue < 20%
-> and market cap > $15B — this MoS is a commercial signal, not a defense catalyst.
+> **ACN's +70% MoS** reflects its commercial FCF (DoD is ~8% of revenue) — not a DoD thesis.
+> The tool caps ACN at 60 (Watchlist, not Potentially Attractive) because its DoD exposure
+> is too small to outrank pure-DoD plays. An explicit caveat appears in Section 2b when
+> DoD revenue < 20% and market cap > $15B.
 >
-> **SHIM's `—` MoS** indicates a negative intrinsic value (all DCF scenarios project negative FCF).
-> The model replaces the misleading MoS% with "Negative IV — capital destruction risk" because
-> an IV below zero is a solvency question, not a valuation one.
+> **SHIM's `--` MoS** indicates negative intrinsic value (all DCF scenarios project negative FCF).
+> The model shows "Negative IV -- capital destruction risk" because negative IV is a solvency
+> question, not a valuation one.
 >
-> **For Ignore-rated companies** (BA, CNC, HUM, UNH), the Action Summary table shows "—†"
-> because positive MoS on a low-quality or low-concentration name is a DCF artifact, not a signal.
-> The `†` distinguishes suppressed-but-present MoS from `—` (no valid MoS due to negative IV).
+> **For Ignore-rated companies** (CNC, HUM, UNH), the Action Summary shows `-+`
+> (suppressed) because positive MoS on a low-quality name is a DCF artifact, not a signal.
+> Full detail remains in Section 2b.
 
 ---
 
