@@ -145,7 +145,7 @@ Output: `reports/report_YYYYMMDD_HHMM.md` — open in VS Code, Obsidian, or any 
 10  HII        61.5  100%   +34%  🔵 Watchlist                  Shipbuilding
 ...
 28  BA         36.9   94%   -87%  🔴 Ignore                     Aerospace
-29  SHIM       23.5   56%  -584%  🔴 Ignore                     Infrastructure / Construction
+29  SHIM       23.5   56%    N/A  🔴 Ignore                     Infrastructure / Construction
 
 Private/unmatched: 353 contracts ($251,662M unresolved)
 
@@ -178,17 +178,26 @@ Report → reports/report_20260607_2240.md
 | LDOS   | $167  | $138    | $202    | $255    | +21%       | 4%/yr       | 8.5%          | Undervalued              |
 | LMT    | $463  | $105    | $171    | $287    | -63%       | 16%/yr      | 8.0%          | Significantly Overvalued |
 | BA     | $195  | $6      | $22     | $39     | -87%       | 30%/yr      | 10.5%         | Significantly Overvalued |
+| SHIM   | $4    | $-18    | $-19    | $-12    | —          | —           | 13.5%         | Negative IV — capital destruction risk |
 ```
 
 > **Reading the DCF:** MoS = (Intrinsic Value − Price) / Price. Positive = stock trading below
 > what the model thinks it's worth. Reverse DCF answers "what growth rate does the current price
 > require?" BA's price implies 30%/yr growth for 10 years — the sanity check that flags it as a
-> pass regardless of any other signal. ACN's large MoS reflects its massive commercial FCF vs. its
-> DoD contract activity — not a DoD thesis, just a quality business at a reasonable price.
+> pass regardless of any other signal.
 >
-> **Important:** For Ignore-rated companies (BA, CNC, HUM, UNH), the Action Summary table
-> suppresses the MoS column and shows "—†" because positive MoS on a low-quality or
-> low-concentration name is a DCF artifact, not a buy signal.
+> **ACN's +152% MoS** reflects its massive commercial FCF (DoD is ~8% of revenue) — not a
+> DoD thesis, just a quality business at a reasonable price. The report includes an explicit
+> ⚠ caveat when DoD revenue < 20% and market cap > $15B, so this can't be misread as a
+> defense-specific signal.
+>
+> **SHIM's `—` MoS** indicates a negative intrinsic value (all DCF scenarios project negative FCF).
+> The model replaces the misleading MoS% with "Negative IV — capital destruction risk" because
+> an IV below zero is a solvency question, not a valuation one.
+>
+> **For Ignore-rated companies** (BA, CNC, HUM, UNH), the Action Summary table shows "—†"
+> because positive MoS on a low-quality or low-concentration name is a DCF artifact, not a signal.
+> The `†` distinguishes suppressed-but-present MoS from `—` (no valid MoS due to negative IV).
 
 ---
 
@@ -430,8 +439,11 @@ Sector drives the DCF growth assumptions and terminal rate — misclassification
 | **IDIQ ceilings** | USAspending records obligated task orders, not total contract ceiling. An IDIQ ceiling of $500M with $50M funded (10%) is a much weaker catalyst than it appears. The tool applies a haircut and flags this. |
 | **Sector classification** | Keyword-based on short contract descriptions. Ticker overrides applied for 20 known systematic misclassifications. Add new ones in `TICKER_SECTOR_OVERRIDES` in `config.py`. |
 | **Earnings stability cap** | yfinance returns max 4 years of income statement history. When this cap is hit, the tool raises a flag in the Buffett component. Add `earnings_stability_years` to the overlay for established companies. |
-| **Large commercial companies** | ACN, IBM, HON have strong scores driven by business quality, but DoD contracts are marginal to their investment thesis. Read the "Why It Might Not Matter" section in the report carefully for these names. |
-| **MoS for non-defense companies** | Companies like CNC, HUM, UNH have high FCF from their commercial business (Medicaid, Medicare Advantage) that inflates the DCF Margin of Safety. MoS is suppressed in the Action Summary for Ignore-rated companies specifically to prevent this from being mistaken for a buy signal. |
+| **Large commercial companies** | ACN, IBM, HON have strong scores driven by business quality, but DoD contracts are marginal to their investment thesis. When DoD revenue < 20% and market cap > $15B, the tool adds an explicit ⚠ caveat to the DCF section and caps the valuation score at 45. Read the "Why It Might Not Matter" section for these names. |
+| **MoS for non-defense companies** | Companies like CNC, HUM, UNH have high FCF from their commercial business (Medicaid, Medicare Advantage) that inflates the DCF Margin of Safety. MoS is suppressed (`—†`) in the Action Summary for Ignore-rated companies to prevent this from being mistaken for a buy signal. |
+| **Negative intrinsic value** | Companies with persistent negative FCF (SHIM, AVAV in down cycles) produce negative DCF intrinsic values. The tool replaces the misleading MoS% with "Negative IV — capital destruction risk" and shows `—` in all tables — a solvency alert, not a valuation alert. |
+| **FCF margin fallback** | yfinance's `freeCashflow` info field is sometimes missing even when the cashflow statement has the data (e.g., LHX). The tool now reads the cashflow statement directly as fallback, fixing silently missing data that was depressing scores for quality primes. |
+| **Dividend yield normalization** | yfinance's `dividendYield` is inconsistently formatted across tickers; the tool now prefers `trailingAnnualDividendYield` (always fractional) and falls back to `dividendYield` only when needed. |
 | **Graham calibration** | P/E brackets calibrated for 18–30x defense universe. Dividend yield replaces current ratio in Graham Value to avoid double-counting with the Balance Sheet component. |
 | **DCF sensitivity** | Terminal value is 60–80% of the total intrinsic value. Use the reverse DCF (implied growth rate) as the primary sanity check — not the absolute scenario IVs. |
 | **No backtesting** | Scoring weights are constructed from first principles, not empirically validated on historical returns. This is the single most important limitation for real capital deployment. |
