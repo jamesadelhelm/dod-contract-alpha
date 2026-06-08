@@ -100,7 +100,8 @@ class CompanyFundamentals:
     earnings_stability_years: Optional[int] = None
     moat_rating: Optional[str] = None
     gross_margin: Optional[float] = None          # % gross profit / revenue
-    revenue_growth_1yr: Optional[float] = None    # % YoY revenue growth
+    revenue_growth_1yr: Optional[float] = None    # % YoY revenue growth (TTM)
+    revenue_growth_forward: Optional[float] = None # % fwd revenue growth (analyst consensus avg of 0y/+1y)
     data_source: str = "mock"
     data_notes: str = ""
     current_price: Optional[float] = None

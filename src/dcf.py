@@ -386,11 +386,19 @@ def _growth_assumptions(
     defaults = (2, 1, 4, 3, 8, 5)
     bear_g1, bear_g2, base_g1, base_g2, bull_g1, bull_g2 = sector_growth.get(sector, defaults)
 
-    # Anchor to actual company revenue growth when available.
-    # Pure sector defaults ignore whether a company is actually growing fast or slow —
-    # a company growing 30% YoY should not get the same base case as one growing 4%.
-    # Blend: 60% actual + 40% sector default for yr1-5 (mean-revert more in yr6-10).
-    actual = f.revenue_growth_1yr
+    # Anchor to revenue growth when available.
+    # Blend forward consensus (60%) with TTM (40%) when both are available:
+    #   - Forward consensus corrects for lumpy TTM (e.g. GD 10.3% TTM vs 4.5% forward)
+    #   - TTM component preserves current-period reality (e.g. BAH -6.5% DOGE impact)
+    # Fall back to TTM alone when forward estimates are unavailable.
+    fwd = f.revenue_growth_forward
+    ttm = f.revenue_growth_1yr
+    if fwd is not None and ttm is not None and -10 < fwd < 60 and -10 < ttm < 60:
+        actual = round(fwd * 0.60 + ttm * 0.40, 1)
+    elif fwd is not None and -10 < fwd < 60:
+        actual = fwd
+    else:
+        actual = ttm
     if actual is not None and -10 < actual < 60:
         # Base yr1–5: 60% actual, 40% sector
         base_g1 = round(actual * 0.60 + base_g1 * 0.40, 1)

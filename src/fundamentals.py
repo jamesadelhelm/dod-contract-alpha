@@ -147,6 +147,22 @@ def get_fundamentals_from_yfinance(ticker: str) -> Optional[CompanyFundamentals]
             revenue_growth_1yr = _derive_revenue_growth(stock)
         revenue_cagr_3yr = _derive_3yr_revenue_cagr(stock)
 
+        # Forward revenue growth — analyst consensus (avg of current-year and next-year estimates)
+        revenue_growth_forward = None
+        try:
+            rev_est = stock.revenue_estimate
+            if rev_est is not None and not rev_est.empty:
+                growth_vals = []
+                for period in ["0y", "+1y"]:
+                    if period in rev_est.index:
+                        g = rev_est.loc[period, "growth"]
+                        if g is not None and not (isinstance(g, float) and g != g):  # not NaN
+                            growth_vals.append(float(g) * 100)
+                if growth_vals:
+                    revenue_growth_forward = round(sum(growth_vals) / len(growth_vals), 1)
+        except Exception:
+            pass
+
         # Staleness check — warn if most recent filing > 180 days old
         stale_note = ""
         most_recent_ts = info.get("mostRecentQuarter") or info.get("lastFiscalYearEnd")
@@ -242,6 +258,7 @@ def get_fundamentals_from_yfinance(ticker: str) -> Optional[CompanyFundamentals]
             operating_margin=op_margin,
             gross_margin=gross_margin,
             revenue_growth_1yr=revenue_growth_1yr,
+            revenue_growth_forward=revenue_growth_forward,
             pe_ratio=pe,
             forward_pe=fwd_pe,
             ev_ebitda=ev_ebitda,
