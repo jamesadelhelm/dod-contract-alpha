@@ -65,14 +65,22 @@ def get_fundamentals_from_yfinance(ticker: str) -> Optional[CompanyFundamentals]
 
         # ── Margins ───────────────────────────────────────────────────────────
         op_margin = _pct(info.get("operatingMargins"))
-        fcf_margin = _derive_fcf_margin(info)
+        fcf_margin = _derive_fcf_margin(info, stock)
 
         # ── ROIC: derive from yfinance cash flow / balance sheet ──────────────
         roic = _derive_roic(stock, info)
 
         # ── FCF yield ─────────────────────────────────────────────────────────
+        # Use same cashflow-derived FCF as _derive_fcf_margin for consistency
         fcf_yield = None
         fcf = info.get("freeCashflow")
+        if fcf is None:
+            try:
+                cf = stock.cashflow
+                if cf is not None and not cf.empty:
+                    fcf = _row(cf, ["Free Cash Flow", "FreeCashFlow", "Free Cash Flow"], cf.columns[0])
+            except Exception:
+                pass
         mc_raw = info.get("marketCap")
         if fcf and mc_raw and mc_raw > 0:
             fcf_yield = round(fcf / mc_raw * 100, 2)
@@ -487,9 +495,21 @@ def _get_next_earnings(info: dict, stock) -> Optional[str]:
 
 # ── Margin helpers ────────────────────────────────────────────────────────────
 
-def _derive_fcf_margin(info: dict) -> Optional[float]:
+def _derive_fcf_margin(info: dict, stock=None) -> Optional[float]:
     fcf = info.get("freeCashflow")
     rev = info.get("totalRevenue")
+    # Fallback: read directly from the cashflow statement when info omits it
+    # (yfinance's freeCashflow field is sometimes None even when data exists, e.g. LHX)
+    if fcf is None and stock is not None:
+        try:
+            cf = stock.cashflow
+            if cf is not None and not cf.empty:
+                col = cf.columns[0]
+                fcf_raw = _row(cf, ["Free Cash Flow", "FreeCashFlow", "Free Cash Flow"], col)
+                if fcf_raw is not None:
+                    fcf = fcf_raw
+        except Exception:
+            pass
     if fcf and rev and rev > 0:
         return round(fcf / rev * 100, 2)
     return None
