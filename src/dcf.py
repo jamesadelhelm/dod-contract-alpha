@@ -194,10 +194,12 @@ def run_dcf(
                 s.intrinsic_value_per_share = round(
                     s.intrinsic_value_per_share - adj_per_share, 2
                 )
-                if current_price and current_price > 0:
+                if current_price and current_price > 0 and s.intrinsic_value_per_share >= 0:
                     s.margin_of_safety_pct = round(
                         (s.intrinsic_value_per_share - current_price) / current_price * 100, 1
                     )
+                elif s.intrinsic_value_per_share < 0:
+                    s.margin_of_safety_pct = None  # negative IV — MoS undefined
         label = f"${abs(net_debt):.0f}M net {'debt' if net_debt > 0 else 'cash'}"
         caveats.append(
             f"{label} deducted from EV to compute equity intrinsic value per share."
@@ -480,7 +482,12 @@ def _dcf_calc(
     mos = None
     if shares_millions and shares_millions > 0:
         iv_per_share = round(total_pv / shares_millions, 2)
-        if current_price and current_price > 0:
+        if current_price and current_price > 0 and iv_per_share >= 0:
+            # MoS is only computed when IV ≥ 0. A negative IV means the business is
+            # projected to destroy capital — (negative_IV - price) / price is
+            # arithmetically valid but investment-meaningless (implies stock must fall
+            # >100% to reach "fair value"). Suppress it; the _verdict function handles
+            # negative IV separately with a solvency-risk verdict.
             mos = round((iv_per_share - current_price) / current_price * 100, 1)
 
     return round(total_pv, 1), iv_per_share, mos
@@ -550,12 +557,28 @@ def _verdict(
 ) -> Tuple[str, str, float]:
     """Returns (verdict_str, valuation_note, valuation_score_0_to_100)."""
 
+    # Negative intrinsic value — company burns more cash than it generates; DCF IV is below zero.
+    # Check this BEFORE the mos_base is None check, because we explicitly suppress MoS
+    # when IV < 0 (making mos_base None); the "price unknown" path must not win over this.
+    iv_base = base_s.intrinsic_value_per_share
+    if iv_base is not None and iv_base < 0:
+        note = (
+            f"All DCF scenarios produce negative intrinsic value (base: ${iv_base:.2f}/share) "
+            "because projected free cash flows are negative — the business is currently destroying "
+            "capital rather than creating it. DCF margin-of-safety is not meaningful here; this is "
+            "a fundamental solvency question, not a valuation one."
+        )
+        caveats.append(
+            "Negative intrinsic value: company projected to destroy capital under all scenarios. "
+            "Do not use MoS % for this company — it is arithmetically misleading when IV < 0."
+        )
+        return "Negative IV — capital destruction risk", note, 5.0
+
     if mos_base is None:
         caveats.append("Cannot compute margin of safety — current price or shares unavailable.")
         note = "Intrinsic value range computed but margin of safety requires current share price."
         iv_low  = bear_s.intrinsic_value_per_share
         iv_high = bull_s.intrinsic_value_per_share
-        iv_base = base_s.intrinsic_value_per_share
         if iv_base:
             note += f" Base IV estimate: ${iv_base:.2f}/share (range: ${iv_low:.2f}–${iv_high:.2f})." if iv_low and iv_high else ""
         return "Price unknown — verify manually", note, 50.0
@@ -621,6 +644,23 @@ def _verdict(
             f"{abs(bear_mos):.0f}% downside — meaningful downside risk if thesis disappoints."
         )
         caveats.append("Bear case shows significant downside. Position sizing discipline is important.")
+
+    # Large commercial company warning — DCF uses total-company FCF, not DoD portion.
+    # For companies where DoD revenue is a small fraction of total, a favorable MoS
+    # reflects the commercial business, not the DoD investment catalyst.
+    dod_pct = getattr(f, "dod_revenue_pct", None)
+    mkt_cap = getattr(f, "market_cap_millions", None)
+    if dod_pct is not None and dod_pct < 20 and mkt_cap is not None and mkt_cap > 15_000:
+        caveat_txt = (
+            f"DCF uses total-company FCF — DoD revenue is only ~{dod_pct:.0f}% of the business. "
+            f"The {mos_base:+.0f}% margin of safety reflects the entire enterprise (including "
+            "commercial/government-other revenue), NOT the DoD contract thesis specifically. "
+            "Treat as a total-company valuation check, not a DoD catalyst entry signal."
+        )
+        parts.append(f"⚠ {caveat_txt}")
+        caveats.append(caveat_txt)
+        # Suppress MoS benefit from inflating the valuation score
+        score = min(score, 45.0)
 
     note = " ".join(parts)
     return verdict, note, round(score, 1)
