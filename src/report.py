@@ -78,8 +78,8 @@ def generate_report(
         "",
         "Highest-priority companies from this contract batch, ranked by composite score.",
         "",
-        "| # | Ticker | Company | Sector | Score | MoS | Data | Verdict |",
-        "|---|--------|---------|--------|------:|----:|-----:|---------|",
+        "| # | Ticker | Company | Sector | Score | MoS | Bear | Data | Verdict |",
+        "|---|--------|---------|--------|------:|----:|-----:|-----:|---------|",
     ]
     for i, s in enumerate(ranked_scores, 1):
         emoji = VERDICT_EMOJI.get(s.verdict, "⚪")
@@ -87,6 +87,7 @@ def generate_report(
         if s.data_completeness_pct < 50:
             data_str += "⚠"
         mos_str = "—"
+        bear_str = "—"
         if s.dcf and s.dcf.margin_of_safety_base is not None:
             mos_val = s.dcf.margin_of_safety_base
             # Suppress positive MoS for Ignore-rated companies: a high MoS driven by
@@ -96,9 +97,13 @@ def generate_report(
                 mos_str = "—†"
             else:
                 mos_str = f"{mos_val:+.0f}%"
+        if s.dcf and s.dcf.bear_mos is not None:
+            bm = s.dcf.bear_mos
+            # 🛡️ prefix when bear case still shows margin of safety (downside protected)
+            bear_str = f"🛡️{bm:+.0f}%" if bm > 0 else f"{bm:+.0f}%"
         lines.append(
             f"| {i} | **{s.ticker}** | {s.company_name} | {s.sector.value} "
-            f"| **{s.final_score:.1f}** | {mos_str} | {data_str} | {emoji} {s.verdict.value} |"
+            f"| **{s.final_score:.1f}** | {mos_str} | {bear_str} | {data_str} | {emoji} {s.verdict.value} |"
         )
 
     lines += [
@@ -106,6 +111,8 @@ def generate_report(
         "† MoS suppressed for Ignore-rated companies — high MoS on a low-quality name"
         " is usually a DCF artifact (e.g. high FCF yield from non-DoD business lines)."
         " Full DCF detail in Section 2b.",
+        "**Bear MoS** = bear-case DCF margin of safety. 🛡️ = positive even in the downside scenario"
+        " (downside protection confirmed). Negative = thesis must be right for capital to be safe.",
         "",
         "**Signal counts:**",
         f"- 🟢 Strong Candidate / Research Further: **{len(strong)}**",
@@ -192,11 +199,12 @@ def generate_report(
         "### 2b. DCF Intrinsic Value Estimates",
         "",
         "> 3-scenario owner-earnings DCF. **MoS** = (IV − Price) / Price. Positive = stock trades below intrinsic value.",
+        "> **Bear MoS** = downside scenario margin of safety. 🛡️ = still positive in the bear case — highest conviction entry.",
         "> Reverse DCF shows what growth rate the current price is already pricing in.",
         "> **These are estimates, not predictions. Bear/Base/Bull range is the thinking framework; use Reverse DCF as the sanity check.**",
         "",
-        "| Ticker | Price | Bear IV | Base IV | Bull IV | MoS (Base) | Reverse DCF | Discount Rate | DCF Verdict |",
-        "|--------|------:|--------:|--------:|--------:|-----------:|------------:|--------------:|-------------|",
+        "| Ticker | Price | Bear IV | Base IV | Bull IV | Bear MoS | MoS (Base) | Reverse DCF | Discount Rate | DCF Verdict |",
+        "|--------|------:|--------:|--------:|--------:|---------:|-----------:|------------:|--------------:|-------------|",
     ]
     for s in ranked_scores:
         f_ctx = (fundamentals_map or {}).get(s.ticker)
@@ -207,13 +215,14 @@ def generate_report(
             base  = f"${d.base_iv:.0f}"  if d.base_iv  is not None else "—"
             bull  = f"${d.bull_iv:.0f}"  if d.bull_iv  is not None else "—"
             mos   = f"{d.margin_of_safety_base:+.0f}%" if d.margin_of_safety_base is not None else "—"
+            bmos  = (f"🛡️ {d.bear_mos:+.0f}%" if d.bear_mos > 0 else f"{d.bear_mos:+.0f}%") if d.bear_mos is not None else "—"
             impl  = f"{d.implied_growth_rate:.0f}%/yr" if d.implied_growth_rate is not None else "—"
             rate  = f"{d.discount_rate_base:.1f}%"
             verd  = d.verdict[:30] if d.verdict else "—"
         else:
-            bear = base = bull = mos = impl = rate = verd = "—"
+            bear = base = bull = mos = bmos = impl = rate = verd = "—"
         lines.append(
-            f"| {s.ticker} | {price_str} | {bear} | {base} | {bull} | {mos} | {impl} | {rate} | {verd} |"
+            f"| {s.ticker} | {price_str} | {bear} | {base} | {bull} | {bmos} | {mos} | {impl} | {rate} | {verd} |"
         )
 
     lines += ["", "---", ""]

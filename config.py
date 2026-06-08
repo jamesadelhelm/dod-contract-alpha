@@ -109,6 +109,7 @@ TICKER_SECTOR_OVERRIDES = {
     "ACN":  "Cloud / IT Services",         # IT consulting
     "PLTR": "AI / Data / Software",        # data analytics platform
     "AMTM": "Consulting / Services",       # government operations/maintenance services
+    "PSN":  "AI / Data / Software",        # Parsons: federal IT/mission systems, intelligence, cyber (not infrastructure despite name)
     # Engineering & infrastructure
     "ACM":  "Infrastructure / Construction",  # AECOM: engineering/construction firm
     "KBR":  "Infrastructure / Construction",  # KBR: engineering, construction, operations

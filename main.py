@@ -168,8 +168,8 @@ def main():
 
     # ── Step 4: Print summary ─────────────────────────────────────────────────
     print("\n[4/4] Results\n")
-    print(f"{'#':<3} {'Ticker':<8} {'Score':>6} {'Data':>5} {'MoS':>6}  {'Verdict':<28} {'Sector'}")
-    print("-" * 90)
+    print(f"{'#':<3} {'Ticker':<8} {'Score':>6} {'Data':>5} {'MoS':>6} {'Bear':>6}  {'Verdict':<28} {'Sector'}")
+    print("-" * 98)
     verdict_emoji_map = {
         Verdict.STRONG_CANDIDATE: "🟢",
         Verdict.RESEARCH_FURTHER: "🟡",
@@ -187,7 +187,11 @@ def main():
         mos_str = "N/A"
         if s.dcf and s.dcf.margin_of_safety_base is not None:
             mos_str = f"{s.dcf.margin_of_safety_base:+.0f}%"
-        print(f"{i:<3} {s.ticker:<8} {s.final_score:>6.1f} {data_str:>5} {mos_str:>6}  {emoji} {s.verdict.value:<26} {s.sector.value}")
+        bear_str = "N/A"
+        if s.dcf and s.dcf.bear_mos is not None:
+            bm = s.dcf.bear_mos
+            bear_str = f"🛡{bm:+.0f}%" if bm > 0 else f"{bm:+.0f}%"
+        print(f"{i:<3} {s.ticker:<8} {s.final_score:>6.1f} {data_str:>5} {mos_str:>6} {bear_str:>7}  {emoji} {s.verdict.value:<26} {s.sector.value}")
 
     unmatched_value = sum(c.contract_value for c in private_contracts if c.contract_value)
     print(f"\nPrivate/unmatched: {len(private_contracts)} contracts (${unmatched_value:.0f}M unresolved)")

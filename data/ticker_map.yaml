@@ -544,6 +544,29 @@ amentum:
   confidence: 1.0
   notes: Spun out of AECOM in 2023, listed ~2024
 
+parsons corporation:
+  ticker: PSN
+  parent: Parsons Corporation
+  confidence: 1.0
+parsons:
+  ticker: PSN
+  parent: Parsons Corporation
+  confidence: 0.85
+  notes: NYSE:PSN; federal/defense IT and mission systems
+parsons government services inc:
+  ticker: PSN
+  parent: Parsons Corporation
+  confidence: 1.0
+  notes: Government services subsidiary (Missile Defense Agency, Army)
+parsons government services:
+  ticker: PSN
+  parent: Parsons Corporation
+  confidence: 1.0
+parsons federal:
+  ticker: PSN
+  parent: Parsons Corporation
+  confidence: 0.95
+
 dyncorp international:
   ticker: null
   parent: DynCorp (Private)
