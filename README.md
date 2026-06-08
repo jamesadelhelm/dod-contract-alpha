@@ -158,12 +158,12 @@ Report → reports/report_20260607_2240.md
 ```
 ## 1. Action Summary
 
-| # | Ticker | Company                            | Sector              | Score | MoS   | Data | Verdict                  |
-|---|--------|------------------------------------|---------------------|------:|------:|-----:|--------------------------|
-| 1 | BAH    | Booz Allen Hamilton                | AI / Data / Software| 71.8  | +22%  | 100% | 🟡 Potentially Attractive|
-| 2 | LDOS   | Leidos Holdings                    | Cloud / IT Services | 70.6  | +22%  | 100% | 🟡 Potentially Attractive|
-| 3 | GD     | General Dynamics Corporation       | Shipbuilding        | 70.2  | +53%  | 100% | 🟡 Potentially Attractive|
-| 4 | SAIC   | Science Applications International | Cloud / IT Services | 65.7  | +4%   | 100% | 🔵 Watchlist             |
+| # | Ticker | Company                            | Sector              | Score | MoS   | Bear  | Data | Verdict                  |
+|---|--------|------------------------------------|---------------------|------:|------:|------:|-----:|--------------------------|
+| 1 | BAH    | Booz Allen Hamilton                | AI / Data / Software| 71.8  | +22%  | -39%  | 100% | 🟡 Potentially Attractive|
+| 2 | LDOS   | Leidos Holdings                    | Cloud / IT Services | 70.6  | +22%  | -15%  | 100% | 🟡 Potentially Attractive|
+| 3 | GD     | General Dynamics Corporation       | Shipbuilding        | 70.2  | +53%  | 🛡+13%| 100% | 🟡 Potentially Attractive|
+| 4 | SAIC   | Science Applications International | Cloud / IT Services | 65.7  | +4%   | -30%  | 100% | 🔵 Watchlist             |
 ```
 
 ### What the report looks like (Section 2b — DCF Table)
@@ -171,21 +171,26 @@ Report → reports/report_20260607_2240.md
 ```
 ## 2b. DCF Intrinsic Value Estimates
 
-| Ticker | Price | Bear IV | Base IV | Bull IV | MoS (Base) | Reverse DCF | Discount Rate | DCF Verdict              |
-|--------|------:|--------:|--------:|--------:|-----------:|------------:|--------------:|--------------------------|
-| BAH    | $140  | $97     | $169    | $512    | +21%       | 3%/yr       | 9.2%          | Undervalued              |
-| GD     | $288  | $380    | $435    | $640    | +51%       | 2%/yr       | 7.8%          | Significantly Undervalued|
-| ACN    | $333  | $621    | $838    | $1,201  | +152%      | -5%/yr      | 9.0%          | Significantly Undervalued|
-| LDOS   | $167  | $138    | $202    | $255    | +21%       | 4%/yr       | 8.5%          | Undervalued              |
-| LMT    | $463  | $105    | $171    | $287    | -63%       | 16%/yr      | 8.0%          | Significantly Overvalued |
-| BA     | $195  | $6      | $22     | $39     | -87%       | 30%/yr      | 10.5%         | Significantly Overvalued |
-| SHIM   | $4    | $-18    | $-19    | $-12    | —          | —           | 13.5%         | Negative IV — capital destruction risk |
+| Ticker | Price | Bear IV | Base IV | Bull IV | Bear MoS | MoS (Base) | Reverse DCF | Discount Rate | DCF Verdict              |
+|--------|------:|--------:|--------:|--------:|----------:|-----------:|------------:|--------------:|--------------------------|
+| BAH    | $79   | $48     | $96     | $383    | -39%      | +22%       | 3%/yr       | 9.2%          | Undervalued              |
+| GD     | $342  | $387    | $523    | $772    | 🛡️ +13%  | +53%       | 1%/yr       | 7.8%          | Significantly Undervalued|
+| LDOS   | $123  | $104    | $151    | $255    | -15%      | +22%       | 3%/yr       | 8.5%          | Undervalued              |
+| LMT    | $518  | $155    | $193    | $343    | -70%      | -63%       | 15%/yr      | 8.8%          | Significantly Overvalued |
+| BA     | $195  | $6      | $22     | $39     | —         | -87%       | 30%/yr      | 10.5%         | Significantly Overvalued |
+| SHIM   | $4    | —       | —       | —       | —         | —          | —           | 13.5%         | Negative IV — capital destruction risk |
 ```
 
 > **Reading the DCF:** MoS = (Intrinsic Value − Price) / Price. Positive = stock trading below
 > what the model thinks it's worth. Reverse DCF answers "what growth rate does the current price
 > require?" BA's price implies 30%/yr growth for 10 years — the sanity check that flags it as a
 > pass regardless of any other signal.
+>
+> **Bear MoS** = margin of safety in the bear-case scenario. 🛡️ = stock is still undervalued
+> even if bear-case assumptions materialize — the single most important signal for position sizing.
+> GD's 🛡️ +13% means the stock is undervalued even under the pessimistic growth scenario (3%/yr).
+> BAH's -39% means the thesis must be right for capital to be safe — DOGE cuts would destroy the
+> margin of safety and the bear-case shows meaningful downside.
 >
 > **ACN's +152% MoS** reflects its massive commercial FCF (DoD is ~8% of revenue) — not a
 > DoD thesis, just a quality business at a reasonable price. The tool caps ACN's final score
@@ -227,6 +232,21 @@ python3 main.py --source live             # scrape defense.gov instead of USAspe
 # EDGAR enrichment (slow — fetches 10-K for each ticker)
 python3 main.py --edgar
 ```
+
+---
+
+## Signal Tiers
+
+The Action Summary produces a Signal Tiers box that organizes actionable names:
+
+| Tier | Criteria | Current Example |
+|------|---------|-----------------|
+| 🟢 **Highest Conviction** | PA+, bear MoS > 0 | GD (🛡+13% bear) |
+| 🟡 **Research Priority** | PA+, positive base MoS, negative bear MoS | BAH (-39% bear), LDOS (-15% bear) |
+| 🔵 **Monitor** | Watchlist, positive base MoS > 5% | HII (+34% base MoS) |
+| ⏳ **Wait for Entry** | Overvaluation flag active (base MoS < −35%) | LMT, NOC, GE, RTX |
+
+The tier labels directly answer "what do I do today?" without requiring cross-referencing multiple report sections. They're derived from composite scores, base MoS, and bear-case MoS — not a separate scoring system.
 
 ---
 
