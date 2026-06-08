@@ -305,26 +305,37 @@ def generate_report(
         size_pct, rationale = _compute_position_size(s)
         if size_pct > 0:
             b_mos = s.dcf.bear_mos if s.dcf else None
+            bear_iv = s.dcf.bear_iv if s.dcf else None
+            f_ds = (fundamentals_map or {}).get(s.ticker)
+            cur_price = f_ds.current_price if f_ds and f_ds.current_price else None
             tier_label = (
                 "🟢 Highest Conviction" if (b_mos is not None and b_mos > 0)
                 else "🟡 Research Priority"
             )
             bmos_str = (f"🛡️ {b_mos:+.0f}%" if b_mos > 0 else f"{b_mos:+.0f}%") if b_mos is not None else "—"
-            deployable_rows.append((s.ticker, tier_label, bmos_str, rationale, size_pct))
+            # Entry target: bear IV is the price at which downside scenario breaks even.
+            # For Highest Conviction (positive bear MoS), bear IV > current price — already safe.
+            # For Research Priority, bear IV < current price — shows where bear case breaks even.
+            if bear_iv is not None and bear_iv > 0:
+                entry_str = f"${bear_iv:.0f} (bear IV)"
+            else:
+                entry_str = "—"
+            deployable_rows.append((s.ticker, tier_label, bmos_str, entry_str, rationale, size_pct, cur_price))
 
     if deployable_rows:
-        total_pct = sum(r[4] for r in deployable_rows)
+        total_pct = sum(r[5] for r in deployable_rows)
         cash_pct = 100.0 - total_pct
 
         lines += [
             "**Position sizing guidance (% of equity portfolio):**",
             "",
-            "| Ticker | Tier | Bear MoS | Sizing Logic | Weight |",
-            "|--------|------|:--------:|:-------------|-------:|",
+            "| Ticker | Now | Entry Target | Tier | Bear MoS | Sizing Logic | Weight |",
+            "|--------|----:|-------------:|------|:--------:|:-------------|-------:|",
         ]
-        for ticker, tier_label, bmos_str, rationale, size_pct in deployable_rows:
+        for ticker, tier_label, bmos_str, entry_str, rationale, size_pct, cur_price in deployable_rows:
+            price_str = f"${cur_price:.0f}" if cur_price else "—"
             lines.append(
-                f"| {ticker} | {tier_label} | {bmos_str} | {rationale} | {size_pct:.1f}% |"
+                f"| {ticker} | {price_str} | {entry_str} | {tier_label} | {bmos_str} | {rationale} | {size_pct:.1f}% |"
             )
         lines += [
             "",
@@ -333,22 +344,22 @@ def generate_report(
             "",
         ]
 
-        # Cluster cap reporting
-        doge_pct  = sum(r[4] for r in deployable_rows if r[0] in _DOGE_CLUSTER)
-        aero_pct  = sum(r[4] for r in deployable_rows if r[0] in _AEROSPACE_CLUSTER)
+        # Cluster cap reporting (size_pct is index 5 now)
+        doge_pct  = sum(r[5] for r in deployable_rows if r[0] in _DOGE_CLUSTER)
+        aero_pct  = sum(r[5] for r in deployable_rows if r[0] in _AEROSPACE_CLUSTER)
         doge_tickers = [r[0] for r in deployable_rows if r[0] in _DOGE_CLUSTER]
         aero_tickers = [r[0] for r in deployable_rows if r[0] in _AEROSPACE_CLUSTER]
         cluster_lines = []
         if doge_tickers:
             flag = "⚠️ EXCEEDS CAP — scale back proportionally" if doge_pct > _DOGE_CAP_PCT else "✅"
-            comp_str = " + ".join(f"{t} {next(r[4] for r in deployable_rows if r[0]==t):.1f}%" for t in doge_tickers)
+            comp_str = " + ".join(f"{t} {next(r[5] for r in deployable_rows if r[0]==t):.1f}%" for t in doge_tickers)
             cluster_lines.append(
                 f"- Federal IT / DOGE risk (cap {_DOGE_CAP_PCT:.0f}%): "
                 f"{comp_str} = {doge_pct:.1f}% {flag}"
             )
         if aero_tickers:
             flag = "⚠️ EXCEEDS CAP — scale back proportionally" if aero_pct > _AEROSPACE_CAP_PCT else "✅"
-            comp_str = " + ".join(f"{t} {next(r[4] for r in deployable_rows if r[0]==t):.1f}%" for t in aero_tickers)
+            comp_str = " + ".join(f"{t} {next(r[5] for r in deployable_rows if r[0]==t):.1f}%" for t in aero_tickers)
             cluster_lines.append(
                 f"- Aerospace / Defense Prime (cap {_AEROSPACE_CAP_PCT:.0f}%): "
                 f"{comp_str} = {aero_pct:.1f}% {flag}"
@@ -425,6 +436,45 @@ def generate_report(
         lines.append(
             f"| {s.ticker} | {price_str} | {bear} | {base} | {bull} | {bmos} | {mos} | {impl} | {rate} | {verd} |"
         )
+
+    # ── WACC sensitivity note for PA+ names ─────────────────────────────────
+    # Approximation: dIV/IV ≈ -TV_pct / (WACC - terminal_g) per +1% WACC
+    # Terminal value = ~70% of total IV for a 10-yr DCF with 3% terminal growth.
+    pa_plus_dcf = [
+        s for s in ranked_scores
+        if s.verdict in (Verdict.STRONG_CANDIDATE, Verdict.POTENTIALLY_ATTRACTIVE, Verdict.RESEARCH_FURTHER)
+        and s.dcf and s.dcf.base_iv is not None and s.dcf.base_iv > 0
+    ]
+    if pa_plus_dcf:
+        sensitivity_parts = []
+        for s in pa_plus_dcf:
+            d = s.dcf
+            f_c = (fundamentals_map or {}).get(s.ticker)
+            if d.discount_rate_base and d.bear_growth is not None:
+                # Terminal growth is stored per-scenario in bear; use base scenario's terminal growth
+                # Estimate: terminal_g ≈ 2.5–3.5% depending on sector, use 3.0 as midpoint
+                tg_est = 0.03
+                wacc = d.discount_rate_base / 100.0
+                if wacc > tg_est:
+                    tv_pct = 0.70  # TV as fraction of total IV
+                    # dIV/IV = -tv_pct * dr/(r-g); for dr=1pp: drop% = tv_pct/(r-g)*100
+                    iv_drop_pct = tv_pct / (wacc - tg_est) * 0.01  # fractional drop for +1pp WACC
+                    new_iv = d.base_iv * (1 - iv_drop_pct)
+                    sensitivity_parts.append(
+                        f"**{s.ticker}**: base IV ${d.base_iv:.0f} → ~${new_iv:.0f} at +1% WACC "
+                        f"({iv_drop_pct*100:.0f}% drop per +1pp)"
+                    )
+        if sensitivity_parts:
+            lines += [
+                "",
+                "**WACC sensitivity (PA+ names):** A +1% increase in the discount rate reduces "
+                "intrinsic value by the amounts below — driven by terminal value sensitivity. "
+                "Use these as a stress test: does the thesis survive a higher-rate environment?",
+                "",
+            ]
+            for sp in sensitivity_parts:
+                lines.append(f"> {sp}")
+            lines.append("")
 
     lines += ["", "---", ""]
 

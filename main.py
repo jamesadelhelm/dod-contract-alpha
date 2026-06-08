@@ -29,7 +29,7 @@ from src.fundamentals import get_fundamentals_or_stub
 from src.scoring import score_company
 from src.report import generate_report, save_report
 from src.models import CompanyScore, CompanyFundamentals, Verdict, Sector
-from config import REPORTS_DIR, TICKER_SECTOR_OVERRIDES
+from config import REPORTS_DIR, TICKER_SECTOR_OVERRIDES, DATA_DIR
 
 
 def parse_args():
@@ -59,6 +59,38 @@ def parse_args():
     p.add_argument("--min-market-cap", type=float, default=0.0, dest="min_market_cap",
                    help="Exclude companies with market cap below this value in millions (e.g. 500 = $500M)")
     return p.parse_args()
+
+
+_LAST_SCORES_PATH = DATA_DIR / "last_scores.json"
+
+
+def _load_last_scores() -> dict:
+    """Load previous run scores for delta comparison."""
+    try:
+        if _LAST_SCORES_PATH.exists():
+            return json.loads(_LAST_SCORES_PATH.read_text())
+    except Exception:
+        pass
+    return {}
+
+
+def _save_last_scores(scores: list, fundamentals_map: dict) -> None:
+    """Persist current run scores for next-run delta comparison."""
+    try:
+        data = {}
+        for s in scores:
+            f = fundamentals_map.get(s.ticker)
+            data[s.ticker] = {
+                "score": round(s.final_score, 1),
+                "verdict": s.verdict.value,
+                "price": round(f.current_price, 2) if f and f.current_price else None,
+                "base_mos": round(s.dcf.margin_of_safety_base, 1) if s.dcf and s.dcf.margin_of_safety_base is not None else None,
+                "bear_mos": round(s.dcf.bear_mos, 1) if s.dcf and s.dcf.bear_mos is not None else None,
+                "date": datetime.now().strftime("%Y-%m-%d"),
+            }
+        _LAST_SCORES_PATH.write_text(json.dumps(data, indent=2))
+    except Exception:
+        pass
 
 
 def main():
@@ -200,9 +232,10 @@ def main():
         scores = scores[:args.top]
 
     # ── Step 4: Print summary ─────────────────────────────────────────────────
+    last_scores = _load_last_scores()
     print("\n[4/4] Results\n")
-    print(f"{'#':<3} {'Ticker':<8} {'Score':>6} {'Data':>5} {'MoS':>6} {'Bear':>6}  {'Verdict':<28} {'Sector'}")
-    print("-" * 98)
+    print(f"{'#':<3} {'Ticker':<8} {'Score':>6} {'Chg':>5} {'Data':>5} {'MoS':>6} {'Bear':>6}  {'Verdict':<28} {'Sector'}")
+    print("-" * 105)
     verdict_emoji_map = {
         Verdict.STRONG_CANDIDATE: "🟢",
         Verdict.RESEARCH_FURTHER: "🟡",
@@ -236,7 +269,17 @@ def main():
                 bear_str = f"🛡{bm:+.0f}%"
             else:
                 bear_str = "+0%" if abs(bm) < 0.5 else f"{bm:+.0f}%"
-        print(f"{i:<3} {s.ticker:<8} {s.final_score:>6.1f} {data_str:>5} {mos_str:>6} {bear_str:>7}  {emoji} {s.verdict.value:<26} {s.sector.value}")
+        prev = last_scores.get(s.ticker)
+        if prev:
+            delta = s.final_score - prev["score"]
+            chg_str = f"{delta:+.1f}" if abs(delta) >= 0.1 else "  ="
+        else:
+            chg_str = " new"
+        print(f"{i:<3} {s.ticker:<8} {s.final_score:>6.1f} {chg_str:>5} {data_str:>5} {mos_str:>6} {bear_str:>7}  {emoji} {s.verdict.value:<26} {s.sector.value}")
+
+    # Save scores for next-run delta comparison (only when live and not mock)
+    if live and args.source != "mock":
+        _save_last_scores(scores, fundamentals_map)
 
     unmatched_value = sum(c.contract_value for c in private_contracts if c.contract_value)
     print(f"\nPrivate/unmatched: {len(private_contracts)} contracts (${unmatched_value:.0f}M unresolved)")

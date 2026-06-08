@@ -248,12 +248,21 @@ The Action Summary produces a Signal Tiers box that organizes actionable names:
 
 | Tier | Criteria | Current Example |
 |------|---------|-----------------|
-| 🟢 **Highest Conviction** | PA+, bear MoS > 0 | GD (🛡+13% bear) |
-| 🟡 **Research Priority** | PA+, positive base MoS, negative bear MoS | BAH (-39% bear), LDOS (-15% bear) |
-| 🔵 **Monitor** | Watchlist, positive base MoS > 5% | HII (+34% base MoS) |
-| ⏳ **Wait for Entry** | Overvaluation flag active (base MoS < −35%) | LMT, NOC, GE, RTX |
+| 🟢 **Highest Conviction** | PA+, bear MoS > 0 | GD (S+12% bear) |
+| 🟡 **Research Priority** | PA+, positive base MoS, negative bear MoS | BAH (-24% bear), LDOS (-12% bear) |
+| 🔵 **Monitor** | Watchlist, positive base MoS > 5% | HII (+12% base MoS) |
+| ⏳ **Wait for Entry** | Overvaluation flag active (base MoS < -35%) | LMT, NOC, GE, RTX |
 
-The tier labels directly answer "what do I do today?" without requiring cross-referencing multiple report sections. They're derived from composite scores, base MoS, and bear-case MoS — not a separate scoring system.
+The tier labels directly answer "what do I do today?" without requiring cross-referencing multiple
+report sections. They're derived from composite scores, base MoS, and bear-case MoS.
+
+**Position Sizing Table** in Section 1 now also includes:
+- **Now** — current market price (entry price anchor)
+- **Entry Target** — bear IV: the price at which even the pessimistic DCF scenario breaks even.
+  For Highest Conviction names (positive bear MoS), bear IV > current price; you are already
+  "inside" the bear case safety margin. For Research Priority names, bear IV shows the "back up
+  the truck" price where the thesis becomes risk-free.
+- **Score delta** — console shows change vs. previous run (e.g., GD: 70.2 -> 69.2 = -1.0)
 
 ---
 
@@ -310,16 +319,25 @@ Final Score = Buffett(25%) + Graham(20%) + DoD(20%) + Management(15%) + Catalyst
 
 | Parameter | Logic |
 |-----------|-------|
-| **Owner earnings** | FCF margin × revenue; revenue-based if FCF is negative |
-| **Discount rate** | 9% base ± adjustments for DoD concentration, moat, leverage, size, profitability |
-| **Growth yr 1–5** | 60% actual company revenue growth + 40% sector default, clipped to −10%/+60% |
-| **Growth yr 6–10** | Mean-reverts toward sector long-run rate |
-| **Terminal growth** | 2.5–3.5% depending on sector and DoD concentration |
-| **EV → Equity** | Enterprise value − net debt / shares outstanding = equity per share IV |
-| **Reverse DCF** | Solves for the growth rate that justifies the current price — key sanity check |
+| **Owner earnings** | FCF margin x revenue; revenue-based if FCF is negative |
+| **FCF margin** | 3-year normalized average from EDGAR XBRL (--xbrl flag); falls back to yfinance TTM |
+| **Discount rate** | 9% base +/- adjustments for DoD concentration, moat, leverage, size, profitability |
+| **DoD WACC penalty** | +3% for DoD < 15%, +1% for < 25%, +0.5% for < 40% (commercial revenue risk) |
+| **Growth anchor** | 60% analyst forward consensus + 40% TTM actual (both from yfinance) |
+| **Growth yr 1-5** | Blended anchor x 60% + sector default x 40%; bear = 40% of anchor; bull = 85% |
+| **Growth yr 6-10** | Mean-reverts toward sector long-run rate |
+| **Terminal growth** | 2.5-3.5% depending on sector and DoD concentration |
+| **EV to Equity** | Enterprise value - net debt / shares = equity per share IV |
+| **WACC sensitivity** | +1% WACC reduces IV by ~10-17% (TV dominates; shown per PA+ name in report) |
+| **Reverse DCF** | Solves for the growth rate that justifies the current price -- key sanity check |
 
 **Reading the output:** Bear/base/bull gives a range of outcomes. The reverse DCF is the primary
-sanity check — if the current price requires 20%+/yr growth for 10 years, skip it.
+sanity check -- if the current price requires 20%+/yr growth for 10 years, skip it.
+
+**The blended growth anchor** prevents two failure modes: (1) using only TTM, which anchors to
+BAH's -6% DOGE revenue drop and produces an unnecessarily pessimistic base case; (2) using only
+forward consensus, which misses current-period headwinds. 60/40 forward/TTM preserves both
+analyst outlook and current reality.
 
 ---
 
