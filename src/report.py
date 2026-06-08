@@ -164,6 +164,45 @@ def generate_report(
             lines.append(f"- {note}")
         lines.append("")
 
+    # ── Signal tiers for capital deployment ────────────────────────────────────
+    # Organize actionable names by conviction level based on composite score,
+    # base MoS, and bear-case MoS. Not investment advice — organizes signals.
+    tier1 = []  # PA+ with positive bear MoS
+    tier2 = []  # PA+ with negative bear MoS (moderate tail risk)
+    tier3 = []  # Watchlist with positive base MoS
+    tier4 = []  # Watchlist/PA with overvaluation flag (wait for entry)
+    for s in ranked_scores:
+        is_pa_plus = s.verdict in (Verdict.STRONG_CANDIDATE, Verdict.POTENTIALLY_ATTRACTIVE, Verdict.RESEARCH_FURTHER)
+        is_watchlist = s.verdict == Verdict.WATCHLIST
+        b_mos = s.dcf.bear_mos if s.dcf else None
+        base_mos = s.dcf.margin_of_safety_base if s.dcf else None
+        is_overvalued = any("overvalued at" in f.lower() or "dcf:" in f.lower() for f in (s.red_flags or []))
+        if is_overvalued:
+            tier4.append(s.ticker)
+        elif is_pa_plus and b_mos is not None and b_mos > 0:
+            tier1.append(s.ticker)
+        elif is_pa_plus:
+            tier2.append(s.ticker)
+        elif is_watchlist and base_mos is not None and base_mos > 5:
+            tier3.append(s.ticker)
+
+    if tier1 or tier2 or tier3 or tier4:
+        lines.append("**Signal tiers (based on composite score + DCF MoS):**")
+        if tier1:
+            lines.append(f"- 🟢 **Highest Conviction** — positive bear-case MoS: {', '.join(tier1)}")
+        if tier2:
+            lines.append(f"- 🟡 **Research Priority** — positive base MoS, tail risk in bear case: {', '.join(tier2)}")
+        if tier3:
+            lines.append(f"- 🔵 **Monitor** — Watchlist quality with positive base MoS: {', '.join(tier3)}")
+        if tier4:
+            lines.append(f"- ⏳ **Wait for Entry** — overvalued at current price: {', '.join(tier4)}")
+        lines += [
+            "",
+            "> Signal tiers summarize the above signals. Not investment advice.",
+            "> Verify all DCF assumptions and 10-K before any capital deployment.",
+            "",
+        ]
+
     lines += ["---", "", ]
 
     # ── 2. Valuation Snapshot ─────────────────────────────────────────────────
