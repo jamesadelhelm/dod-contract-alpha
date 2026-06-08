@@ -130,8 +130,8 @@ def generate_report(
     if total_pa == 0:
         exec_parts.append("No Potentially Attractive names in this batch — hold cash and wait.")
     exec_parts.append(
-        f"Recommended deployment: **{_total_pct_ex:.1f}% (${_total_pct_ex:.1f}M of $100M)** — "
-        "high cash position reflects limited actionable opportunities in this snapshot."
+        f"Actionable position weight: **{_total_pct_ex:.1f}% of portfolio** — "
+        "high cash discipline is correct when opportunities are limited."
     )
 
     lines += [
@@ -310,21 +310,19 @@ def generate_report(
         cash_pct = 100.0 - total_pct
 
         lines += [
-            "**Capital deployment guidance ($100M portfolio):**",
+            "**Position sizing guidance (% of equity portfolio):**",
             "",
-            "| Ticker | Tier | Bear MoS | Sizing Logic | Position | $100M |",
-            "|--------|------|:--------:|:-------------|:--------:|------:|",
+            "| Ticker | Tier | Bear MoS | Sizing Logic | Weight |",
+            "|--------|------|:--------:|:-------------|-------:|",
         ]
         for ticker, tier_label, bmos_str, rationale, size_pct in deployable_rows:
-            dollar = size_pct * 1_000_000
             lines.append(
-                f"| {ticker} | {tier_label} | {bmos_str} | {rationale} "
-                f"| {size_pct:.1f}% | ${dollar/1e6:.1f}M |"
+                f"| {ticker} | {tier_label} | {bmos_str} | {rationale} | {size_pct:.1f}% |"
             )
         lines += [
             "",
-            f"**Deployed: {total_pct:.1f}% (${total_pct:.1f}M) &nbsp;|&nbsp; "
-            f"Cash / T-bills: {cash_pct:.1f}% (${cash_pct:.1f}M)**",
+            f"**Actionable weight: {total_pct:.1f}% &nbsp;|&nbsp; "
+            f"Hold cash / await better entries: {cash_pct:.1f}%**",
             "",
         ]
 
@@ -354,8 +352,8 @@ def generate_report(
             lines.append("")
 
         lines += [
-            "> Sizing: 6% max per PA+ name. Scaled by bear-MoS: >0% → 100%, −15% → 75%, −30% → 50%, <−30% → 25%.",
-            "> High cash position is correct discipline — deploy into better entry points or next batch.",
+            "> Sizing: 6% max per PA+ name. Scaled by bear-MoS: >0% → full, ≥−15% → 75%, ≥−30% → 50%, <−30% → 25%.",
+            "> High cash weight is correct discipline when conviction names are scarce — avoid forcing capital into inferior positions.",
             "> This is a sizing framework, not investment advice. Verify 10-K before any capital deployment.",
             "",
         ]
@@ -732,13 +730,28 @@ def generate_report(
                 else:
                     key_sigs.append(
                         f"Bear-case MoS {d.bear_mos:.0f}% — significant tail risk if thesis disappoints. "
-                        "Size at 25%–50% of full position (see Capital Deployment section)."
+                        "The scenario where the thesis is wrong loses more than one-third of capital; "
+                        "keep position small enough to survive that outcome (see Capital Deployment)."
                     )
+            # Insider buying as a confirming or contradicting signal
+            f_ins = (fundamentals_map or {}).get(s.ticker)
+            if f_ins and hasattr(f_ins, "insider_net_pct_6m") and f_ins.insider_net_pct_6m is not None:
+                ins_pct = f_ins.insider_net_pct_6m * 100
+                if ins_pct >= 15:
+                    key_sigs.append(
+                        f"Insider signal: net buying of **+{ins_pct:.0f}%** of held shares over the "
+                        "past 6 months — management putting capital behind the thesis."
+                    )
+                elif ins_pct <= -15:
+                    key_sigs.append(
+                        f"Insider signal: net selling of **{ins_pct:.0f}%** of held shares over the "
+                        "past 6 months — management reducing exposure; warrants scrutiny."
+                    )
+
             sz, sz_logic = _compute_position_size(s)
             if sz > 0:
                 key_sigs.append(
-                    f"Recommended position: **{sz:.1f}%** of portfolio "
-                    f"(${sz*1e6/1e6:.1f}M per $100M) — {sz_logic}."
+                    f"Recommended weight: **{sz:.1f}%** of portfolio — {sz_logic}."
                 )
             if key_sigs:
                 lines += ["#### Key Signals", ""]
