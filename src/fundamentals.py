@@ -145,6 +145,7 @@ def get_fundamentals_from_yfinance(ticker: str) -> Optional[CompanyFundamentals]
             revenue_growth_1yr = round(float(rev_growth_raw) * 100, 1)
         else:
             revenue_growth_1yr = _derive_revenue_growth(stock)
+        revenue_cagr_3yr = _derive_3yr_revenue_cagr(stock)
 
         # Staleness check — warn if most recent filing > 180 days old
         stale_note = ""
@@ -272,6 +273,7 @@ def get_fundamentals_from_yfinance(ticker: str) -> Optional[CompanyFundamentals]
             payout_ratio=payout_rat,
             shares_chg_1yr_pct=shares_chg,
             next_earnings_date=next_earn,
+            revenue_cagr_3yr=revenue_cagr_3yr,
         )
 
         # ── Overlay curated fields from mock ──────────────────────────────────
@@ -368,6 +370,28 @@ def _derive_revenue_growth(stock) -> Optional[float]:
     return None
 
 
+def _derive_3yr_revenue_cagr(stock) -> Optional[float]:
+    """
+    3-year revenue CAGR from income statement history.
+    yfinance provides up to 4 years — index 0 = most recent, index 3 = 3 years ago.
+    Returns None when fewer than 4 years of data are available.
+    """
+    try:
+        inc = stock.income_stmt
+        if inc is None or inc.empty or len(inc.columns) < 4:
+            return None
+        cols = inc.columns
+        rev_current = _row(inc, ["Total Revenue", "Revenue"], cols[0])
+        rev_3yr_ago = _row(inc, ["Total Revenue", "Revenue"], cols[3])
+        if rev_current and rev_3yr_ago and rev_3yr_ago > 0 and rev_current > 0:
+            cagr = ((rev_current / rev_3yr_ago) ** (1 / 3) - 1) * 100
+            # Sanity bounds: >100% or <-40% 3yr CAGR is likely a merger/divestiture artifact
+            return round(cagr, 1) if -40 < cagr < 100 else None
+    except Exception:
+        pass
+    return None
+
+
 def _row(df, names: list, col) -> Optional[float]:
     import math
     for name in names:
@@ -387,12 +411,12 @@ def _row(df, names: list, col) -> Optional[float]:
 
 def _de_ratio(info: dict) -> Optional[float]:
     de = info.get("debtToEquity")
-    if de is not None:
-        # yfinance returns this as a percentage sometimes (e.g. 55.2 = 0.552)
-        # Normalize to a ratio
-        if de > 20:  # clearly a % value
-            return round(de / 100, 2)
-        return round(de, 2)
+    if de is not None and de >= 0:
+        # yfinance consistently returns debtToEquity as a percentage
+        # (e.g., 176.9 = 176.9% = 1.769x ratio; 19.3 = 19.3% = 0.193x ratio).
+        # Always divide by 100 — the old threshold of >20 mis-classified values
+        # between 0 and 20 as direct ratios (e.g., AVAV 19.3% D/E → showed as 19.3x).
+        return round(de / 100, 2)
     return None
 
 

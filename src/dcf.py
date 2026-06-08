@@ -120,6 +120,23 @@ def run_dcf(
             f"sector defaults — bear/base/bull yr1–5: {bear_g1:.0f}%/{base_g1:.0f}%/{bull_g1:.0f}%."
         )
 
+    # ── Engineering/construction sector caveat ────────────────────────────────
+    # FCF-based DCF systematically understates intrinsic value for project-based
+    # engineering firms (KBR, AECOM, Fluor). Working capital cycles, contract billing
+    # timing (front-loaded invoicing, retainage holdbacks), and lump-sum fixed-price
+    # contract risk all depress reported FCF vs normalized earning power.
+    # Sector EV/EBITDA multiples (8–12x) are a more reliable primary signal.
+    if sector == Sector.INFRASTRUCTURE_CONSTRUCTION:
+        _fcf_m = f.free_cash_flow_margin or 0
+        if 0 <= _fcf_m < 6.0:
+            _ev_note = (f" Cross-reference: current EV/EBITDA {f.ev_ebitda:.1f}x vs sector 8–12x median."
+                        if f.ev_ebitda else "")
+            caveats.append(
+                f"Engineering/construction company with thin FCF margin (~{_fcf_m:.1f}%). "
+                "FCF-based DCF likely understates intrinsic value for this sector — "
+                "use EV/EBITDA as the primary valuation anchor, not DCF MoS." + _ev_note
+            )
+
     # ── FCF margin scenarios ──────────────────────────────────────────────────
     fcf_base = _safe(f.free_cash_flow_margin, 8.0)
     if fcf_base >= 0:

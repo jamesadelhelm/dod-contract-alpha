@@ -1047,6 +1047,30 @@ def score_company(
     specialist = score_specialist_tier(ticker, f, contracts)
     final = _clamp(final + specialist.score_adjustment)
 
+    # ── DoD concentration cap ─────────────────────────────────────────────────
+    # This tool is calibrated for DoD-focused investments. Companies where DoD
+    # revenue is a small fraction of total should not outrank pure DoD plays
+    # based on superior commercial quality metrics (moat, margins, FCF yield).
+    # Cap final score at Watchlist ceiling (just below "Potentially Attractive")
+    # when DoD exposure is below investment-thesis-meaningful thresholds.
+    dod_pct = getattr(f, "dod_revenue_pct", None)
+    if dod_pct is not None:
+        if dod_pct < 15:
+            if final > 60.0:
+                final = 60.0
+                all_flags.append(
+                    f"Score capped at 60: DoD revenue only {dod_pct:.0f}% of total. "
+                    "This DoD screening tool scores commercial quality signals that do "
+                    "not reflect DoD-specific investment catalysts."
+                )
+        elif dod_pct < 25:
+            if final > 65.0:
+                final = 65.0
+                all_flags.append(
+                    f"Score capped at 65: DoD revenue is {dod_pct:.0f}% (below 25% threshold). "
+                    "Commercial metrics drive this company's score rather than DoD exposure."
+                )
+
     verdict = determine_verdict(final, f, all_flags)
 
     # DCF valuation — run after final score, attach result
@@ -1083,6 +1107,22 @@ def score_company(
         )
     except Exception as e:
         dcf = None
+
+    # ── Post-DCF overvaluation flag ───────────────────────────────────────────
+    # When DCF base case shows significant overvaluation on a quality company,
+    # make this prominent — the composite score reflects business quality, but
+    # investors need to know the current price doesn't offer a margin of safety.
+    # Excludes Infrastructure/Construction where FCF-DCF systematically understates.
+    if dcf is not None and dcf.margin_of_safety_base is not None:
+        mos = dcf.margin_of_safety_base
+        infra = sector in (Sector.INFRASTRUCTURE_CONSTRUCTION,)
+        if mos < -35 and not infra:
+            ig = dcf.implied_growth_rate
+            ig_note = f" Reverse DCF implies {ig:.0f}%/yr growth priced in." if ig else ""
+            all_flags.append(
+                f"DCF: {abs(mos):.0f}% overvalued at current price.{ig_note} "
+                "No margin of safety — consider lower entry points or smaller position sizing."
+            )
 
     # Narrative
     why_matters, why_not, risks, verify = _generate_narrative(ticker, f, contracts, sector, bq_raw, gv_raw, ds_raw)
@@ -1128,7 +1168,7 @@ def score_company(
         red_flags=[flag for flag in all_flags if any(kw in flag.lower() for kw in
             ["score capped", "capped at", "dangerous", "dilution", "negative fcf",
              "negative roe", "contracting", "consensus", "short interest",
-             "destroying", "binary catalyst", "distressed"])],
+             "destroying", "binary catalyst", "distressed", "dcf:", "overvalued at"])],
         low_ticker_confidence=any(c.ticker_confidence < OVERRIDE_RULES["low_ticker_confidence_flag_threshold"] for c in contracts if c.ticker == ticker),
         specialist=specialist,
         dcf=dcf,
@@ -1177,10 +1217,17 @@ def _generate_narrative(
     if gv < 50:
         not_matters_parts.append("current valuation may already reflect visible contract pipeline")
     rev_growth = getattr(f, "revenue_growth_1yr", None)
+    rev_cagr_3yr = getattr(f, "revenue_cagr_3yr", None)
     if rev_growth is not None and rev_growth < -5:
+        context = ""
+        if rev_cagr_3yr is not None and rev_cagr_3yr > 3:
+            context = (
+                f" (3yr CAGR +{rev_cagr_3yr:.1f}% — decline may be cyclical rather than structural; "
+                "monitor next 2 quarters before concluding trend reversal)"
+            )
         not_matters_parts.append(
             f"revenue declined {rev_growth:.1f}% YoY — fundamental business shrinkage, "
-            "not just market dislocation; verify whether headwinds are transient or structural"
+            f"not just market dislocation; verify whether headwinds are transient or structural{context}"
         )
     mos_1yr = getattr(f, "return_1yr", None)
     if mos_1yr is not None and mos_1yr < -20:

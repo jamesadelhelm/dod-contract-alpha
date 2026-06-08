@@ -113,9 +113,51 @@ def generate_report(
         f"- 🟠 High Quality But Expensive: **{len(expensive)}**",
         f"- 🔵 Watchlist: **{len(watchlist)}**",
         "",
-        "---",
-        "",
     ]
+
+    # ── Portfolio-level sector concentration warning ───────────────────────────
+    # Group actionable names (Potentially Attractive + Watchlist) by sector risk bucket
+    # to alert investors to hidden concentration risk.
+    from collections import defaultdict
+    actionable = [s for s in ranked_scores if s.verdict in (
+        Verdict.STRONG_CANDIDATE, Verdict.POTENTIALLY_ATTRACTIVE,
+        Verdict.HIGH_QUALITY_BUT_EXPENSIVE, Verdict.WATCHLIST
+    )]
+    # Map sectors to risk buckets
+    _DOGE_RISK_SECTORS = {
+        "AI / Data / Software", "Cloud / IT Services", "Consulting / Services"
+    }
+    _AEROSPACE_SECTORS = {"Aerospace", "Traditional Defense Prime"}
+    _HEALTHCARE_SECTORS = {"Military Healthcare"}
+    bucket_names = defaultdict(list)
+    for s in actionable:
+        sec = s.sector.value
+        if sec in _DOGE_RISK_SECTORS:
+            bucket_names["Federal IT / Consulting (DOGE risk)"].append(s.ticker)
+        elif sec in _AEROSPACE_SECTORS:
+            bucket_names["Aerospace / Defense Prime"].append(s.ticker)
+        elif sec in _HEALTHCARE_SECTORS:
+            bucket_names["Military Healthcare"].append(s.ticker)
+    concentration_notes = []
+    for bucket, tickers in bucket_names.items():
+        if len(tickers) >= 3:
+            concentration_notes.append(
+                f"⚠️ **{bucket}**: {', '.join(tickers)} — "
+                f"{len(tickers)} companies share this risk factor. "
+                "Investing across all represents concentrated exposure to a single macro theme."
+            )
+        elif len(tickers) == 2:
+            concentration_notes.append(
+                f"📌 **{bucket}**: {', '.join(tickers)} — correlated risk; "
+                "consider sizing as a pair rather than independent positions."
+            )
+    if concentration_notes:
+        lines.append("**Portfolio concentration notes:**")
+        for note in concentration_notes:
+            lines.append(f"- {note}")
+        lines.append("")
+
+    lines += ["---", "", ]
 
     # ── 2. Valuation Snapshot ─────────────────────────────────────────────────
     lines += [

@@ -127,6 +127,8 @@ class CompanyFundamentals:
     shares_chg_1yr_pct: Optional[float] = None      # % YoY change in diluted shares (neg = buyback)
     # Earnings calendar
     next_earnings_date: Optional[str] = None        # "YYYY-MM-DD"
+    # Multi-year growth context
+    revenue_cagr_3yr: Optional[float] = None        # 3-yr revenue CAGR %
 
 
 @dataclass

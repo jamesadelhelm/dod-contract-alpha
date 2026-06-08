@@ -133,16 +133,17 @@ Output: `reports/report_YYYYMMDD_HHMM.md` — open in VS Code, Obsidian, or any 
 
 #   Ticker    Score  Data    MoS  Verdict                      Sector
 ------------------------------------------------------------------------------------------
-1   BAH        70.6  100%   +21%  🟡 Potentially Attractive     AI / Data / Software
-2   ACN        70.4  100%  +152%  🟡 Potentially Attractive     Cloud / IT Services
-3   GD         69.5  100%   +51%  🟡 Potentially Attractive     Shipbuilding
-4   LDOS       69.4  100%   +21%  🟡 Potentially Attractive     Cloud / IT Services
-5   SAIC       65.7  100%    +4%  🔵 Watchlist                  Cloud / IT Services
-6   LMT        63.6  100%   -63%  🔵 Watchlist                  Aerospace
-7   NOC        63.5  100%   -65%  🔵 Watchlist                  Aerospace
-8   OSK        62.3  100%    -7%  🔵 Watchlist                  Industrial Components
+1   BAH        71.8  100%   +22%  🟡 Potentially Attractive     AI / Data / Software
+2   LDOS       70.6  100%   +22%  🟡 Potentially Attractive     Cloud / IT Services
+3   GD         70.2  100%   +53%  🟡 Potentially Attractive     Shipbuilding
+4   SAIC       65.7  100%    +4%  🔵 Watchlist                  Cloud / IT Services
+5   LMT        63.6  100%   -63%  🔵 Watchlist [🚩 DCF 63% overvalued]   Aerospace
+6   NOC        63.5  100%   -64%  🔵 Watchlist [🚩 DCF 64% overvalued]   Aerospace
+7   OSK        62.8  100%    -7%  🔵 Watchlist                  Industrial Components
+8   HII        62.8  100%   +34%  🔵 Watchlist                  Shipbuilding
 9   ACM        62.3  100%   -51%  🔵 Watchlist                  Infrastructure / Construction
-10  HII        61.5  100%   +34%  🔵 Watchlist                  Shipbuilding
+10  CACI       60.4  100%   -38%  🔵 Watchlist                  AI / Data / Software
+12  ACN        60.0  100%  +152%  🔵 Watchlist [capped: DoD 8%] Cloud / IT Services
 ...
 28  BA         36.9   94%   -87%  🔴 Ignore                     Aerospace
 29  SHIM       23.5   56%    N/A  🔴 Ignore                     Infrastructure / Construction
@@ -159,10 +160,10 @@ Report → reports/report_20260607_2240.md
 
 | # | Ticker | Company                            | Sector              | Score | MoS   | Data | Verdict                  |
 |---|--------|------------------------------------|---------------------|------:|------:|-----:|--------------------------|
-| 1 | BAH    | Booz Allen Hamilton                | AI / Data / Software| 70.6  | +21%  | 100% | 🟡 Potentially Attractive|
-| 2 | GD     | General Dynamics Corporation       | Shipbuilding        | 69.5  | +51%  | 100% | 🟡 Potentially Attractive|
-| 3 | ACN    | Accenture plc                      | Cloud / IT Services | 69.4  | +152% | 100% | 🟡 Potentially Attractive|
-| 4 | LDOS   | Leidos Holdings                    | Cloud / IT Services | 69.0  | +4%   | 100% | 🟡 Potentially Attractive|
+| 1 | BAH    | Booz Allen Hamilton                | AI / Data / Software| 71.8  | +22%  | 100% | 🟡 Potentially Attractive|
+| 2 | LDOS   | Leidos Holdings                    | Cloud / IT Services | 70.6  | +22%  | 100% | 🟡 Potentially Attractive|
+| 3 | GD     | General Dynamics Corporation       | Shipbuilding        | 70.2  | +53%  | 100% | 🟡 Potentially Attractive|
+| 4 | SAIC   | Science Applications International | Cloud / IT Services | 65.7  | +4%   | 100% | 🔵 Watchlist             |
 ```
 
 ### What the report looks like (Section 2b — DCF Table)
@@ -187,9 +188,10 @@ Report → reports/report_20260607_2240.md
 > pass regardless of any other signal.
 >
 > **ACN's +152% MoS** reflects its massive commercial FCF (DoD is ~8% of revenue) — not a
-> DoD thesis, just a quality business at a reasonable price. The report includes an explicit
-> ⚠ caveat when DoD revenue < 20% and market cap > $15B, so this can't be misread as a
-> defense-specific signal.
+> DoD thesis, just a quality business at a reasonable price. The tool caps ACN's final score
+> at 60 (Watchlist, not Potentially Attractive) because its DoD exposure is too small to
+> outrank pure-DoD plays. The DCF section adds an explicit ⚠ caveat when DoD revenue < 20%
+> and market cap > $15B — this MoS is a commercial signal, not a defense catalyst.
 >
 > **SHIM's `—` MoS** indicates a negative intrinsic value (all DCF scenarios project negative FCF).
 > The model replaces the misleading MoS% with "Negative IV — capital destruction risk" because
@@ -270,6 +272,8 @@ Final Score = Buffett(25%) + Graham(20%) + DoD(20%) + Management(15%) + Catalyst
 | Negative FCF **and** negative operating margin | Buffett score capped at 45 |
 | IDIQ contract with < 25% funded | Catalyst score capped at 40 |
 | Current ratio < 1.0 **and** Debt/EBITDA > 4.0 | Final score capped at 65 |
+| DoD revenue **< 15%** of total | Final score capped at 60 — commercial metrics drive the score, not DoD exposure |
+| DoD revenue **15–24%** of total | Final score capped at 65 — prevents large commercial companies from outranking pure-DoD plays |
 
 ---
 
@@ -324,6 +328,7 @@ Automatically flagged and surfaced in Section 3 of the report:
 | Interest coverage dangerously low | IC < 1.5x |
 | Current ratio | < 1.0 |
 | IDIQ funded ratio | Funded < 25% of ceiling |
+| DCF overvaluation | MoS < −35% (non-infrastructure) — includes reverse DCF implied growth rate as sanity check |
 
 ---
 
@@ -439,13 +444,17 @@ Sector drives the DCF growth assumptions and terminal rate — misclassification
 | **IDIQ ceilings** | USAspending records obligated task orders, not total contract ceiling. An IDIQ ceiling of $500M with $50M funded (10%) is a much weaker catalyst than it appears. The tool applies a haircut and flags this. |
 | **Sector classification** | Keyword-based on short contract descriptions. Ticker overrides applied for 20 known systematic misclassifications. Add new ones in `TICKER_SECTOR_OVERRIDES` in `config.py`. |
 | **Earnings stability cap** | yfinance returns max 4 years of income statement history. When this cap is hit, the tool raises a flag in the Buffett component. Add `earnings_stability_years` to the overlay for established companies. |
-| **Large commercial companies** | ACN, IBM, HON have strong scores driven by business quality, but DoD contracts are marginal to their investment thesis. When DoD revenue < 20% and market cap > $15B, the tool adds an explicit ⚠ caveat to the DCF section and caps the valuation score at 45. Read the "Why It Might Not Matter" section for these names. |
+| **Large commercial companies** | ACN, IBM, HON have strong scores driven by business quality, but DoD contracts are marginal to their investment thesis. When DoD revenue < 20% and market cap > $15B, the tool adds an explicit ⚠ caveat to the DCF section and caps the valuation score at 45. A separate DoD concentration cap applies to the final composite score: < 15% DoD → capped at 60, 15–24% DoD → capped at 65. This prevents a pristine commercial compounder from ranking above a pure-DoD specialist. Read the "Why It Might Not Matter" section for these names. |
 | **MoS for non-defense companies** | Companies like CNC, HUM, UNH have high FCF from their commercial business (Medicaid, Medicare Advantage) that inflates the DCF Margin of Safety. MoS is suppressed (`—†`) in the Action Summary for Ignore-rated companies to prevent this from being mistaken for a buy signal. |
 | **Negative intrinsic value** | Companies with persistent negative FCF (SHIM, AVAV in down cycles) produce negative DCF intrinsic values. The tool replaces the misleading MoS% with "Negative IV — capital destruction risk" and shows `—` in all tables — a solvency alert, not a valuation alert. |
 | **FCF margin fallback** | yfinance's `freeCashflow` info field is sometimes missing even when the cashflow statement has the data (e.g., LHX). The tool now reads the cashflow statement directly as fallback, fixing silently missing data that was depressing scores for quality primes. |
 | **Dividend yield normalization** | yfinance's `dividendYield` is inconsistently formatted across tickers; the tool now prefers `trailingAnnualDividendYield` (always fractional) and falls back to `dividendYield` only when needed. |
 | **Graham calibration** | P/E brackets calibrated for 18–30x defense universe. Dividend yield replaces current ratio in Graham Value to avoid double-counting with the Balance Sheet component. |
 | **DCF sensitivity** | Terminal value is 60–80% of the total intrinsic value. Use the reverse DCF (implied growth rate) as the primary sanity check — not the absolute scenario IVs. |
+| **D/E ratio parsing** | yfinance returns `debtToEquity` as a percentage (e.g., 19.3 = 19.3% = 0.193× ratio), not as a direct ratio. The tool divides by 100 consistently — older code had a threshold bug where values ≤ 20 were taken as-is, causing AVAV's 0.19× D/E to appear as 19.3× and inflating its discount rate by ~0.75pp. |
+| **Infrastructure/Construction DCF** | FCF-based DCF systematically understates value for engineering and construction firms (KBR, AECOM, Parsons). Working capital cycles and billing timing compress reported FCF even when economic returns are healthy. For these companies, the tool adds a caveat directing to EV/EBITDA as the primary valuation anchor and suppresses the overvaluation flag. |
+| **3-year revenue CAGR context** | A single-year revenue decline can be cyclical (budget timing, contract transitions) or structural. When 1yr revenue falls > 5% but 3yr CAGR is positive, the tool adds context: "3yr CAGR +X% — decline may be cyclical rather than structural; monitor next 2 quarters before concluding trend reversal." |
+| **Portfolio concentration** | When ≥ 3 actionable names share a common risk factor (Federal IT/DOGE exposure, Aerospace prime concentration), the Action Summary adds a ⚠️ cluster warning so sector risk is visible at the portfolio level — not just per-company. |
 | **No backtesting** | Scoring weights are constructed from first principles, not empirically validated on historical returns. This is the single most important limitation for real capital deployment. |
 | **First-pass screen only** | Not a substitute for reading the 10-K, listening to earnings calls, or building your own discounted cash flow model. Use this tool to decide where to spend your research time, not to make the final call. |
 
