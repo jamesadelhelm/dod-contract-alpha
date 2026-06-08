@@ -60,6 +60,10 @@ def parse_args():
                    help="Exclude companies with market cap below this value in millions (e.g. 500 = $500M)")
     p.add_argument("--min-liquidity", type=float, default=0.0, dest="min_liquidity",
                    help="Exclude companies where avg daily dollar volume < this value in millions (e.g. 2 = $2M/day)")
+    p.add_argument("--watch", action="store_true",
+                   help="Continuous monitoring mode: re-run every 24h, print only material changes")
+    p.add_argument("--watch-interval", type=int, default=86400, dest="watch_interval",
+                   help="Seconds between watch-mode re-runs (default: 86400 = 24h)")
     return p.parse_args()
 
 
@@ -386,5 +390,107 @@ def main():
     return scores
 
 
+def _check_material_changes(scores: list, last_scores: dict, fundamentals_map: dict) -> list[str]:
+    """Return a list of alert strings for conditions that warrant immediate attention."""
+    _PA_PLUS = {"Strong Candidate", "Research Further", "Potentially Attractive"}
+    alerts = []
+    for s in scores:
+        prev = last_scores.get(s.ticker)
+        is_pa_plus_now = s.verdict.value in _PA_PLUS
+        was_pa_plus    = prev and prev.get("verdict") in _PA_PLUS
+
+        # Exit signals
+        if was_pa_plus and s.verdict.value == "Ignore":
+            alerts.append(f"🔴 SELL {s.ticker} — verdict collapsed PA+ → Ignore (score {prev['score']:.0f} → {s.final_score:.0f})")
+        elif was_pa_plus and not is_pa_plus_now:
+            alerts.append(f"🟠 REDUCE {s.ticker} — downgraded PA+ → {s.verdict.value} (score {prev['score']:.0f} → {s.final_score:.0f})")
+
+        # Bear MoS sign flip on a PA+ name
+        if is_pa_plus_now and prev and s.dcf and s.dcf.bear_mos is not None:
+            old_bear = prev.get("bear_mos")
+            if old_bear is not None and old_bear > 0 and s.dcf.bear_mos < 0:
+                alerts.append(f"⚠️  REVIEW {s.ticker} — bear MoS flipped {old_bear:+.0f}% → {s.dcf.bear_mos:+.0f}%: downside protection lost")
+
+        # Earnings imminent for PA+ names
+        if is_pa_plus_now:
+            f_w = fundamentals_map.get(s.ticker)
+            if f_w and f_w.next_earnings_date:
+                try:
+                    days_out = (datetime.strptime(f_w.next_earnings_date, "%Y-%m-%d") - datetime.now()).days
+                    if 0 < days_out <= 7:
+                        alerts.append(f"📅 EARNINGS {s.ticker} in {days_out} day(s) — position automatically halved until post-report")
+                except Exception:
+                    pass
+
+        # New highest-conviction entry
+        if is_pa_plus_now and not was_pa_plus and s.dcf and s.dcf.bear_mos is not None and s.dcf.bear_mos > 0:
+            alerts.append(f"🟢 NEW BUY {s.ticker} — entered Highest Conviction tier (score {s.final_score:.0f}, bear MoS 🛡 {s.dcf.bear_mos:+.0f}%)")
+
+    return alerts
+
+
+def _run_watch_loop(args) -> None:
+    """Continuous monitoring: re-run every watch_interval seconds, print only material alerts."""
+    import time
+    print(f"Watch mode active — polling every {args.watch_interval // 3600}h {(args.watch_interval % 3600) // 60}m. Ctrl-C to stop.\n")
+    iteration = 0
+    while True:
+        iteration += 1
+        now_str = datetime.now().strftime("%Y-%m-%d %H:%M")
+        print(f"[{now_str}] Run #{iteration}...", end="", flush=True)
+        try:
+            scores = main()
+            if scores:
+                last = _load_last_scores()
+                # Re-fetch fundamentals map from last run (stored in last_scores for prices)
+                # Use the scores we just got
+                alerts = []
+                # We need fundamentals_map — re-build a minimal version from last_scores prices
+                # (full fundamentals not returned by main(); alerts use last_scores for prior state)
+                print(f" {len(scores)} companies scored.")
+                last_after = _load_last_scores()
+                # Build prior state from last run's last_scores BEFORE this run
+                alerts_txt = []
+                for s in scores:
+                    prev = last.get(s.ticker)
+                    is_pa_plus_now = s.verdict.value in {"Strong Candidate", "Research Further", "Potentially Attractive"}
+                    was_pa_plus = prev and prev.get("verdict") in {"Strong Candidate", "Research Further", "Potentially Attractive"}
+                    if was_pa_plus and s.verdict.value == "Ignore":
+                        alerts_txt.append(f"  🔴 SELL {s.ticker}: PA+ → Ignore")
+                    elif was_pa_plus and not is_pa_plus_now:
+                        alerts_txt.append(f"  🟠 REDUCE {s.ticker}: PA+ → {s.verdict.value}")
+                    if is_pa_plus_now and prev and s.dcf and s.dcf.bear_mos is not None:
+                        old_b = prev.get("bear_mos")
+                        if old_b is not None and old_b > 0 > s.dcf.bear_mos:
+                            alerts_txt.append(f"  ⚠️  REVIEW {s.ticker}: bear MoS {old_b:+.0f}% → {s.dcf.bear_mos:+.0f}%")
+                    if is_pa_plus_now and not was_pa_plus and s.dcf and s.dcf.bear_mos and s.dcf.bear_mos > 0:
+                        alerts_txt.append(f"  🟢 NEW BUY {s.ticker}: Highest Conviction (score {s.final_score:.0f})")
+                if alerts_txt:
+                    print("\n" + "=" * 50)
+                    print("  MATERIAL CHANGES — ACTION REQUIRED")
+                    print("=" * 50)
+                    for a in alerts_txt:
+                        print(a)
+                    print("=" * 50 + "\n")
+                else:
+                    print("  No material changes.")
+            else:
+                print(" no scores returned.")
+        except KeyboardInterrupt:
+            print("\nWatch mode stopped.")
+            return
+        except Exception as e:
+            print(f" ERROR: {e}")
+        try:
+            time.sleep(args.watch_interval)
+        except KeyboardInterrupt:
+            print("\nWatch mode stopped.")
+            return
+
+
 if __name__ == "__main__":
-    main()
+    args_check = parse_args()
+    if args_check.watch:
+        _run_watch_loop(args_check)
+    else:
+        main()

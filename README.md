@@ -245,6 +245,10 @@ python3 main.py --edgar
 
 # EDGAR XBRL (recommended for production) — 3-yr normalized FCF + shipbuilding backlog
 python3 main.py --xbrl
+
+# Continuous monitoring — re-run every 24h, print only material changes (SELL/REDUCE/new BUY)
+python3 main.py --watch
+python3 main.py --watch --watch-interval 3600   # hourly (e.g. during volatile periods)
 ```
 
 ---
