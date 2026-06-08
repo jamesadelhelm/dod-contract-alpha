@@ -130,6 +130,8 @@ class CompanyFundamentals:
     next_earnings_date: Optional[str] = None        # "YYYY-MM-DD"
     # Multi-year growth context
     revenue_cagr_3yr: Optional[float] = None        # 3-yr revenue CAGR %
+    # Liquidity
+    avg_daily_volume: Optional[float] = None        # 10-day avg volume in shares
 
 
 @dataclass

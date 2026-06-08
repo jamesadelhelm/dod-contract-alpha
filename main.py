@@ -58,6 +58,8 @@ def parse_args():
                    help="Filter to mid-cap, high-DoD-concentration companies only (sweet spot tier)")
     p.add_argument("--min-market-cap", type=float, default=0.0, dest="min_market_cap",
                    help="Exclude companies with market cap below this value in millions (e.g. 500 = $500M)")
+    p.add_argument("--min-liquidity", type=float, default=0.0, dest="min_liquidity",
+                   help="Exclude companies where avg daily dollar volume < this value in millions (e.g. 2 = $2M/day)")
     return p.parse_args()
 
 
@@ -223,6 +225,18 @@ def main():
         dropped = before - len(scores)
         if dropped:
             print(f'Market cap filter (>=${args.min_market_cap:.0f}M) dropped {dropped} company/companies.')
+    if args.min_liquidity > 0:
+        before = len(scores)
+        def _above_liquidity_floor(s):
+            f = fundamentals_map.get(s.ticker)
+            if f is None or f.avg_daily_volume is None or f.current_price is None:
+                return True  # no volume data — pass through
+            dollar_vol_m = f.avg_daily_volume * f.current_price / 1_000_000
+            return dollar_vol_m >= args.min_liquidity
+        scores = [s for s in scores if _above_liquidity_floor(s)]
+        dropped = before - len(scores)
+        if dropped:
+            print(f'Liquidity filter (>${args.min_liquidity:.0f}M/day) dropped {dropped} company/companies.')
     if args.specialist_only:
         scores = [s for s in scores
                   if s.specialist and s.specialist.status.value in ('In Tier', 'Near Tier')]

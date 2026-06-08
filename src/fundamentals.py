@@ -194,6 +194,10 @@ def get_fundamentals_from_yfinance(ticker: str) -> Optional[CompanyFundamentals]
         if isinstance(short_ratio, (int, float)) and short_ratio > 200:
             short_ratio = None  # yfinance sometimes returns junk values
 
+        # ── Liquidity ─────────────────────────────────────────────────────────
+        avg_vol = info.get("averageVolume10days") or info.get("averageVolume")
+        avg_vol = float(avg_vol) if isinstance(avg_vol, (int, float)) and avg_vol > 0 else None
+
         # ── Capital return ────────────────────────────────────────────────────
         # yfinance has two dividend yield fields:
         #   trailingAnnualDividendYield — consistently fractional (0.025 = 2.5%); preferred
@@ -291,6 +295,7 @@ def get_fundamentals_from_yfinance(ticker: str) -> Optional[CompanyFundamentals]
             shares_chg_1yr_pct=shares_chg,
             next_earnings_date=next_earn,
             revenue_cagr_3yr=revenue_cagr_3yr,
+            avg_daily_volume=avg_vol,
         )
 
         # ── Overlay curated fields from mock ──────────────────────────────────

@@ -229,6 +229,7 @@ python3 main.py --min-score 65         # only companies scoring >= 65
 python3 main.py --top 10               # top 10 by score
 python3 main.py --specialist-only      # mid-cap, high-DoD-concentration only
 python3 main.py --min-market-cap 500   # drop micro-caps below $500M market cap
+python3 main.py --min-liquidity 2      # drop names with < $2M/day avg dollar volume
 
 # Output
 python3 main.py --output my_report.md  # custom output path
@@ -275,6 +276,12 @@ report sections. They're derived from composite scores, base MoS, and bear-case 
   `data/last_scores.json`
 - **Changes Since Last Run (report)** — dedicated section flags score moves ≥ 0.5 pts,
   verdict upgrades/downgrades, and bear MoS sign flips (most critical signal)
+- **Position Management Signals** — exit rules embedded in Changes Since Last Run:
+  - 🔴 **SELL** — name was PA+, now Ignore: thesis broken down, exit position
+  - 🟠 **REDUCE** — name was PA+, now Watchlist/below: trim to half, re-evaluate next run
+  - ⚠️ **REVIEW** — bear MoS flipped negative on a PA+ name: reduce to 75% sizing
+- **Liquidity warnings** — PA+ names below $2M/day avg dollar volume are flagged in Section 1.
+  Filter with `--min-liquidity 2` to exclude illiquid names from rankings entirely.
 
 ---
 
@@ -513,6 +520,7 @@ Sector drives the DCF growth assumptions and terminal rate — misclassification
 | **3-year revenue CAGR context** | A single-year revenue decline can be cyclical (budget timing, contract transitions) or structural. When 1yr revenue falls > 5% but 3yr CAGR is positive, the tool adds context: "3yr CAGR +X% — decline may be cyclical rather than structural; monitor next 2 quarters before concluding trend reversal." |
 | **Portfolio concentration** | When ≥ 3 actionable names share a common risk factor (Federal IT/DOGE exposure, Aerospace prime concentration), the Action Summary adds a ⚠️ cluster warning so sector risk is visible at the portfolio level — not just per-company. |
 | **No backtesting** | Scoring weights are constructed from first principles, not empirically validated on historical returns. This is the single most important limitation for real capital deployment. |
+| **Liquidity** | Avg daily dollar volume is shown as a warning when < $2M for PA+ names. Use `--min-liquidity 2` to exclude them from rankings. Volume data from yfinance `averageVolume10days`; not available in offline mock mode. |
 | **First-pass screen only** | Not a substitute for reading the 10-K, listening to earnings calls, or building your own discounted cash flow model. Use this tool to decide where to spend your research time, not to make the final call. |
 
 ---

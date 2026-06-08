@@ -150,6 +150,50 @@ def _generate_changes_section(ranked_scores, last_scores, fundamentals_map) -> L
         lines.append(f"**No longer appearing:** {', '.join(removed)}")
         lines.append("")
 
+    # ── Exit / position management signals ───────────────────────────────────
+    # These fire when a previously PA+ name has deteriorated. Real capital
+    # requires knowing when to exit — not just when to enter.
+    _PA_PLUS_VERDICTS = {
+        "Strong Candidate", "Research Further", "Potentially Attractive"
+    }
+    _WATCHLIST_OR_BELOW = {"Watchlist", "High Quality But Expensive", "Low Conviction", "Ignore"}
+    exit_signals = []
+    for ch in changes:
+        was_pa_plus = ch["old_verdict"] in _PA_PLUS_VERDICTS
+        now_ignore  = ch["new_verdict"] == "Ignore"
+        now_below   = ch["new_verdict"] in _WATCHLIST_OR_BELOW
+        bear_turned_negative = (
+            ch["bear_flipped"] and ch["old_bear"] is not None and ch["old_bear"] > 0
+            and ch["new_bear"] is not None and ch["new_bear"] < 0
+        )
+        if was_pa_plus and now_ignore:
+            exit_signals.append(
+                f"🔴 **SELL {ch['ticker']}** — was PA+ ({ch['old_verdict']}), "
+                f"now Ignore (score {ch['old_score']:.0f} → {ch['new_score']:.0f}). "
+                "Thesis has broken down. Exit position."
+            )
+        elif was_pa_plus and now_below:
+            exit_signals.append(
+                f"🟠 **REDUCE {ch['ticker']}** — downgraded from PA+ ({ch['old_verdict']}) "
+                f"to {ch['new_verdict']} (score {ch['old_score']:.0f} → {ch['new_score']:.0f}). "
+                "Trim position to half; re-evaluate next run."
+            )
+        elif bear_turned_negative and ch["old_verdict"] in _PA_PLUS_VERDICTS:
+            exit_signals.append(
+                f"⚠️ **REVIEW {ch['ticker']}** — bear MoS flipped negative "
+                f"({ch['old_bear']:+.0f}% → {ch['new_bear']:+.0f}%). Downside protection lost; "
+                "reduce to Research Priority sizing (75%) until bear case recovers."
+            )
+
+    if exit_signals:
+        lines += [
+            "**Position Management Signals:**",
+            "",
+        ]
+        for sig in exit_signals:
+            lines.append(f"> {sig}")
+        lines.append("")
+
     return lines
 
 
@@ -346,6 +390,31 @@ def generate_report(
         lines.append("**Portfolio concentration notes:**")
         for note in concentration_notes:
             lines.append(f"- {note}")
+        lines.append("")
+
+    # ── Liquidity warnings for PA+ names ──────────────────────────────────────
+    # Flag when a high-conviction name can't absorb meaningful capital.
+    # $2M/day threshold: a 1% of portfolio position in a $500K account = $5K,
+    # which can be filled in under 30 minutes at $2M/day.
+    _LIQUIDITY_THRESHOLD_M = 2.0
+    pa_plus_names = [s for s in ranked_scores if s.verdict in (
+        Verdict.STRONG_CANDIDATE, Verdict.POTENTIALLY_ATTRACTIVE, Verdict.RESEARCH_FURTHER
+    )]
+    liquidity_warnings = []
+    for s in pa_plus_names:
+        f_liq = (fundamentals_map or {}).get(s.ticker)
+        if f_liq and f_liq.avg_daily_volume and f_liq.current_price:
+            dollar_vol_m = f_liq.avg_daily_volume * f_liq.current_price / 1_000_000
+            if dollar_vol_m < _LIQUIDITY_THRESHOLD_M:
+                liquidity_warnings.append(
+                    f"⚠️ **{s.ticker}** avg daily volume ~${dollar_vol_m:.1f}M — "
+                    f"below ${_LIQUIDITY_THRESHOLD_M:.0f}M threshold. "
+                    "Limit individual orders to < 5% of daily volume to avoid moving the market."
+                )
+    if liquidity_warnings:
+        lines.append("**Liquidity warnings (PA+ names):**")
+        for w in liquidity_warnings:
+            lines.append(f"- {w}")
         lines.append("")
 
     # ── Signal tiers for capital deployment ────────────────────────────────────
