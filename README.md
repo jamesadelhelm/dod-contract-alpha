@@ -282,6 +282,13 @@ report sections. They're derived from composite scores, base MoS, and bear-case 
   - ⚠️ **REVIEW** — bear MoS flipped negative on a PA+ name: reduce to 75% sizing
 - **Liquidity warnings** — PA+ names below $2M/day avg dollar volume are flagged in Section 1.
   Filter with `--min-liquidity 2` to exclude illiquid names from rankings entirely.
+- **Earnings pre-announcement sizing** — position size is automatically halved when a PA+
+  name has earnings within 21 days. Binary event risk (beat/miss gaps) are independent of
+  thesis quality; sizing is restored to full on the next run post-earnings.
+- **Watchlist buy triggers** — Signal Tiers lists the base IV for each Watchlist/overvalued
+  name: "LMT becomes PA+ below $X" directly answers "when would I buy this?"
+- **Score trend arrows** — Changes Since Last Run shows ↑ / ↓ / → based on the rolling
+  30-run score history in `data/score_history.json`. Trends require ≥3 runs; shown as `—` until then.
 
 ---
 
@@ -521,6 +528,8 @@ Sector drives the DCF growth assumptions and terminal rate — misclassification
 | **Portfolio concentration** | When ≥ 3 actionable names share a common risk factor (Federal IT/DOGE exposure, Aerospace prime concentration), the Action Summary adds a ⚠️ cluster warning so sector risk is visible at the portfolio level — not just per-company. |
 | **No backtesting** | Scoring weights are constructed from first principles, not empirically validated on historical returns. This is the single most important limitation for real capital deployment. |
 | **Liquidity** | Avg daily dollar volume is shown as a warning when < $2M for PA+ names. Use `--min-liquidity 2` to exclude them from rankings. Volume data from yfinance `averageVolume10days`; not available in offline mock mode. |
+| **Score trend (minimum 3 runs)** | Trend arrows (↑ ↓ →) in Changes Since Last Run require ≥3 entries in `data/score_history.json`. They show `—` until then. History is appended on every live run, one entry per calendar day per ticker. |
+| **Earnings sizing (live only)** | Pre-announcement position halving requires `next_earnings_date` from yfinance. Offline mock mode has no earnings dates so the rule never fires in mock runs. |
 | **First-pass screen only** | Not a substitute for reading the 10-K, listening to earnings calls, or building your own discounted cash flow model. Use this tool to decide where to spend your research time, not to make the final call. |
 
 ---

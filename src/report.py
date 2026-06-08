@@ -26,29 +26,44 @@ _AEROSPACE_CAP_PCT = 15.0
 _BASE_POSITION_PCT = 6.0  # full-conviction PA+ max per name
 
 
-def _compute_position_size(s: CompanyScore) -> tuple[float, str]:
+def _compute_position_size(s: CompanyScore, f=None) -> tuple[float, str]:
     """Return (size_pct, sizing_rationale) for a single company.
-    Base 6% per PA+ name, scaled by bear-case MoS severity."""
+    Base 6% per PA+ name, scaled by bear-case MoS severity.
+    Auto-halved when earnings are within 21 days (binary event risk)."""
+    from datetime import datetime as _dt
     is_pa_plus = s.verdict in (
         Verdict.STRONG_CANDIDATE, Verdict.POTENTIALLY_ATTRACTIVE, Verdict.RESEARCH_FURTHER
     )
     b_mos = s.dcf.bear_mos if s.dcf else None
     is_overvalued = any(
-        "overvalued at" in f.lower() or "dcf:" in f.lower()
-        for f in (s.red_flags or [])
+        "overvalued at" in fstr.lower() or "dcf:" in fstr.lower()
+        for fstr in (s.red_flags or [])
     )
     if not is_pa_plus or is_overvalued:
         return 0.0, ""
     if b_mos is None:
-        return 3.0, "Half-size (no bear MoS data)"
+        size_pct, rationale = 3.0, "Half-size (no bear MoS data)"
     elif b_mos > 0:
-        return 6.0, "Full — bear case confirms MoS"
+        size_pct, rationale = 6.0, "Full — bear case confirms MoS"
     elif b_mos >= -15:
-        return 4.5, "75% — mild tail risk"
+        size_pct, rationale = 4.5, "75% — mild tail risk"
     elif b_mos >= -30:
-        return 3.0, "50% — elevated tail risk"
+        size_pct, rationale = 3.0, "50% — elevated tail risk"
     else:
-        return 1.5, "25% — survive the bear scenario"
+        size_pct, rationale = 1.5, "25% — survive the bear scenario"
+
+    # Halve sizing within 21 days of earnings — binary event risk (beat/miss) can
+    # gap the stock ±10% regardless of thesis quality.
+    if f and getattr(f, "next_earnings_date", None):
+        try:
+            days_out = (_dt.strptime(f.next_earnings_date, "%Y-%m-%d") - _dt.now()).days
+            if 0 < days_out <= 21:
+                size_pct = round(size_pct * 0.5, 1)
+                rationale = f"{rationale} → halved (earnings in {days_out}d ⚠️)"
+        except Exception:
+            pass
+
+    return size_pct, rationale
 
 SCORE_BAR_CHARS = 20
 
@@ -68,7 +83,23 @@ def _score_table_row(label: str, score: float, weight_pct: int) -> str:
     return f"| {label:<30} | {score:>6.1f}/100 | {weight_pct:>4}% | {_bar(score)} |"
 
 
-def _generate_changes_section(ranked_scores, last_scores, fundamentals_map) -> List[str]:
+def _score_trend(ticker: str, current_score: float, history: dict) -> str:
+    """Return a trend arrow based on rolling history: ↑ / ↓ / → / (empty)."""
+    entries = (history or {}).get(ticker, [])
+    if len(entries) < 3:
+        return ""
+    # Use last 3 entries (not including the current run, which isn't in history yet)
+    recent = [e["score"] for e in entries[-3:]]
+    avg_old = sum(recent[:2]) / 2
+    avg_new = recent[-1]
+    if avg_new - avg_old >= 1.0:
+        return " ↑"
+    elif avg_old - avg_new >= 1.0:
+        return " ↓"
+    return " →"
+
+
+def _generate_changes_section(ranked_scores, last_scores, fundamentals_map, score_history=None) -> List[str]:
     """Generate 'Changes Since Last Run' markdown lines from persisted last_scores.json."""
     if not last_scores:
         return ["*No prior run data — this is the first recorded run.*", ""]
@@ -117,11 +148,12 @@ def _generate_changes_section(ranked_scores, last_scores, fundamentals_map) -> L
     if changes:
         changes.sort(key=lambda x: abs(x["score_delta"]), reverse=True)
         lines += [
-            "| Ticker | Score Δ | Old → New Score | Verdict Change | Bear MoS Change |",
-            "|--------|--------:|----------------:|----------------|-----------------|",
+            "| Ticker | Score Δ | Trend | Old → New Score | Verdict Change | Bear MoS Change |",
+            "|--------|--------:|:-----:|----------------:|----------------|-----------------|",
         ]
         for ch in changes:
             delta_str = f"{ch['score_delta']:+.1f}" if abs(ch['score_delta']) >= 0.1 else "="
+            trend = _score_trend(ch["ticker"], ch["new_score"], score_history)
             verdict_str = (
                 f"{ch['old_verdict']} → **{ch['new_verdict']}**"
                 if ch["verdict_changed"] else ch["new_verdict"]
@@ -137,7 +169,7 @@ def _generate_changes_section(ranked_scores, last_scores, fundamentals_map) -> L
             else:
                 bear_str = "—"
             lines.append(
-                f"| {ch['ticker']} | {delta_str} | "
+                f"| {ch['ticker']} | {delta_str} | {trend.strip() or '—'} | "
                 f"{ch['old_score']:.1f} → {ch['new_score']:.1f} | "
                 f"{verdict_str} | {bear_str} |"
             )
@@ -205,6 +237,7 @@ def generate_report(
     live: bool = True,
     fundamentals_map: Dict = None,
     last_scores: Dict = None,
+    score_history: Dict = None,
 ) -> str:
     run_date = run_date or datetime.now().strftime("%Y-%m-%d %H:%M UTC")
 
@@ -228,7 +261,7 @@ def generate_report(
                  and not any("overvalued at" in f.lower() or "dcf:" in f.lower() for f in (s.red_flags or []))]
     _tier2_ex = [s for s in _pa_plus if s not in _tier1_ex
                  and not any("overvalued at" in f.lower() or "dcf:" in f.lower() for f in (s.red_flags or []))]
-    _deploy_rows_ex = [(s, *_compute_position_size(s)) for s in ranked_scores]
+    _deploy_rows_ex = [(s, *_compute_position_size(s, (fundamentals_map or {}).get(s.ticker))) for s in ranked_scores]
     _total_pct_ex   = sum(pct for _, pct, _ in _deploy_rows_ex if pct > 0)
 
     # Auto-generate executive summary
@@ -290,7 +323,7 @@ def generate_report(
         "## Changes Since Last Run",
         "",
     ]
-    lines += _generate_changes_section(ranked_scores, last_scores, fundamentals_map)
+    lines += _generate_changes_section(ranked_scores, last_scores, fundamentals_map, score_history)
     lines += ["---", ""]
 
     # ── 1. Action Summary ─────────────────────────────────────────────────────
@@ -452,8 +485,31 @@ def generate_report(
             lines.append(f"- 🔵 **Monitor** — Watchlist quality with positive base MoS: {', '.join(tier3)}")
         if tier4:
             lines.append(f"- ⏳ **Wait for Entry** — overvalued at current price: {', '.join(tier4)}")
+        lines.append("")
+
+        # Watchlist buy triggers: show the price at which each overvalued/watchlist
+        # name would cross into PA+ territory (base MoS ≥ 0 → base IV = entry trigger).
+        watchlist_triggers = []
+        for s in ranked_scores:
+            is_watchlist_q = s.verdict in (Verdict.WATCHLIST, Verdict.HIGH_QUALITY_BUT_EXPENSIVE)
+            is_overval = any("overvalued at" in f.lower() or "dcf:" in f.lower() for f in (s.red_flags or []))
+            if (is_watchlist_q or is_overval) and s.dcf and s.dcf.base_iv:
+                f_wt = (fundamentals_map or {}).get(s.ticker)
+                cur = f_wt.current_price if f_wt and f_wt.current_price else None
+                gap_str = ""
+                if cur and cur > s.dcf.base_iv:
+                    gap_pct = (cur - s.dcf.base_iv) / cur * 100
+                    gap_str = f" — {gap_pct:.0f}% above trigger"
+                watchlist_triggers.append(
+                    f"**{s.ticker}**: buy below **${s.dcf.base_iv:.0f}** (base IV){gap_str}"
+                )
+        if watchlist_triggers:
+            lines.append("**Watchlist buy triggers** (price at which name enters PA+ territory):")
+            for wt in watchlist_triggers:
+                lines.append(f"- {wt}")
+            lines.append("")
+
         lines += [
-            "",
             "> Signal tiers summarize the above signals. Not investment advice.",
             "> Verify all DCF assumptions and 10-K before any capital deployment.",
             "",
@@ -465,11 +521,11 @@ def generate_report(
     # Cluster caps prevent correlated exposure from exceeding concentration limits.
     deployable_rows = []
     for s in ranked_scores:
-        size_pct, rationale = _compute_position_size(s)
+        f_ds = (fundamentals_map or {}).get(s.ticker)
+        size_pct, rationale = _compute_position_size(s, f_ds)
         if size_pct > 0:
             b_mos = s.dcf.bear_mos if s.dcf else None
             bear_iv = s.dcf.bear_iv if s.dcf else None
-            f_ds = (fundamentals_map or {}).get(s.ticker)
             cur_price = f_ds.current_price if f_ds and f_ds.current_price else None
             tier_label = (
                 "🟢 Highest Conviction" if (b_mos is not None and b_mos > 0)
@@ -979,7 +1035,8 @@ def generate_report(
                         "past 6 months — management reducing exposure; warrants scrutiny."
                     )
 
-            sz, sz_logic = _compute_position_size(s)
+            f_ksd = (fundamentals_map or {}).get(s.ticker)
+            sz, sz_logic = _compute_position_size(s, f_ksd)
             if sz > 0:
                 key_sigs.append(
                     f"Recommended weight: **{sz:.1f}%** of portfolio — {sz_logic}."

@@ -63,7 +63,44 @@ def parse_args():
     return p.parse_args()
 
 
-_LAST_SCORES_PATH = DATA_DIR / "last_scores.json"
+_LAST_SCORES_PATH    = DATA_DIR / "last_scores.json"
+_SCORE_HISTORY_PATH  = DATA_DIR / "score_history.json"
+_HISTORY_MAX_ENTRIES = 30
+
+
+def _load_score_history() -> dict:
+    """Load rolling score history (up to _HISTORY_MAX_ENTRIES per ticker)."""
+    try:
+        if _SCORE_HISTORY_PATH.exists():
+            return json.loads(_SCORE_HISTORY_PATH.read_text())
+    except Exception:
+        pass
+    return {}
+
+
+def _update_score_history(scores: list, fundamentals_map: dict) -> None:
+    """Append current run to the rolling history file."""
+    try:
+        history = _load_score_history()
+        run_date = datetime.now().strftime("%Y-%m-%d")
+        for s in scores:
+            f = fundamentals_map.get(s.ticker)
+            entry = {
+                "score": round(s.final_score, 1),
+                "verdict": s.verdict.value,
+                "bear_mos": round(s.dcf.bear_mos, 1) if s.dcf and s.dcf.bear_mos is not None else None,
+                "date": run_date,
+            }
+            ticker_history = history.get(s.ticker, [])
+            # Avoid duplicate entries for the same calendar date
+            if ticker_history and ticker_history[-1].get("date") == run_date:
+                ticker_history[-1] = entry  # overwrite same-day entry
+            else:
+                ticker_history.append(entry)
+            history[s.ticker] = ticker_history[-_HISTORY_MAX_ENTRIES:]
+        _SCORE_HISTORY_PATH.write_text(json.dumps(history, indent=2))
+    except Exception:
+        pass
 
 
 def _load_last_scores() -> dict:
@@ -246,7 +283,8 @@ def main():
         scores = scores[:args.top]
 
     # ── Step 4: Print summary ─────────────────────────────────────────────────
-    last_scores = _load_last_scores()
+    last_scores   = _load_last_scores()
+    score_history = _load_score_history()
     print("\n[4/4] Results\n")
     print(f"{'#':<3} {'Ticker':<8} {'Score':>6} {'Chg':>5} {'Price':>7} {'Data':>5} {'MoS':>6} {'Bear':>6}  {'Verdict':<28} {'Sector'}")
     print("-" * 115)
@@ -296,6 +334,7 @@ def main():
     # Save scores for next-run delta comparison (only when live and not mock)
     if live and args.source != "mock":
         _save_last_scores(scores, fundamentals_map)
+        _update_score_history(scores, fundamentals_map)
 
     unmatched_value = sum(c.contract_value for c in private_contracts if c.contract_value)
     print(f"\nPrivate/unmatched: {len(private_contracts)} contracts (${unmatched_value:.0f}M unresolved)")
@@ -338,6 +377,7 @@ def main():
             live=live,
             fundamentals_map=fundamentals_map,
             last_scores=last_scores,
+            score_history=score_history,
         )
         save_report(report_content, output_path)
         print(f"\nReport → {output_path}")
