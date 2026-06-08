@@ -43,9 +43,12 @@ tickers, fetching live fundamentals, running a DCF, and ranking every company by
 │  STEP 3: ENRICH                                                             │
 │   yfinance (live):  price, P/E, Fwd P/E, EV/EBITDA, FCF yield, short %,   │
 │                     share count Δ, dividend yield, earnings calendar,       │
-│                     analyst consensus, 52-week range                        │
-│   Curated overlay:  DoD revenue %, government revenue %, backlog/revenue,  │
-│                     moat rating, earnings stability years                   │
+│                     analyst consensus, 52-week range, ROIC (derived)       │
+│   Curated overlay:  44-entry database — DoD revenue %, gov revenue %,      │
+│                     backlog/revenue, moat rating, earnings stability years  │
+│                     (supplements or corrects yfinance for 44 defense and    │
+│                     adjacent companies including RTX, BA, LHX, CACI,       │
+│                     HON, OSK, CNC, UNH, VSAT, and all major primes)        │
 │  Sector classifier: keyword voting on contract descriptions → 15 sectors   │
 │  Ticker overrides:  correct systematic misclassifications (BAH→AI/Data,    │
 │                     LDOS→Cloud IT, RTX→Defense Prime, etc.)                │
@@ -55,11 +58,13 @@ tickers, fetching live fundamentals, running a DCF, and ranking every company by
 │  STEP 4: SCORE                                                              │
 │  6-component framework (0–100 each, weighted):                              │
 │   Buffett Quality   25%  — ROIC, FCF margin, earnings stability, moat      │
-│   Graham Value      20%  — P/E, Fwd P/E, EV/EBITDA, FCF yield, P/B        │
+│   Graham Value      20%  — P/E, Fwd P/E, EV/EBITDA, FCF yield, P/B,       │
+│                            dividend yield (calibrated for defense universe) │
 │   DoD Stability     20%  — DoD revenue %, backlog, sole-source position    │
 │   Management        15%  — ROIC, FCF consistency, insider ownership        │
 │   Contract Catalyst 10%  — contract size vs. revenue, sole-source, IDIQ   │
 │   Balance Sheet     10%  — current ratio, Debt/EBITDA, interest coverage  │
+│                            (negative IC = operating loss → flagged)        │
 │  + 3-scenario DCF (bear/base/bull) with reverse DCF (implied growth rate) │
 │  + Specialist Tier bonus for mid-cap, high-DoD-concentration companies    │
 └────────────────────────────────┬────────────────────────────────────────────┘
@@ -129,21 +134,22 @@ Output: `reports/report_YYYYMMDD_HHMM.md` — open in VS Code, Obsidian, or any 
 #   Ticker    Score  Data    MoS  Verdict                      Sector
 ------------------------------------------------------------------------------------------
 1   BAH        70.6  100%   +21%  🟡 Potentially Attractive     AI / Data / Software
-2   GD         69.5  100%   +51%  🟡 Potentially Attractive     Shipbuilding
-3   ACN        69.4  100%  +152%  🟡 Potentially Attractive     Cloud / IT Services
-4   LDOS       69.0  100%    +4%  🟡 Potentially Attractive     Cloud / IT Services
-5   SAIC       65.1  100%    +4%  🔵 Watchlist                  Cloud / IT Services
-6   NOC        62.9  100%   -65%  🔵 Watchlist                  Aerospace
-7   LMT        61.6  100%   -63%  🔵 Watchlist                  Aerospace
-8   HII        61.0  100%   +34%  🔵 Watchlist                  Shipbuilding
-9   TXT        60.3  100%   -27%  🔵 Watchlist                  Aerospace
-10  ACM        60.1  100%   -54%  🔵 Watchlist                  Infrastructure / Construction
+2   ACN        70.4  100%  +152%  🟡 Potentially Attractive     Cloud / IT Services
+3   GD         69.5  100%   +51%  🟡 Potentially Attractive     Shipbuilding
+4   LDOS       69.4  100%   +21%  🟡 Potentially Attractive     Cloud / IT Services
+5   SAIC       65.7  100%    +4%  🔵 Watchlist                  Cloud / IT Services
+6   LMT        63.6  100%   -63%  🔵 Watchlist                  Aerospace
+7   NOC        63.5  100%   -65%  🔵 Watchlist                  Aerospace
+8   OSK        62.3  100%    -7%  🔵 Watchlist                  Industrial Components
+9   ACM        62.3  100%   -51%  🔵 Watchlist                  Infrastructure / Construction
+10  HII        61.5  100%   +34%  🔵 Watchlist                  Shipbuilding
 ...
-29  SHIM       23.7   56%  -584%  🔴 Ignore                     Infrastructure / Construction
+28  BA         36.9   94%   -87%  🔴 Ignore                     Aerospace
+29  SHIM       23.5   56%  -584%  🔴 Ignore                     Infrastructure / Construction
 
-Private/unmatched: 354 contracts ($251,885M unresolved)
+Private/unmatched: 353 contracts ($251,662M unresolved)
 
-Report → reports/report_20260607_1544.md
+Report → reports/report_20260607_2240.md
 ```
 
 ### What the report looks like (Section 1 — Action Summary)
@@ -166,18 +172,23 @@ Report → reports/report_20260607_1544.md
 
 | Ticker | Price | Bear IV | Base IV | Bull IV | MoS (Base) | Reverse DCF | Discount Rate | DCF Verdict              |
 |--------|------:|--------:|--------:|--------:|-----------:|------------:|--------------:|--------------------------|
-| BAH    | $79   | $48     | $96     | $383    | +21%       | 3%/yr       | 9.2%          | Undervalued              |
-| GD     | $346  | $387    | $523    | $772    | +51%       | 2%/yr       | 7.8%          | Significantly Undervalued|
-| ACN    | $178  | $336    | $448    | $679    | +152%      | -5%/yr      | 9.0%          | Significantly Undervalued|
-| LDOS   | $124  | $104    | $129    | $163    | +4%        | 4%/yr       | 8.5%          | Fairly Valued            |
-| NOC    | $544  | $143    | $190    | $311    | -65%       | 17%/yr      | 8.0%          | Significantly Overvalued |
-| BA     | $215  | $7      | $28     | $44     | -87%       | 32%/yr      | 10.2%         | Significantly Overvalued |
+| BAH    | $140  | $97     | $169    | $512    | +21%       | 3%/yr       | 9.2%          | Undervalued              |
+| GD     | $288  | $380    | $435    | $640    | +51%       | 2%/yr       | 7.8%          | Significantly Undervalued|
+| ACN    | $333  | $621    | $838    | $1,201  | +152%      | -5%/yr      | 9.0%          | Significantly Undervalued|
+| LDOS   | $167  | $138    | $202    | $255    | +21%       | 4%/yr       | 8.5%          | Undervalued              |
+| LMT    | $463  | $105    | $171    | $287    | -63%       | 16%/yr      | 8.0%          | Significantly Overvalued |
+| BA     | $195  | $6      | $22     | $39     | -87%       | 30%/yr      | 10.5%         | Significantly Overvalued |
 ```
 
-> **Reading the DCF:** MoS = (Intrinsic Value − Price) / Price. Positive = stock trading below what
-> the model thinks it's worth. Reverse DCF answers "what growth rate does the current price require?"
-> BA's price implies 32%/yr growth for 10 years — the sanity check that flags it as a pass regardless
-> of any other signal.
+> **Reading the DCF:** MoS = (Intrinsic Value − Price) / Price. Positive = stock trading below
+> what the model thinks it's worth. Reverse DCF answers "what growth rate does the current price
+> require?" BA's price implies 30%/yr growth for 10 years — the sanity check that flags it as a
+> pass regardless of any other signal. ACN's large MoS reflects its massive commercial FCF vs. its
+> DoD contract activity — not a DoD thesis, just a quality business at a reasonable price.
+>
+> **Important:** For Ignore-rated companies (BA, CNC, HUM, UNH), the Action Summary table
+> suppresses the MoS column and shows "—†" because positive MoS on a low-quality or
+> low-concentration name is a DCF artifact, not a buy signal.
 
 ---
 
@@ -219,11 +230,11 @@ Final Score = Buffett(25%) + Graham(20%) + DoD(20%) + Management(15%) + Catalyst
 | Component | Weight | What It Measures | Key Signals |
 |-----------|:------:|-----------------|-------------|
 | **Buffett Quality** | 25% | Is this a durable, high-quality business? | ROIC ≥ 15%, FCF margin ≥ 12%, earnings stable 5+ years, economic moat |
-| **Graham Value** | 20% | Is it trading at a reasonable price? | P/E, Fwd P/E, EV/EBITDA, FCF yield, P/B — calibrated for 18–30x defense universe |
+| **Graham Value** | 20% | Is it trading at a reasonable price? | P/E, Fwd P/E, EV/EBITDA, FCF yield ≥ 6%, P/B, dividend yield — calibrated for 18–30x defense universe |
 | **DoD Stability** | 20% | How durable is the government revenue? | DoD revenue %, backlog/revenue ratio, sole-source position, sector durability |
-| **Management Quality** | 15% | Is management allocating capital well? | ROIC trend, FCF consistency, insider ownership, share count discipline |
-| **Contract Catalyst** | 10% | Is this contract meaningful to the thesis? | Contract size as % of revenue, funded vs. ceiling, sole-source, duration |
-| **Balance Sheet** | 10% | Can the company survive a downturn? | Current ratio, Debt/EBITDA, interest coverage |
+| **Management Quality** | 15% | Is management allocating capital well? | ROIC, FCF consistency, insider ownership, share count discipline (buybacks vs. dilution) |
+| **Contract Catalyst** | 10% | Is this contract meaningful to the thesis? | Contract size as % of revenue, funded vs. ceiling (IDIQ haircut), sole-source, duration |
+| **Balance Sheet** | 10% | Can the company survive a downturn? | Current ratio, Debt/EBITDA, interest coverage (negative IC = operating loss flagged separately) |
 
 ### Verdict System
 
@@ -300,7 +311,8 @@ Automatically flagged and surfaced in Section 3 of the report:
 | Margin contraction | Operating margin down > 3pp YoY |
 | Gross margin contraction | Down > 2pp YoY |
 | Leverage | Debt/EBITDA > 4.0x |
-| Interest coverage | < 1.5x |
+| Interest coverage negative | EBIT < 0 — operating loss cannot service debt (insolvency risk if sustained) |
+| Interest coverage dangerously low | IC < 1.5x |
 | Current ratio | < 1.0 |
 | IDIQ funded ratio | Funded < 25% of ceiling |
 
@@ -364,23 +376,32 @@ To force re-resolution of a cached awardee: `rm data/resolved_cache.json`
 
 ### Improving fundamentals coverage
 
-`data/mock_fundamentals.json` supplements yfinance with fields it can't reliably provide.
-Add an entry for any ticker where DoD revenue %, backlog, or moat rating matters:
+`data/mock_fundamentals.json` is a 44-entry curated database that supplements yfinance with
+fields it cannot reliably provide, and serves as the full data source for offline (`--no-live`) runs.
 
+**Fields applied as overlay on top of yfinance (live runs):**
+These override yfinance only when yfinance returns None:
+- `dod_revenue_pct`, `government_revenue_pct` — not available from yfinance
+- `backlog_to_revenue` — not available from yfinance
+- `moat_rating` — subjective; must be set manually ("Wide" / "Narrow" / "None")
+- `roic` — derived from financial statements; override if yfinance ROIC is unreliable
+
+**Always overrides yfinance:**
+- `earnings_stability_years` — yfinance caps at 4 years; established primes need the real number
+
+**To add a new ticker** (minimum useful entry):
 ```json
-"VVX": {
-  "company_name": "V2X Inc",
-  "dod_revenue_pct": 95,
-  "government_revenue_pct": 98,
-  "backlog_to_revenue": 1.6,
+"PSN": {
+  "dod_revenue_pct": 48,
+  "government_revenue_pct": 78,
+  "backlog_to_revenue": 1.8,
   "moat_rating": "Narrow",
   "earnings_stability_years": 8
 }
 ```
 
-Do not duplicate fields yfinance provides live: price, P/E, Fwd P/E, EV/EBITDA, FCF yield,
-P/B, D/E, current ratio, revenue growth, insider %, short interest, dividend yield,
-share count change, next earnings date, analyst consensus, 52W range.
+Full financial data (price, P/E, margins, etc.) can also be added for offline-mode accuracy,
+but yfinance wins in live runs — don't expect those fields to override live data.
 
 ### Fixing a sector misclassification
 
@@ -403,16 +424,18 @@ Sector drives the DCF growth assumptions and terminal rate — misclassification
 
 | Issue | Detail |
 |-------|--------|
-| **USAspending data lag** | 30–90 days. Contracts from the last ~6 weeks may be missing. Fiscal-year mode is used by default to capture all major awards. |
-| **yfinance accuracy** | P/E, EV/EBITDA, FCF yield can diverge from Bloomberg/FactSet. Treat as directional. |
-| **Overlay staleness** | DoD %, backlog, moat rating are manually maintained — verify against the latest 10-K or earnings call. |
-| **IDIQ ceilings** | USAspending shows obligated task orders, not contract ceiling. Ceiling ≠ guaranteed revenue. |
-| **Sector classification** | Keyword-based on short descriptions. Ticker overrides applied for common misclassifications. |
-| **Earnings stability cap** | yfinance returns max 4 years of history. Established primes need `earnings_stability_years` set in the overlay. |
-| **Graham calibration** | P/E brackets calibrated for 18–30x defense universe. Verdict thresholds adjusted accordingly. |
-| **DCF sensitivity** | Terminal value is 60–80% of total. Use reverse DCF as the primary sanity check — not the scenario IVs. |
-| **No backtesting** | Scoring weights are constructed from first principles, not empirically validated on historical returns. This is the single most important limitation. |
-| **First-pass screen only** | Not a substitute for reading the 10-K, listening to earnings calls, or building your own model. |
+| **USAspending data lag** | 30–90 days. Contracts from the last ~6 weeks may be missing. Fiscal-year mode captures all major awards back to Oct 1. |
+| **yfinance accuracy** | P/E, EV/EBITDA, FCF yield can diverge from Bloomberg/FactSet by 5–15%. Treat as directional — verify before acting. |
+| **Overlay staleness** | DoD %, backlog, moat rating are manually maintained. The tool flags when these are estimated vs. verified. Always confirm against the latest 10-K or earnings call transcript. |
+| **IDIQ ceilings** | USAspending records obligated task orders, not total contract ceiling. An IDIQ ceiling of $500M with $50M funded (10%) is a much weaker catalyst than it appears. The tool applies a haircut and flags this. |
+| **Sector classification** | Keyword-based on short contract descriptions. Ticker overrides applied for 20 known systematic misclassifications. Add new ones in `TICKER_SECTOR_OVERRIDES` in `config.py`. |
+| **Earnings stability cap** | yfinance returns max 4 years of income statement history. When this cap is hit, the tool raises a flag in the Buffett component. Add `earnings_stability_years` to the overlay for established companies. |
+| **Large commercial companies** | ACN, IBM, HON have strong scores driven by business quality, but DoD contracts are marginal to their investment thesis. Read the "Why It Might Not Matter" section in the report carefully for these names. |
+| **MoS for non-defense companies** | Companies like CNC, HUM, UNH have high FCF from their commercial business (Medicaid, Medicare Advantage) that inflates the DCF Margin of Safety. MoS is suppressed in the Action Summary for Ignore-rated companies specifically to prevent this from being mistaken for a buy signal. |
+| **Graham calibration** | P/E brackets calibrated for 18–30x defense universe. Dividend yield replaces current ratio in Graham Value to avoid double-counting with the Balance Sheet component. |
+| **DCF sensitivity** | Terminal value is 60–80% of the total intrinsic value. Use the reverse DCF (implied growth rate) as the primary sanity check — not the absolute scenario IVs. |
+| **No backtesting** | Scoring weights are constructed from first principles, not empirically validated on historical returns. This is the single most important limitation for real capital deployment. |
+| **First-pass screen only** | Not a substitute for reading the 10-K, listening to earnings calls, or building your own discounted cash flow model. Use this tool to decide where to spend your research time, not to make the final call. |
 
 ---
 

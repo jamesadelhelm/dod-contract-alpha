@@ -124,6 +124,13 @@ def score_buffett_quality(f: CompanyFundamentals) -> Tuple[float, str, List[str]
     details.append(f"Earnings stability {stab:.0f} yrs (+{stab_pts:.0f})")
     if stab < 5:
         flags.append(f"Short earnings history ({stab:.0f} years)")
+    # yfinance income_stmt only exposes 4 years of history; if no curated overlay was applied
+    # the stability score is capped at 4 regardless of the actual track record.
+    if stab == 4 and (f.data_source or "").lower() == "yfinance":
+        flags.append(
+            "earnings_stability_years = 4 (yfinance 4-year data limit) — "
+            "actual track record may be much longer; add to mock_fundamentals.json for accurate scoring."
+        )
 
     # ROE — 15 pts (with caveat for leverage-inflated ROE)
     roe = _safe(f.roe)
@@ -234,17 +241,19 @@ def score_graham_value(f: CompanyFundamentals) -> Tuple[float, str, List[str]]:
         details.append("EV/EBITDA not available (+0)")
 
     # Free cash flow yield — 20 pts
+    # Thresholds calibrated for the defense/gov-services universe where 4-6% FCF yield
+    # is typically excellent (vs. Graham's original 7%+ for net-net deep value stocks).
     fcfy = f.fcf_yield
     if fcfy and fcfy > 0:
-        if fcfy >= 7:
+        if fcfy >= 6:
             fcfy_pts = 20
-        elif fcfy >= 5:
+        elif fcfy >= 4.5:
             fcfy_pts = 16
-        elif fcfy >= 3.5:
+        elif fcfy >= 3.0:
             fcfy_pts = 12
-        elif fcfy >= 2:
+        elif fcfy >= 1.5:
             fcfy_pts = 7
-        elif fcfy >= 1:
+        elif fcfy >= 0.5:
             fcfy_pts = 3
         else:
             fcfy_pts = 1
@@ -268,6 +277,10 @@ def score_graham_value(f: CompanyFundamentals) -> Tuple[float, str, List[str]]:
             pb_pts = 5
         elif pb <= 8.0:
             pb_pts = 2
+        elif pb <= 15.0:
+            # High P/B in defense often reflects buyback-reduced book value (LMT, BAH, SAIC),
+            # not speculative premium. Give 1 token point rather than penalizing 0.
+            pb_pts = 1
         else:
             pb_pts = 0
         points += pb_pts
@@ -290,22 +303,27 @@ def score_graham_value(f: CompanyFundamentals) -> Tuple[float, str, List[str]]:
         details.append(f"Earnings stability {stab:.0f} yrs (+0)")
         flags.append("Insufficient earnings track record for Graham-style confidence")
 
-    # Current ratio — 10 pts
-    cr = f.current_ratio
-    if cr is not None:
-        if cr >= 2.0:
-            cr_pts = 10
-        elif cr >= 1.5:
-            cr_pts = 8
-        elif cr >= 1.2:
-            cr_pts = 5
-        elif cr >= 1.0:
-            cr_pts = 2
+    # Dividend yield — 10 pts
+    # Graham valued income-producing equities; a reliable dividend also signals
+    # durable profitability and management confidence in the business. Defense
+    # primes with multi-decade dividend track records get appropriately rewarded.
+    # (Current ratio is evaluated in the Balance Sheet component to avoid double-counting.)
+    div_yield = getattr(f, "dividend_yield", None)
+    if div_yield is not None and div_yield > 0:
+        if div_yield >= 3.0:
+            dy_pts = 10
+        elif div_yield >= 2.0:
+            dy_pts = 7
+        elif div_yield >= 1.0:
+            dy_pts = 5
+        elif div_yield >= 0.1:
+            dy_pts = 2
         else:
-            cr_pts = 0
-            flags.append(f"Current ratio below 1.0 ({cr:.1f}) — liquidity concern")
-        points += cr_pts
-        details.append(f"Current ratio {cr:.1f}x (+{cr_pts:.0f})")
+            dy_pts = 0
+        points += dy_pts
+        details.append(f"Dividend yield {div_yield:.1f}% (+{dy_pts:.0f})")
+    else:
+        details.append("No dividend (+0)")
 
     score = _clamp(points)
     explanation = (
@@ -775,7 +793,14 @@ def score_balance_sheet(f: CompanyFundamentals) -> Tuple[float, str, List[str]]:
         else:
             details.append("Interest coverage N/A (+0)")
     else:
-        if ic >= 12:
+        if ic < 0:
+            # Operating loss — EBIT doesn't cover interest at all
+            ic_pts = 0
+            flags.append(
+                f"Interest coverage negative ({ic:.1f}x) — operating loss cannot service debt; "
+                "insolvency risk if sustained"
+            )
+        elif ic >= 12:
             ic_pts = 25
         elif ic >= 8:
             ic_pts = 19

@@ -381,16 +381,21 @@ def _debt_ebitda(info: dict) -> Optional[float]:
 
 
 def _interest_coverage(info: dict, stock) -> Optional[float]:
-    """EBIT / Interest Expense from income statement."""
+    """
+    EBIT / |Interest Expense| from income statement.
+    Positive = EBIT covers interest; negative = operating loss cannot service debt.
+    yfinance stores interest expense as a negative number (expense convention), so we
+    divide by abs(int_exp) to get the correct signed coverage ratio.
+    """
     try:
         inc = stock.income_stmt
         if inc is None or inc.empty:
             return None
         col = inc.columns[0]
-        ebit      = _row(inc, ["EBIT", "Operating Income"], col)
-        int_exp   = _row(inc, ["Interest Expense", "Interest Expense Non Operating"], col)
-        if ebit and int_exp and int_exp != 0:
-            return round(abs(ebit / int_exp), 1)
+        ebit    = _row(inc, ["EBIT", "Operating Income"], col)
+        int_exp = _row(inc, ["Interest Expense", "Interest Expense Non Operating"], col)
+        if ebit is not None and int_exp is not None and int_exp != 0:
+            return round(ebit / abs(int_exp), 1)
     except Exception:
         pass
     return None

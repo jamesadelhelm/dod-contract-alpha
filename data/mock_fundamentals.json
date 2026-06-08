@@ -24,7 +24,8 @@
     "insider_ownership_pct": 0.1,
     "earnings_stability_years": 20,
     "moat_rating": "Narrow",
-    "data_notes": "Mock data. Primarily consumer/enterprise telecom. FirstNet is the main DoD-adjacent franchise (nationwide first-responder network). Government is ~8% of revenue; DoD specifically ~3%. High legacy debt from DirecTV acquisition (now divested). Competitive moat narrowing vs. Verizon and cable. Individual DoD contracts are immaterial to investment thesis. Price ~$23 approx mid-2025."
+    "data_notes": "Mock data. Primarily consumer/enterprise telecom. FirstNet is the main DoD-adjacent franchise (nationwide first-responder network). Government is ~8% of revenue; DoD specifically ~3%. High legacy debt from DirecTV acquisition (now divested). Competitive moat narrowing vs. Verizon and cable. Individual DoD contracts are immaterial to investment thesis. Price ~$23 approx mid-2025.",
+    "dividend_yield": 5.2
   },
   "TMUS": {
     "company_name": "T-Mobile US Inc.",
@@ -51,7 +52,8 @@
     "insider_ownership_pct": 0.2,
     "earnings_stability_years": 8,
     "moat_rating": "Narrow",
-    "data_notes": "Mock data. T-Mobile Secure Federal Operations is their DoD/government subsidiary. Government revenue is a small share of total. Sprint merger integration substantially complete. Network infrastructure moat exists but competition from AT&T and Verizon is intense. Individual DoD contracts are not material to investment thesis. Price ~$165 approx mid-2025."
+    "data_notes": "Mock data. T-Mobile Secure Federal Operations is their DoD/government subsidiary. Government revenue is a small share of total. Sprint merger integration substantially complete. Network infrastructure moat exists but competition from AT&T and Verizon is intense. Individual DoD contracts are not material to investment thesis. Price ~$165 approx mid-2025.",
+    "dividend_yield": 1.5
   },
   "ACM": {
     "company_name": "AECOM",
@@ -78,7 +80,8 @@
     "insider_ownership_pct": 1.2,
     "earnings_stability_years": 12,
     "moat_rating": "Narrow",
-    "data_notes": "Mock data. Formerly URS Group (acquired 2014) and now includes legacy URS and AECOM entities. Heavily government-focused engineering and construction services. DoD includes environmental remediation, base construction, infrastructure hardening. Spun off Amentum (management services) in 2023. Low margins typical of engineering services. Backlog provides meaningful revenue visibility. Price ~$86 approx mid-2025."
+    "data_notes": "Mock data. Formerly URS Group (acquired 2014) and now includes legacy URS and AECOM entities. Heavily government-focused engineering and construction services. DoD includes environmental remediation, base construction, infrastructure hardening. Spun off Amentum (management services) in 2023. Low margins typical of engineering services. Backlog provides meaningful revenue visibility. Price ~$86 approx mid-2025.",
+    "dividend_yield": 0.8
   },
   "TTEK": {
     "company_name": "Tetra Tech Inc.",
@@ -105,7 +108,8 @@
     "insider_ownership_pct": 2.5,
     "earnings_stability_years": 18,
     "moat_rating": "Narrow",
-    "data_notes": "Mock data. Focused on environmental and engineering services for US government, DoD, and international clients. 'EC' subsidiary handles DoD environmental remediation (FUDS — Formerly Used Defense Sites program). Clean balance sheet relative to peers. Better margins than AECOM due to higher-value consulting mix. Meaningful government revenue concentration. Price ~$98 approx mid-2025."
+    "data_notes": "Mock data. Focused on environmental and engineering services for US government, DoD, and international clients. 'EC' subsidiary handles DoD environmental remediation (FUDS \u2014 Formerly Used Defense Sites program). Clean balance sheet relative to peers. Better margins than AECOM due to higher-value consulting mix. Meaningful government revenue concentration. Price ~$98 approx mid-2025.",
+    "dividend_yield": 0.5
   },
   "J": {
     "company_name": "Jacobs Solutions Inc.",
@@ -132,7 +136,8 @@
     "insider_ownership_pct": 1.0,
     "earnings_stability_years": 20,
     "moat_rating": "Narrow",
-    "data_notes": "Mock data. Formerly Jacobs Engineering Group. Government/defense services is the core business — DoD, NASA, DHS, EPA. Rebranded as Jacobs Solutions after divesting lower-margin construction operations. Backlog provides solid forward visibility. 'Jacobs Government Services Company' is the primary DoD contracting entity. Strong position in critical infrastructure and national security programs. Price ~$101 approx mid-2025."
+    "data_notes": "Mock data. Formerly Jacobs Engineering Group. Government/defense services is the core business \u2014 DoD, NASA, DHS, EPA. Rebranded as Jacobs Solutions after divesting lower-margin construction operations. Backlog provides solid forward visibility. 'Jacobs Government Services Company' is the primary DoD contracting entity. Strong position in critical infrastructure and national security programs. Price ~$101 approx mid-2025.",
+    "dividend_yield": 0.5
   },
   "VZ": {
     "company_name": "Verizon Communications Inc.",
@@ -159,7 +164,8 @@
     "insider_ownership_pct": 0.1,
     "earnings_stability_years": 22,
     "moat_rating": "Narrow",
-    "data_notes": "Mock data. Primarily consumer/enterprise telecom. Government/DoD revenue is a small fraction of total. Network infrastructure moat but highly capital-intensive. Individual DoD contracts are not material to investment thesis. Price ~$42 approx mid-2025."
+    "data_notes": "Mock data. Primarily consumer/enterprise telecom. Government/DoD revenue is a small fraction of total. Network infrastructure moat but highly capital-intensive. Individual DoD contracts are not material to investment thesis. Price ~$42 approx mid-2025.",
+    "dividend_yield": 6.5
   },
   "GD": {
     "company_name": "General Dynamics Corporation",
@@ -186,7 +192,8 @@
     "insider_ownership_pct": 1.2,
     "earnings_stability_years": 20,
     "moat_rating": "Wide",
-    "data_notes": "Mock data — verify via 10-K. Price ~$288 approx mid-2025."
+    "data_notes": "Mock data \u2014 verify via 10-K. Price ~$288 approx mid-2025.",
+    "dividend_yield": 2.1
   },
   "HII": {
     "company_name": "Huntington Ingalls Industries",
@@ -213,7 +220,8 @@
     "insider_ownership_pct": 0.9,
     "earnings_stability_years": 12,
     "moat_rating": "Wide",
-    "data_notes": "Mock data — verify via 10-K. Newport News and Ingalls are sole US suppliers of nuclear carriers and amphibious warships. Price ~$242 approx mid-2025."
+    "data_notes": "Mock data \u2014 verify via 10-K. Newport News and Ingalls are sole US suppliers of nuclear carriers and amphibious warships. Price ~$242 approx mid-2025.",
+    "dividend_yield": 2.5
   },
   "LDOS": {
     "company_name": "Leidos Holdings Inc",
@@ -240,7 +248,8 @@
     "insider_ownership_pct": 2.1,
     "earnings_stability_years": 10,
     "moat_rating": "Narrow",
-    "data_notes": "Mock data — verify via 10-K. Price ~$167 approx mid-2025."
+    "data_notes": "Mock data \u2014 verify via 10-K. Price ~$167 approx mid-2025.",
+    "dividend_yield": 1.2
   },
   "PLTR": {
     "company_name": "Palantir Technologies Inc",
@@ -267,7 +276,8 @@
     "insider_ownership_pct": 9.8,
     "earnings_stability_years": 2,
     "moat_rating": "Narrow",
-    "data_notes": "Mock data. High valuation is the dominant risk. Revenue growth ~27% YoY. Government revenue concentration creates both stability and exposure. Price ~$80 approx mid-2025."
+    "data_notes": "Mock data. High valuation is the dominant risk. Revenue growth ~27% YoY. Government revenue concentration creates both stability and exposure. Price ~$80 approx mid-2025.",
+    "dividend_yield": 0.0
   },
   "BAH": {
     "company_name": "Booz Allen Hamilton Holding Corporation",
@@ -294,7 +304,8 @@
     "insider_ownership_pct": 3.4,
     "earnings_stability_years": 15,
     "moat_rating": "Narrow",
-    "data_notes": "Mock data. High P/B from leveraged recaps. High ROE is partly leverage-driven. Strong clearance/IC relationships are a moat component. Price ~$140 approx mid-2025."
+    "data_notes": "Mock data. High P/B from leveraged recaps. High ROE is partly leverage-driven. Strong clearance/IC relationships are a moat component. Price ~$140 approx mid-2025.",
+    "dividend_yield": 1.5
   },
   "KTOS": {
     "company_name": "Kratos Defense & Security Solutions Inc",
@@ -321,7 +332,8 @@
     "insider_ownership_pct": 5.8,
     "earnings_stability_years": 4,
     "moat_rating": "Narrow",
-    "data_notes": "Mock data. Kratos is a high-growth lower-tier defense tech company. Sole-source drone work provides moat element but profitability is still limited. Valuation is speculative. Price ~$35 approx mid-2025."
+    "data_notes": "Mock data. Kratos is a high-growth lower-tier defense tech company. Sole-source drone work provides moat element but profitability is still limited. Valuation is speculative. Price ~$35 approx mid-2025.",
+    "dividend_yield": 0.0
   },
   "HUM": {
     "company_name": "Humana Inc",
@@ -348,7 +360,8 @@
     "insider_ownership_pct": 0.8,
     "earnings_stability_years": 14,
     "moat_rating": "Narrow",
-    "data_notes": "Mock data. TRICARE contract is highly visible, durable government revenue. DoD % is relatively small vs total revenue; Medicare Advantage is core. Medical cost pressures are significant risk. Price ~$280 approx mid-2025."
+    "data_notes": "Mock data. TRICARE contract is highly visible, durable government revenue. DoD % is relatively small vs total revenue; Medicare Advantage is core. Medical cost pressures are significant risk. Price ~$280 approx mid-2025.",
+    "dividend_yield": 0.0
   },
   "BWXT": {
     "company_name": "BWX Technologies Inc",
@@ -375,7 +388,8 @@
     "insider_ownership_pct": 1.1,
     "earnings_stability_years": 20,
     "moat_rating": "Wide",
-    "data_notes": "Mock data. Sole supplier of naval nuclear reactor components and fuel. Extraordinarily durable moat — no practical substitute exists. High P/B from leverage. ROE inflated by leverage and buybacks. Price ~$113 approx mid-2025."
+    "data_notes": "Mock data. Sole supplier of naval nuclear reactor components and fuel. Extraordinarily durable moat \u2014 no practical substitute exists. High P/B from leverage. ROE inflated by leverage and buybacks. Price ~$113 approx mid-2025.",
+    "dividend_yield": 1.2
   },
   "LMT": {
     "company_name": "Lockheed Martin Corporation",
@@ -402,7 +416,8 @@
     "insider_ownership_pct": 0.5,
     "earnings_stability_years": 25,
     "moat_rating": "Wide",
-    "data_notes": "Mock data. F-35 program creates massive long-term backlog. THAAD is a national security critical program. Some F-35 execution risk and C-130 maturity drag. Price ~$463 approx mid-2025."
+    "data_notes": "Mock data. F-35 program creates massive long-term backlog. THAAD is a national security critical program. Some F-35 execution risk and C-130 maturity drag. Price ~$463 approx mid-2025.",
+    "dividend_yield": 2.5
   },
   "NOC": {
     "company_name": "Northrop Grumman Corporation",
@@ -429,7 +444,8 @@
     "insider_ownership_pct": 0.4,
     "earnings_stability_years": 22,
     "moat_rating": "Wide",
-    "data_notes": "Mock data. B-21 sole-source position is a generational moat. Space Systems and Mission Systems provide additional durable program exposure. Price ~$468 approx mid-2025."
+    "data_notes": "Mock data. B-21 sole-source position is a generational moat. Space Systems and Mission Systems provide additional durable program exposure. Price ~$468 approx mid-2025.",
+    "dividend_yield": 1.8
   },
   "TMO": {
     "company_name": "Thermo Fisher Scientific Inc",
@@ -456,7 +472,8 @@
     "insider_ownership_pct": 0.6,
     "earnings_stability_years": 18,
     "moat_rating": "Wide",
-    "data_notes": "Mock data. Very wide moat in life sciences tools. DoD CBRN biodefense work is small but growing. Primary thesis is commercial life sciences, not defense. Price ~$581 approx mid-2025."
+    "data_notes": "Mock data. Very wide moat in life sciences tools. DoD CBRN biodefense work is small but growing. Primary thesis is commercial life sciences, not defense. Price ~$581 approx mid-2025.",
+    "dividend_yield": 0.3
   },
   "CRWD": {
     "company_name": "CrowdStrike Holdings Inc",
@@ -483,7 +500,8 @@
     "insider_ownership_pct": 4.8,
     "earnings_stability_years": 2,
     "moat_rating": "Narrow",
-    "data_notes": "Mock data. Strong product, expanding DoD footprint. Falcon platform stickiness creates moat. Valuation requires near-perfect execution and is extremely sensitive to growth deceleration. July 2024 outage is a reputational and legal overhang. Price ~$388 approx mid-2025."
+    "data_notes": "Mock data. Strong product, expanding DoD footprint. Falcon platform stickiness creates moat. Valuation requires near-perfect execution and is extremely sensitive to growth deceleration. July 2024 outage is a reputational and legal overhang. Price ~$388 approx mid-2025.",
+    "dividend_yield": 0.0
   },
   "PSN": {
     "company_name": "Parsons Corporation",
@@ -510,7 +528,8 @@
     "insider_ownership_pct": 1.8,
     "earnings_stability_years": 8,
     "moat_rating": "Narrow",
-    "data_notes": "Mock data. Growing electronic warfare and directed energy exposure is differentiating. Infrastructure and critical mission work adds durability. Valuation relatively elevated for profitability level. Price ~$91 approx mid-2025."
+    "data_notes": "Mock data. Growing electronic warfare and directed energy exposure is differentiating. Infrastructure and critical mission work adds durability. Valuation relatively elevated for profitability level. Price ~$91 approx mid-2025.",
+    "dividend_yield": 0.9
   },
   "RKLB": {
     "company_name": "Rocket Lab USA Inc",
@@ -537,7 +556,8 @@
     "insider_ownership_pct": 18.8,
     "earnings_stability_years": 0,
     "moat_rating": "None",
-    "data_notes": "Mock data. Company is unprofitable. Neutron development is capital intensive. Electron has established track record but faces competition from SpaceX. Valuation is speculative and requires growth realization. Price ~$26 approx mid-2025."
+    "data_notes": "Mock data. Company is unprofitable. Neutron development is capital intensive. Electron has established track record but faces competition from SpaceX. Valuation is speculative and requires growth realization. Price ~$26 approx mid-2025.",
+    "dividend_yield": 0.0
   },
   "SAIC": {
     "company_name": "Science Applications International Corporation",
@@ -564,7 +584,8 @@
     "insider_ownership_pct": 1.4,
     "earnings_stability_years": 10,
     "moat_rating": "Narrow",
-    "data_notes": "Mock data. Deep government IT embedding and recompete track record. Margins are thin (cost-plus dominant). Leverage is elevated from acquisitions. Price ~$119 approx mid-2025."
+    "data_notes": "Mock data. Deep government IT embedding and recompete track record. Margins are thin (cost-plus dominant). Leverage is elevated from acquisitions. Price ~$119 approx mid-2025.",
+    "dividend_yield": 1.5
   },
   "RTX": {
     "company_name": "RTX Corporation",
@@ -573,16 +594,58 @@
     "backlog_to_revenue": 1.9,
     "moat_rating": "Wide",
     "earnings_stability_years": 22,
-    "data_notes": "Estimates — verify via 10-K. Raytheon segment ~90% DoD; Collins Aerospace and Pratt & Whitney blend down the total. Patriot, Tomahawk, SM-series provide sole-source moat. F135 engine partner. Approx DoD% ~62%, backlog ~$205B FY2024."
+    "data_notes": "Curated overlay. Raytheon segment ~90% DoD; Collins Aerospace + P&W blend down total. Patriot, Tomahawk, SM-series sole-source. F135 engine partner. Current ratio <1 is normal for defense (milestone billing). ~$205B backlog FY2024. Price ~$130 mid-2026.",
+    "dividend_yield": 2.6,
+    "market_cap_millions": 175000,
+    "current_price": 130.0,
+    "annual_revenue_millions": 80000,
+    "roe": 14.2,
+    "roic": 12.1,
+    "free_cash_flow_margin": 10.0,
+    "operating_margin": 14.2,
+    "gross_margin": 22.0,
+    "pe_ratio": 33.0,
+    "forward_pe": 22.0,
+    "ev_ebitda": 18.0,
+    "price_to_book": 3.8,
+    "fcf_yield": 3.5,
+    "debt_equity": 0.6,
+    "current_ratio": 0.9,
+    "interest_coverage": 8.0,
+    "net_debt_millions": 19000,
+    "debt_ebitda": 2.2,
+    "insider_ownership_pct": 0.2,
+    "shares_millions": 1345
   },
   "BA": {
-    "company_name": "Boeing Company",
+    "company_name": "The Boeing Company",
     "government_revenue_pct": 42,
     "dod_revenue_pct": 40,
     "backlog_to_revenue": 8.5,
     "moat_rating": "Narrow",
     "earnings_stability_years": 3,
-    "data_notes": "Estimates — verify via 10-K. BDS (Defense/Space/Security) ~40% of revenue; BCA commercial dominates backlog. Significant execution risk: quality control issues, labor disruption, and multi-year cash burn. Moat is narrowing — lost T-7, KC-46 problems, F-15 near end of production. Earnings_stability is low due to 2019-2023 net losses."
+    "data_notes": "Curated overlay. BDS (Defense/Space) ~40% of revenue; BCA commercial dominates backlog. Negative ROIC and FCF from 737 MAX and quality-control crises. Interest coverage is negative \u2014 operating losses cannot service debt. ~$520B backlog provides long-term value but execution risk is very high. Dividend suspended 2020. D/E extremely high (negative book equity). Price ~$195 mid-2026.",
+    "dividend_yield": 0.0,
+    "market_cap_millions": 120000,
+    "current_price": 195.0,
+    "annual_revenue_millions": 66000,
+    "roe": -25.0,
+    "roic": -8.0,
+    "free_cash_flow_margin": -8.0,
+    "operating_margin": -7.0,
+    "gross_margin": 8.0,
+    "pe_ratio": null,
+    "forward_pe": 38.0,
+    "ev_ebitda": null,
+    "price_to_book": 45.0,
+    "fcf_yield": -4.0,
+    "debt_equity": 50.0,
+    "current_ratio": 1.1,
+    "interest_coverage": -2.0,
+    "net_debt_millions": 50000,
+    "debt_ebitda": null,
+    "insider_ownership_pct": 0.2,
+    "shares_millions": 765
   },
   "LHX": {
     "company_name": "L3Harris Technologies Inc",
@@ -591,7 +654,28 @@
     "backlog_to_revenue": 2.0,
     "moat_rating": "Narrow",
     "earnings_stability_years": 10,
-    "data_notes": "Estimates — verify via 10-K. Communications, electronic warfare, ISR, night vision. Merger of L3 + Harris 2019. High clearance/classified concentration. Moat: incumbency in tactical comms and EW pods. ~$21B revenue FY2024."
+    "data_notes": "Curated overlay. Comms, EW, ISR, night vision. L3 + Harris merger 2019. High clearance/classified work. Moat: tactical comms incumbency and EW pod programs. Debt/EBITDA elevated from merger, declining. Price ~$225 mid-2026.",
+    "dividend_yield": 2.4,
+    "market_cap_millions": 38000,
+    "current_price": 225.0,
+    "annual_revenue_millions": 21000,
+    "roe": 14.0,
+    "roic": 9.0,
+    "free_cash_flow_margin": 8.0,
+    "operating_margin": 10.2,
+    "gross_margin": 20.0,
+    "pe_ratio": 22.0,
+    "forward_pe": 17.0,
+    "ev_ebitda": 16.0,
+    "price_to_book": 3.2,
+    "fcf_yield": 4.5,
+    "debt_equity": 0.9,
+    "current_ratio": 1.0,
+    "interest_coverage": 6.0,
+    "net_debt_millions": 11000,
+    "debt_ebitda": 3.0,
+    "insider_ownership_pct": 0.3,
+    "shares_millions": 170
   },
   "TXT": {
     "company_name": "Textron Inc",
@@ -600,7 +684,28 @@
     "backlog_to_revenue": 1.4,
     "moat_rating": "Narrow",
     "earnings_stability_years": 15,
-    "data_notes": "Estimates — verify via 10-K. Bell Textron (~60% DoD) is offset by commercial aviation (Cessna/Beechcraft), industrial (Kautex), and finance. Textron Aviation is commercial dominant. V-22 partner. FLRAA (V-280 Valor) award provides long-duration Bell exposure."
+    "data_notes": "Curated overlay. Bell Textron (~60% DoD) offset by Cessna/Beechcraft commercial aviation, Kautex industrial, and finance. V-280 Valor FLRAA award = long Bell exposure. Commercial aviation provides counter-cyclical diversification. Price ~$75 mid-2026.",
+    "dividend_yield": 0.1,
+    "market_cap_millions": 15000,
+    "current_price": 75.0,
+    "annual_revenue_millions": 14000,
+    "roe": 18.0,
+    "roic": 12.0,
+    "free_cash_flow_margin": 8.0,
+    "operating_margin": 11.0,
+    "gross_margin": 20.0,
+    "pe_ratio": 18.0,
+    "forward_pe": 15.0,
+    "ev_ebitda": 13.0,
+    "price_to_book": 2.2,
+    "fcf_yield": 4.5,
+    "debt_equity": 0.7,
+    "current_ratio": 1.2,
+    "interest_coverage": 9.0,
+    "net_debt_millions": 3500,
+    "debt_ebitda": 2.3,
+    "insider_ownership_pct": 1.5,
+    "shares_millions": 190
   },
   "CACI": {
     "company_name": "CACI International Inc",
@@ -609,7 +714,28 @@
     "backlog_to_revenue": 1.5,
     "moat_rating": "Narrow",
     "earnings_stability_years": 15,
-    "data_notes": "Estimates — verify via 10-K. Intelligence community and DoD IT services, cyber, and C2. Clearance-based moat: significant portion of work is TS/SCI-classified, creating real switching costs. ~$7.7B revenue FY2024. Strong organic growth track record."
+    "data_notes": "Curated overlay. Intel community and DoD IT, cyber, C2. TS/SCI clearance base = real switching costs. Strong organic growth track record. Reinvests FCF in growth (no dividend). Price ~$345 mid-2026.",
+    "dividend_yield": 0.0,
+    "market_cap_millions": 8000,
+    "current_price": 345.0,
+    "annual_revenue_millions": 7700,
+    "roe": 15.0,
+    "roic": 12.0,
+    "free_cash_flow_margin": 7.0,
+    "operating_margin": 9.0,
+    "gross_margin": 18.0,
+    "pe_ratio": 22.0,
+    "forward_pe": 18.0,
+    "ev_ebitda": 16.0,
+    "price_to_book": 3.5,
+    "fcf_yield": 5.0,
+    "debt_equity": 0.8,
+    "current_ratio": 1.1,
+    "interest_coverage": 8.0,
+    "net_debt_millions": 3200,
+    "debt_ebitda": 2.5,
+    "insider_ownership_pct": 2.0,
+    "shares_millions": 21
   },
   "AVAV": {
     "company_name": "AeroVironment Inc",
@@ -618,7 +744,28 @@
     "backlog_to_revenue": 0.9,
     "moat_rating": "Narrow",
     "earnings_stability_years": 8,
-    "data_notes": "Estimates — verify via 10-K. Raven, Puma, Switchblade UAS are DoD sole-source programs. Ukraine demand drove significant revenue acceleration. High DoD concentration creates both durability and budget risk. ~$700M revenue; small-cap risk for position sizing."
+    "data_notes": "Curated overlay. Raven, Puma, Switchblade UAS sole-source. Ukraine demand drove revenue acceleration. High DoD concentration = durability + budget risk. Small-cap: $3B market cap limits position sizing. Valuation elevated (42x P/E). Clean balance sheet. Price ~$175 mid-2026.",
+    "dividend_yield": 0.0,
+    "market_cap_millions": 3000,
+    "current_price": 175.0,
+    "annual_revenue_millions": 700,
+    "roe": 11.0,
+    "roic": 10.0,
+    "free_cash_flow_margin": 7.0,
+    "operating_margin": 10.0,
+    "gross_margin": 38.0,
+    "pe_ratio": 42.0,
+    "forward_pe": 28.0,
+    "ev_ebitda": 28.0,
+    "price_to_book": 4.5,
+    "fcf_yield": 1.5,
+    "debt_equity": 0.1,
+    "current_ratio": 2.8,
+    "interest_coverage": 25.0,
+    "net_debt_millions": -200,
+    "debt_ebitda": 0.5,
+    "insider_ownership_pct": 5.0,
+    "shares_millions": 28
   },
   "PANW": {
     "company_name": "Palo Alto Networks Inc",
@@ -627,7 +774,8 @@
     "backlog_to_revenue": 2.2,
     "moat_rating": "Wide",
     "earnings_stability_years": 3,
-    "data_notes": "Estimates — verify via 10-K. Platform consolidation strategy creating high switching costs — moat is widening. Government/DoD exposure is growing (Cortex XDR, XSIAM authorized at DoD) but primary thesis is commercial enterprise. Valuation requires strong execution."
+    "data_notes": "Estimates \u2014 verify via 10-K. Platform consolidation strategy creating high switching costs \u2014 moat is widening. Government/DoD exposure is growing (Cortex XDR, XSIAM authorized at DoD) but primary thesis is commercial enterprise. Valuation requires strong execution.",
+    "dividend_yield": 0.0
   },
   "KBR": {
     "company_name": "KBR Inc",
@@ -636,7 +784,8 @@
     "backlog_to_revenue": 1.8,
     "moat_rating": "Narrow",
     "earnings_stability_years": 12,
-    "data_notes": "Estimates — verify via 10-K. Government Services segment dominates; includes DoD logistics, science/space (NASA), and intel community. Sustainable Technology Solutions is commercial but growing. Strong pipeline in UK defence market. ~$7.8B revenue FY2024."
+    "data_notes": "Estimates \u2014 verify via 10-K. Government Services segment dominates; includes DoD logistics, science/space (NASA), and intel community. Sustainable Technology Solutions is commercial but growing. Strong pipeline in UK defence market. ~$7.8B revenue FY2024.",
+    "dividend_yield": 0.7
   },
   "VVX": {
     "company_name": "V2X Inc",
@@ -645,7 +794,28 @@
     "backlog_to_revenue": 1.6,
     "moat_rating": "None",
     "earnings_stability_years": 5,
-    "data_notes": "Estimates — verify via 10-K. Formed 2022 from Vectrus + Vertex Aerospace merger. Aviation sustainment, base operations, logistics. Virtually 100% US government revenue. Margins are thin (cost-plus dominant). High leverage from merger. ~$4B revenue. Not sole-source."
+    "data_notes": "Curated overlay. Formed 2022 from Vectrus + Vertex Aerospace merger. Aviation sustainment, base ops, logistics. ~100% US gov revenue. Thin margins (cost-plus). High leverage from merger (Debt/EBITDA ~4x). Not sole-source \u2014 recompete risk is significant. Price ~$38 mid-2026.",
+    "dividend_yield": 0.0,
+    "market_cap_millions": 2000,
+    "current_price": 38.0,
+    "annual_revenue_millions": 4100,
+    "roe": 10.0,
+    "roic": 7.0,
+    "free_cash_flow_margin": 2.0,
+    "operating_margin": 3.0,
+    "gross_margin": 10.0,
+    "pe_ratio": 14.0,
+    "forward_pe": 10.0,
+    "ev_ebitda": 9.0,
+    "price_to_book": 1.5,
+    "fcf_yield": 4.0,
+    "debt_equity": 2.5,
+    "current_ratio": 1.1,
+    "interest_coverage": 3.0,
+    "net_debt_millions": 1700,
+    "debt_ebitda": 4.0,
+    "insider_ownership_pct": 1.0,
+    "shares_millions": 32
   },
   "AMTM": {
     "company_name": "Amentum Holdings Inc",
@@ -654,7 +824,28 @@
     "backlog_to_revenue": 1.4,
     "moat_rating": "None",
     "earnings_stability_years": 2,
-    "data_notes": "Estimates — verify via 10-K. Spun from AECOM in 2023, became independent public company 2024. Management and operations services, environmental, intelligence. ~$13B revenue estimate. Very limited earnings history as standalone. High leverage from spin. Needs several years of clean public reporting before reliable fundamentals available."
+    "data_notes": "Curated overlay. Spun from AECOM 2023, became standalone public 2024. Mgmt & ops, environmental, intelligence. Very limited standalone earnings history \u2014 wait for 3+ years of clean reporting. High spin-related leverage. Thin operating margins typical of operations/maintenance. Price ~$25 mid-2026.",
+    "dividend_yield": 0.0,
+    "market_cap_millions": 5000,
+    "current_price": 25.0,
+    "annual_revenue_millions": 13000,
+    "roe": 8.0,
+    "roic": 5.0,
+    "free_cash_flow_margin": 1.5,
+    "operating_margin": 2.5,
+    "gross_margin": 8.0,
+    "pe_ratio": 25.0,
+    "forward_pe": 18.0,
+    "ev_ebitda": 11.0,
+    "price_to_book": 2.5,
+    "fcf_yield": 3.0,
+    "debt_equity": 2.0,
+    "current_ratio": 1.1,
+    "interest_coverage": 3.0,
+    "net_debt_millions": 4000,
+    "debt_ebitda": 3.5,
+    "insider_ownership_pct": 2.0,
+    "shares_millions": 160
   },
   "FLR": {
     "company_name": "Fluor Corporation",
@@ -663,7 +854,28 @@
     "backlog_to_revenue": 2.3,
     "moat_rating": "Narrow",
     "earnings_stability_years": 10,
-    "data_notes": "Estimates — verify via 10-K. Mission Solutions segment handles DoD (Fluor Marine Propulsion naval nuclear JV, environmental remediation). Energy Solutions is the larger commercial segment. Significant execution risk on fixed-price contracts in recent years — accounting charges have dented track record. ~$16B revenue."
+    "data_notes": "Curated overlay. Mission Solutions handles DoD (naval nuclear JV, remediation). Energy Solutions is larger commercial segment. Recent fixed-price contract charges dented track record. Low DoD concentration limits scoring as a pure-play defense investment. Price ~$47 mid-2026.",
+    "dividend_yield": 0.5,
+    "market_cap_millions": 5000,
+    "current_price": 47.0,
+    "annual_revenue_millions": 16000,
+    "roe": 8.0,
+    "roic": 6.0,
+    "free_cash_flow_margin": 2.0,
+    "operating_margin": 3.0,
+    "gross_margin": 5.0,
+    "pe_ratio": 30.0,
+    "forward_pe": 20.0,
+    "ev_ebitda": 12.0,
+    "price_to_book": 2.8,
+    "fcf_yield": 2.0,
+    "debt_equity": 0.3,
+    "current_ratio": 1.3,
+    "interest_coverage": 5.0,
+    "net_debt_millions": 400,
+    "debt_ebitda": 1.8,
+    "insider_ownership_pct": 5.0,
+    "shares_millions": 131
   },
   "GE": {
     "company_name": "GE Aerospace",
@@ -672,7 +884,28 @@
     "backlog_to_revenue": 5.5,
     "moat_rating": "Wide",
     "earnings_stability_years": 10,
-    "data_notes": "Estimates — verify via 10-K. Post-Vernova spin (2024), GE is purely aerospace. Jet engines are a duopoly (GE + P&W/RTX). Military: F414, F110, T700, F404. Commercial: LEAP, GE9X. Enormous order backlog provides 5+ year revenue visibility. Wide moat from engine certification economics. ~$38B revenue FY2024."
+    "data_notes": "Curated overlay. Post-Vernova spin (2024), GE is purely aerospace. Jet engine duopoly (GE + P&W/RTX). Military: F414, F110, T700, F404. Commercial: LEAP, GE9X. Massive order backlog. Wide moat from engine certification economics. Valuation is elevated (35x P/E). High ROIC reflects asset-light engine services model. Price ~$205 mid-2026.",
+    "dividend_yield": 0.2,
+    "market_cap_millions": 195000,
+    "current_price": 205.0,
+    "annual_revenue_millions": 38000,
+    "roe": 40.0,
+    "roic": 25.0,
+    "free_cash_flow_margin": 18.0,
+    "operating_margin": 17.0,
+    "gross_margin": 35.0,
+    "pe_ratio": 35.0,
+    "forward_pe": 25.0,
+    "ev_ebitda": 28.0,
+    "price_to_book": 15.0,
+    "fcf_yield": 2.5,
+    "debt_equity": 1.2,
+    "current_ratio": 1.1,
+    "interest_coverage": 10.0,
+    "net_debt_millions": 20000,
+    "debt_ebitda": 2.5,
+    "insider_ownership_pct": 0.2,
+    "shares_millions": 870
   },
   "TDG": {
     "company_name": "TransDigm Group Inc",
@@ -681,7 +914,8 @@
     "backlog_to_revenue": 0.5,
     "moat_rating": "Wide",
     "earnings_stability_years": 18,
-    "data_notes": "Estimates — verify via 10-K. ~75% of revenue is sole-source proprietary aftermarket parts. 80%+ gross margins on many components. DoD is a significant customer but commercial MRO drives pricing power. Serial acquirer of niche aerospace component businesses. Very high leverage by design (private equity heritage). ~$7.9B revenue FY2024."
+    "data_notes": "Estimates \u2014 verify via 10-K. ~75% of revenue is sole-source proprietary aftermarket parts. 80%+ gross margins on many components. DoD is a significant customer but commercial MRO drives pricing power. Serial acquirer of niche aerospace component businesses. Very high leverage by design (private equity heritage). ~$7.9B revenue FY2024.",
+    "dividend_yield": 0.0
   },
   "HEI": {
     "company_name": "HEICO Corporation",
@@ -690,7 +924,8 @@
     "backlog_to_revenue": 0.5,
     "moat_rating": "Narrow",
     "earnings_stability_years": 20,
-    "data_notes": "Estimates — verify via 10-K. FAA-PMA (Parts Manufacturer Approval) aftermarket parts provide niche moat — approved alternatives to OEM parts at 40-60% discount. Profitable every year since IPO 1990. Electronic Technologies Group serves defense/space. Smaller DoD exposure than TDG. ~$3.8B revenue FY2024."
+    "data_notes": "Estimates \u2014 verify via 10-K. FAA-PMA (Parts Manufacturer Approval) aftermarket parts provide niche moat \u2014 approved alternatives to OEM parts at 40-60% discount. Profitable every year since IPO 1990. Electronic Technologies Group serves defense/space. Smaller DoD exposure than TDG. ~$3.8B revenue FY2024.",
+    "dividend_yield": 0.1
   },
   "CW": {
     "company_name": "Curtiss-Wright Corporation",
@@ -699,7 +934,8 @@
     "backlog_to_revenue": 1.6,
     "moat_rating": "Narrow",
     "earnings_stability_years": 18,
-    "data_notes": "Estimates — verify via 10-K. Defense electronics, sensors, and naval systems. Naval valves and pumps for nuclear-powered ships provide specialized sole-source elements. Defense Industrial Group handles flight test and ground vehicle electronics. ~$2.9B revenue FY2024. Specialist mid-cap sweet spot."
+    "data_notes": "Estimates \u2014 verify via 10-K. Defense electronics, sensors, and naval systems. Naval valves and pumps for nuclear-powered ships provide specialized sole-source elements. Defense Industrial Group handles flight test and ground vehicle electronics. ~$2.9B revenue FY2024. Specialist mid-cap sweet spot.",
+    "dividend_yield": 0.5
   },
   "IBM": {
     "company_name": "International Business Machines Corp",
@@ -708,7 +944,28 @@
     "backlog_to_revenue": 0.8,
     "moat_rating": "Narrow",
     "earnings_stability_years": 20,
-    "data_notes": "Estimates — verify via 10-K. Federal government is a significant IBM customer (mainframe, cloud, consulting). DoD uses IBM systems across classified and unclassified networks. Moat: mainframe lock-in for legacy workloads, but cloud/consulting is competitive. Large commercial base means individual DoD contracts are not material to thesis. ~$62B revenue FY2024."
+    "data_notes": "Curated overlay. Federal government is a large IBM customer (mainframe, hybrid cloud, consulting). DoD uses IBM across classified/unclassified. Moat: mainframe lock-in for legacy workloads; cloud/consulting is competitive. Large commercial base means DoD contracts are supplementary. High D/E from historical acquisitions (Red Hat). Price ~$220 mid-2026.",
+    "dividend_yield": 3.3,
+    "market_cap_millions": 208000,
+    "current_price": 220.0,
+    "annual_revenue_millions": 62000,
+    "roe": 30.0,
+    "roic": 10.0,
+    "free_cash_flow_margin": 16.0,
+    "operating_margin": 14.0,
+    "gross_margin": 57.0,
+    "pe_ratio": 22.0,
+    "forward_pe": 18.0,
+    "ev_ebitda": 15.0,
+    "price_to_book": 8.0,
+    "fcf_yield": 4.0,
+    "debt_equity": 2.8,
+    "current_ratio": 1.0,
+    "interest_coverage": 8.0,
+    "net_debt_millions": 52000,
+    "debt_ebitda": 2.5,
+    "insider_ownership_pct": 0.1,
+    "shares_millions": 930
   },
   "OLN": {
     "company_name": "Olin Corporation",
@@ -717,7 +974,28 @@
     "backlog_to_revenue": 0.3,
     "moat_rating": "Narrow",
     "earnings_stability_years": 14,
-    "data_notes": "Estimates — verify via 10-K. Winchester (ammunition) is the DoD-relevant segment. Chemical manufacturing (chlorine/caustic soda) is the larger business. Winchester has a long Army contract for small-caliber ammunition and Lake City management contract. DoD% is approximately the Winchester contribution (~$1.5B of $7.2B total revenue). Commodity chemical cycles drive most of earnings volatility."
+    "data_notes": "Curated overlay. Winchester (ammunition) is DoD-relevant segment. Chemical mfg (chlorine/caustic) is larger business \u2014 drives cyclicality. Winchester has long Army contract for small-caliber ammo and Lake City management. DoD ~$860M of $7.2B total revenue. Chemical cycles dominate earnings volatility more than DoD contracts. Price ~$30 mid-2026.",
+    "dividend_yield": 3.5,
+    "market_cap_millions": 4000,
+    "current_price": 30.0,
+    "annual_revenue_millions": 7200,
+    "roe": 12.0,
+    "roic": 8.0,
+    "free_cash_flow_margin": 4.0,
+    "operating_margin": 5.0,
+    "gross_margin": 18.0,
+    "pe_ratio": 22.0,
+    "forward_pe": 18.0,
+    "ev_ebitda": 11.0,
+    "price_to_book": 2.5,
+    "fcf_yield": 4.0,
+    "debt_equity": 1.5,
+    "current_ratio": 1.5,
+    "interest_coverage": 5.0,
+    "net_debt_millions": 3200,
+    "debt_ebitda": 3.0,
+    "insider_ownership_pct": 2.0,
+    "shares_millions": 115
   },
   "ACN": {
     "company_name": "Accenture plc",
@@ -744,6 +1022,157 @@
     "insider_ownership_pct": 0.3,
     "earnings_stability_years": 20,
     "moat_rating": "Wide",
-    "data_notes": "Mock data. AFS is subsidiary. DoD revenue is small relative to Accenture's total. Primary thesis is commercial consulting/technology, not defense. Price ~$333 approx mid-2025."
+    "data_notes": "Mock data. AFS is subsidiary. DoD revenue is small relative to Accenture's total. Primary thesis is commercial consulting/technology, not defense. Price ~$333 approx mid-2025.",
+    "dividend_yield": 1.6
+  },
+  "HON": {
+    "company_name": "Honeywell International Inc",
+    "market_cap_millions": 120000,
+    "current_price": 205.0,
+    "annual_revenue_millions": 36000,
+    "government_revenue_pct": 22,
+    "dod_revenue_pct": 18,
+    "roe": 33.0,
+    "roic": 16.0,
+    "free_cash_flow_margin": 18.0,
+    "operating_margin": 21.0,
+    "gross_margin": 35.0,
+    "pe_ratio": 22.0,
+    "forward_pe": 18.0,
+    "ev_ebitda": 17.0,
+    "price_to_book": 8.0,
+    "fcf_yield": 4.0,
+    "debt_equity": 1.2,
+    "current_ratio": 1.1,
+    "interest_coverage": 10.0,
+    "backlog_to_revenue": 1.8,
+    "net_debt_millions": 12000,
+    "debt_ebitda": 2.3,
+    "insider_ownership_pct": 0.1,
+    "earnings_stability_years": 20,
+    "moat_rating": "Wide",
+    "dividend_yield": 2.3,
+    "shares_millions": 655,
+    "data_notes": "Curated overlay. Defense & Space segment produces avionics, targeting, comms, and propulsion. DoD is ~18% of total revenue \u2014 the majority is industrial automation, building technologies, and performance materials. Wide moat in industrial automation. Individual DoD contracts are supplementary to the primary industrial thesis. Undergoing portfolio simplification (spinning off Advanced Materials and Automation businesses). Price ~$205 mid-2026."
+  },
+  "OSK": {
+    "company_name": "Oshkosh Corporation",
+    "market_cap_millions": 7000,
+    "current_price": 110.0,
+    "annual_revenue_millions": 9200,
+    "government_revenue_pct": 35,
+    "dod_revenue_pct": 30,
+    "roe": 18.0,
+    "roic": 14.0,
+    "free_cash_flow_margin": 6.0,
+    "operating_margin": 9.0,
+    "gross_margin": 17.0,
+    "pe_ratio": 13.0,
+    "forward_pe": 11.0,
+    "ev_ebitda": 9.0,
+    "price_to_book": 1.8,
+    "fcf_yield": 4.5,
+    "debt_equity": 0.4,
+    "current_ratio": 1.4,
+    "interest_coverage": 12.0,
+    "backlog_to_revenue": 1.0,
+    "net_debt_millions": 1200,
+    "debt_ebitda": 1.2,
+    "insider_ownership_pct": 1.0,
+    "earnings_stability_years": 12,
+    "moat_rating": "Narrow",
+    "dividend_yield": 1.8,
+    "shares_millions": 60,
+    "data_notes": "Curated overlay. Defense segment (JLTV, FMTV, HEMTT) is 30% of revenue. Commercial: JLG aerial work platforms, McNeilus concrete/refuse trucks, and airport fire equipment (Pierce). DoD concentration is meaningful but commercial offsets reduce pure-play defense exposure. JLTV win is a long-duration program. Clean balance sheet vs. peers. Price ~$110 mid-2026."
+  },
+  "CNC": {
+    "company_name": "Centene Corporation",
+    "market_cap_millions": 22000,
+    "current_price": 40.0,
+    "annual_revenue_millions": 145000,
+    "government_revenue_pct": 95,
+    "dod_revenue_pct": 5,
+    "roe": 8.0,
+    "roic": 5.0,
+    "free_cash_flow_margin": 1.0,
+    "operating_margin": 1.5,
+    "gross_margin": 6.0,
+    "pe_ratio": 10.0,
+    "forward_pe": 8.0,
+    "ev_ebitda": 8.0,
+    "price_to_book": 0.9,
+    "fcf_yield": 8.0,
+    "debt_equity": 0.6,
+    "current_ratio": 1.3,
+    "interest_coverage": 6.0,
+    "backlog_to_revenue": 0.1,
+    "net_debt_millions": 10000,
+    "debt_ebitda": 2.0,
+    "insider_ownership_pct": 0.5,
+    "earnings_stability_years": 10,
+    "moat_rating": "Narrow",
+    "dividend_yield": 0.0,
+    "shares_millions": 548,
+    "data_notes": "Curated overlay. TRICARE managed care (Health Net Federal Services) gives DoD exposure but only ~5% of Centene's massive revenue base (~$145B). Core business is Medicaid managed care (70%+ of revenue). DoD contracts are not material to the investment thesis \u2014 do not score this as a defense company. High FCF yield is from Medicaid revenue base, not DoD. Medical loss ratio risk is the dominant investment variable. Price ~$40 mid-2026."
+  },
+  "UNH": {
+    "company_name": "UnitedHealth Group Inc",
+    "market_cap_millions": 250000,
+    "current_price": 265.0,
+    "annual_revenue_millions": 400000,
+    "government_revenue_pct": 60,
+    "dod_revenue_pct": 5,
+    "roe": 22.0,
+    "roic": 13.0,
+    "free_cash_flow_margin": 4.0,
+    "operating_margin": 5.0,
+    "gross_margin": 22.0,
+    "pe_ratio": 14.0,
+    "forward_pe": 12.0,
+    "ev_ebitda": 12.0,
+    "price_to_book": 3.5,
+    "fcf_yield": 3.0,
+    "debt_equity": 1.0,
+    "current_ratio": 0.8,
+    "interest_coverage": 7.0,
+    "backlog_to_revenue": 0.2,
+    "net_debt_millions": 40000,
+    "debt_ebitda": 2.5,
+    "insider_ownership_pct": 0.8,
+    "earnings_stability_years": 15,
+    "moat_rating": "Narrow",
+    "dividend_yield": 1.5,
+    "shares_millions": 925,
+    "data_notes": "Curated overlay. TRICARE East contract (~$45B/10yr from 2018) represents UHC's DoD exposure but is only ~1% of total revenue. Medicare Advantage and Medicaid are the core business drivers. Significant DOJ/legal/regulatory risk in 2025-2026 from PBM practices and managed care pricing investigations. CEO assassination (Dec 2024) created governance uncertainty. DoD contracts are not material to UNH investment thesis. Price ~$265 mid-2026."
+  },
+  "VSAT": {
+    "company_name": "Viasat Inc",
+    "market_cap_millions": 2500,
+    "current_price": 18.0,
+    "annual_revenue_millions": 4500,
+    "government_revenue_pct": 40,
+    "dod_revenue_pct": 35,
+    "roe": -15.0,
+    "roic": -3.0,
+    "free_cash_flow_margin": -5.0,
+    "operating_margin": 3.0,
+    "gross_margin": 38.0,
+    "pe_ratio": null,
+    "forward_pe": 20.0,
+    "ev_ebitda": 10.0,
+    "price_to_book": 0.6,
+    "fcf_yield": -8.0,
+    "debt_equity": 2.5,
+    "current_ratio": 1.2,
+    "interest_coverage": 1.0,
+    "backlog_to_revenue": 1.2,
+    "net_debt_millions": 6500,
+    "debt_ebitda": 5.0,
+    "insider_ownership_pct": 2.0,
+    "earnings_stability_years": 3,
+    "moat_rating": "Narrow",
+    "dividend_yield": 0.0,
+    "shares_millions": 140,
+    "data_notes": "Curated overlay. Satellite broadband + government satcom. ViaSat-3 satellite partial failure (2023) severely damaged growth outlook. Inmarsat acquisition added debt and integration complexity. Government/DoD provides stable revenue base but not enough to offset commercial satcom losses. Negative FCF from capex overhang. Debt/EBITDA ~5x is distressed. Moat narrowing vs SpaceX Starlink. Price ~$18 mid-2026."
   }
 }
