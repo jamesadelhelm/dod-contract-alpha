@@ -1141,12 +1141,34 @@ def _generate_narrative(
     not_matters_parts = []
     if _safe(f.dod_revenue_pct) < 20:
         not_matters_parts.append(f"DoD revenue is only ~{_safe(f.dod_revenue_pct):.0f}% of total — government contracts may not move the needle materially")
-    if _safe(f.market_cap_millions) > 50000:
+    # Large cap caveat only matters when DoD is a small slice — for a pure-play prime
+    # like GD (95% DoD), individual contracts ARE meaningful even at large cap.
+    if _safe(f.market_cap_millions) > 50000 and _safe(f.dod_revenue_pct) < 50:
         not_matters_parts.append("large market cap means individual contracts rarely create meaningful investment signal")
     if any(c.is_idiq for c in contracts) and not any(c.is_sole_source for c in contracts):
         not_matters_parts.append("IDIQ ceiling contracts may have low funded amounts — headline value is aspirational")
     if gv < 50:
         not_matters_parts.append("current valuation may already reflect visible contract pipeline")
+    rev_growth = getattr(f, "revenue_growth_1yr", None)
+    if rev_growth is not None and rev_growth < -5:
+        not_matters_parts.append(
+            f"revenue declined {rev_growth:.1f}% YoY — fundamental business shrinkage, "
+            "not just market dislocation; verify whether headwinds are transient or structural"
+        )
+    mos_1yr = getattr(f, "return_1yr", None)
+    if mos_1yr is not None and mos_1yr < -20:
+        not_matters_parts.append(
+            f"stock is down {abs(mos_1yr):.0f}% in the past year — market is pricing in "
+            "meaningful headwinds; understand the bear case before building a position"
+        )
+    # Government IT/services companies face structural DOGE/efficiency risk
+    if sector in [Sector.AI_DATA_SOFTWARE, Sector.CLOUD_IT_SERVICES, Sector.CONSULTING_SERVICES]:
+        dod_pct = _safe(f.dod_revenue_pct)
+        if dod_pct >= 40:
+            not_matters_parts.append(
+                "federal IT and services budget is under structural review (DOGE, efficiency mandates); "
+                "contract durations may shorten and ceiling prices compress"
+            )
     why_not = ". ".join(not_matters_parts) + "." if not_matters_parts else "No major caveats identified at this time."
 
     # Key risks
@@ -1161,6 +1183,12 @@ def _generate_narrative(
         risks.append("TRICARE contract recompetes and managed care cost pressures are structural risks")
     if sector in [Sector.AI_DATA_SOFTWARE, Sector.CYBERSECURITY]:
         risks.append("Competitive intensity in defense tech is rising; contract losses can be sudden")
+    rev_growth = getattr(f, "revenue_growth_1yr", None)
+    if rev_growth is not None and rev_growth < -3:
+        risks.append(f"Revenue shrinking ({rev_growth:.1f}% YoY) — confirm whether cycle trough or secular decline")
+    op_delta = getattr(f, "op_margin_delta", None)
+    if op_delta is not None and op_delta < -3:
+        risks.append(f"Operating margin compressed {op_delta:.1f}pp YoY — cost discipline or pricing power concern")
     if not risks:
         risks.append("See individual component flags for specific concerns")
 
