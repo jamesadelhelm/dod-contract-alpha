@@ -339,6 +339,170 @@ def _generate_macro_context_section(
     return lines
 
 
+def _conviction_checklist(
+    s: CompanyScore,
+    f,
+    size_pct: float,
+    macro: Optional[MacroContext] = None,
+) -> List[str]:
+    """
+    Generate a pre-deployment conviction checklist for a single PA+ company.
+    Returns markdown lines including a header, a table, and a pass/fail verdict.
+
+    Five checks run in this order:
+    1. Earnings timing — is the stock within the pre-earnings binary-event window?
+    2. Street consensus — is the Street aligned or sharply contra our thesis?
+    3. Price positioning — is the stock near its 52-week high (chasing) or washed out?
+    4. Insider activity — are insiders net buyers or net sellers over the past 6 months?
+    5. Macro rate check — is the live 10-yr yield within 1pp of DCF baseline Rf?
+    """
+    from datetime import datetime as _dt4
+
+    checks = []
+    warnings = 0
+
+    # ── 1. Earnings timing ─────────────────────────────────────────────────────
+    if f and getattr(f, "next_earnings_date", None):
+        try:
+            days_out = (_dt4.strptime(f.next_earnings_date, "%Y-%m-%d") - _dt4.now()).days
+            if days_out <= 0:
+                status, detail = "✅", f"Earnings have passed — full-size position permitted"
+            elif days_out <= 7:
+                status, detail = "❌", f"Earnings in **{days_out}d** — binary risk, hold off until post-report"
+                warnings += 2  # hard block
+            elif days_out <= 21:
+                status, detail = "⚠️", f"Earnings in **{days_out}d** — position **auto-halved to {size_pct:.1f}%** (earnings risk window)"
+                warnings += 1
+            else:
+                status, detail = "✅", f"Next earnings: {f.next_earnings_date} ({days_out}d) — clear of binary event window"
+        except Exception:
+            status, detail = "—", f"Earnings date: {f.next_earnings_date} (could not parse)"
+    else:
+        status, detail = "—", "Earnings date unavailable — verify before sizing"
+
+    checks.append(("Earnings timing", status, detail))
+
+    # ── 2. Street consensus ────────────────────────────────────────────────────
+    if f and f.analyst_recommendation and f.analyst_count:
+        rec = f.analyst_recommendation.lower()
+        n   = f.analyst_count
+        tgt_str = f" | target ${f.analyst_target_price:.0f} ({f.upside_to_target:+.0f}%)" if f.analyst_target_price and f.upside_to_target else ""
+        if rec in ("strong_buy", "buy"):
+            status, detail = "✅", f"**{rec}** consensus ({n} analysts){tgt_str} — Street aligned with our thesis"
+        elif rec in ("hold", "neutral"):
+            status, detail = "⚠️", f"**hold** consensus ({n} analysts){tgt_str} — Street cautious; our model is more bullish (contrarian opportunity if thesis holds)"
+            warnings += 1
+        else:
+            status, detail = "⚠️", f"**{rec}** consensus ({n} analysts){tgt_str} — bearish Street vs. our PA+ rating; verify thesis is sound before sizing up"
+            warnings += 1
+    else:
+        status, detail = "—", "No analyst consensus data — check manually before deploying"
+
+    checks.append(("Street consensus", status, detail))
+
+    # ── 3. Price positioning (vs 52-week range) ────────────────────────────────
+    if f and f.pct_off_52w_high is not None:
+        off = f.pct_off_52w_high  # negative = below 52w high
+        range_str = ""
+        if f.price_52w_low and f.price_52w_high and f.current_price:
+            rng = f.price_52w_high - f.price_52w_low
+            if rng > 0:
+                pct_from_low = (f.current_price - f.price_52w_low) / rng * 100
+                range_str = f" | {pct_from_low:.0f}% from 52w low"
+        if off <= -25:
+            status, detail = "✅", f"{off:+.0f}% off 52-week high{range_str} — significant pullback, not chasing"
+        elif off <= -10:
+            status, detail = "✅", f"{off:+.0f}% off 52-week high{range_str} — reasonable pullback, fair entry"
+        elif off <= -3:
+            status, detail = "⚠️", f"{off:+.0f}% off 52-week high{range_str} — near highs; consider waiting for a 5–10% pullback"
+            warnings += 1
+        else:
+            status, detail = "⚠️", f"At or near **52-week high** ({off:+.0f}%){range_str} — entering at all-time highs; position sizing discipline is critical"
+            warnings += 1
+    else:
+        status, detail = "—", "52-week range data unavailable"
+
+    checks.append(("Price positioning", status, detail))
+
+    # ── 4. Insider activity ────────────────────────────────────────────────────
+    if f and getattr(f, "insider_net_pct_6m", None) is not None:
+        ins_pct = f.insider_net_pct_6m * 100
+        if ins_pct >= 10:
+            status, detail = "✅", f"Net insider **buying** (+{ins_pct:.0f}% of held shares, 6m) — management aligned with thesis"
+        elif ins_pct <= -20:
+            status, detail = "⚠️", f"Net insider **selling** ({ins_pct:.0f}% of held shares, 6m) — warrants scrutiny (could be planned selling, but verify)"
+            warnings += 1
+        elif ins_pct <= -40:
+            status, detail = "❌", f"Heavy insider **selling** ({ins_pct:.0f}% of held shares, 6m) — significant insider distribution; re-examine thesis"
+            warnings += 2
+        else:
+            status, detail = "✅", f"Insider activity neutral ({ins_pct:+.0f}% net, 6m) — no clear signal"
+    else:
+        status, detail = "—", "Insider transaction data unavailable — check SEC Form 4 filings"
+
+    checks.append(("Insider activity", status, detail))
+
+    # ── 5. Macro rate environment ──────────────────────────────────────────────
+    if macro and macro.ten_year_yield is not None and macro.rate_delta_pp is not None:
+        delta = macro.rate_delta_pp
+        impact = macro.iv_impact_pct or 0.0
+        if abs(delta) < 0.5:
+            status, detail = "✅", f"10-yr yield {macro.ten_year_yield:.2f}% ≈ DCF baseline ({delta:+.2f}pp) — IVs valid as shown"
+        elif delta > 0:
+            status, detail = "⚠️", (
+                f"10-yr yield {macro.ten_year_yield:.2f}% is **{delta:+.2f}pp above DCF baseline** — "
+                f"rate-adjusted IVs are ~{abs(impact):.1f}% lower than shown. "
+                + ("Bear IV still positive — shield intact." if s.dcf and s.dcf.bear_mos is not None and s.dcf.bear_mos + impact > 0
+                   else "Verify bear IV holds at current rates.")
+            )
+            if abs(impact) >= 5:
+                warnings += 1
+        else:
+            status, detail = "✅", (
+                f"10-yr yield {macro.ten_year_yield:.2f}% is **{delta:.2f}pp below DCF baseline** — "
+                f"IVs are ~{abs(impact):.1f}% higher than baseline; favorable rate environment"
+            )
+    else:
+        status, detail = "—", "Rate data unavailable — fetch live (^TNX) before deploying capital"
+
+    checks.append(("Macro rate check", status, detail))
+
+    # ── Render ─────────────────────────────────────────────────────────────────
+    lines = [
+        "#### Pre-Deployment Checklist",
+        "",
+        "| Check | Status | Detail |",
+        "|-------|:------:|--------|",
+    ]
+    for label, st, det in checks:
+        lines.append(f"| {label} | {st} | {det} |")
+    lines.append("")
+
+    fails    = sum(1 for _, st, _ in checks if st == "❌")
+    hard_go  = fails == 0 and warnings == 0
+    soft_go  = fails == 0 and warnings > 0
+
+    if hard_go:
+        lines.append(
+            f"**✅ Ready to Deploy** — All checks clear. "
+            f"Execute at up to **{size_pct:.1f}%** per Capital Deployment guidance."
+        )
+    elif soft_go:
+        lines.append(
+            f"**⚠️ Conditional Deploy** — {warnings} caution(s) flagged. "
+            f"Review highlighted items before executing. If comfortable, proceed at "
+            f"**{size_pct:.1f}%** (or reduce 50% until cautions resolved)."
+        )
+    else:
+        lines.append(
+            f"**❌ Hold — Do Not Deploy** — {fails} blocking issue(s). "
+            "Resolve flagged items before initiating position."
+        )
+
+    lines.append("")
+    return lines
+
+
 def generate_report(
     ranked_scores: List[CompanyScore],
     private_contracts: List[Contract],
@@ -1164,6 +1328,11 @@ def generate_report(
                 for sig in key_sigs:
                     lines.append(f"> {sig}")
                 lines.append("")
+
+            # Pre-deployment conviction checklist — only for PA+ names
+            f_chk = (fundamentals_map or {}).get(s.ticker)
+            sz_chk, _ = _compute_position_size(s, f_chk)
+            lines += _conviction_checklist(s, f_chk, sz_chk, macro=macro_context)
 
         # Recent contracts
         if s.recent_contracts:

@@ -299,6 +299,35 @@ report sections. They're derived from composite scores, base MoS, and bear-case 
   name: "LMT becomes PA+ below $X" directly answers "when would I buy this?"
 - **Score trend arrows** — Changes Since Last Run shows ↑ / ↓ / → based on the rolling
   30-run score history in `data/score_history.json`. Trends require ≥3 runs; shown as `—` until then.
+- **Pre-Deployment Conviction Checklist** — Generated for every PA+ name in the Company Deep
+  Dive (Section 7). Answers the 5 questions a real investor must check before executing:
+  1. **Earnings timing** ✅/⚠️/❌ — Is the stock within the pre-earnings binary-event window?
+     ❌ blocks entirely (<7d); ⚠️ notes the auto-halved sizing (<21d); ✅ confirms clear window.
+  2. **Street consensus** ✅/⚠️ — Buy/strong buy = aligned; hold = cautious (contrarian opportunity
+     if thesis holds); sell = flag to re-examine the thesis before sizing up.
+  3. **Price positioning** ✅/⚠️ — ≤−10% off 52-week high = fair entry; ≥−3% = near highs, consider
+     waiting; near all-time high = ⚠️, sizing discipline critical.
+  4. **Insider activity** ✅/⚠️/❌ — Net buying >10% = management aligned; selling >20% = ⚠️;
+     heavy selling >40% = ❌, re-examine thesis.
+  5. **Macro rate check** ✅/⚠️ — Is the live 10-yr yield within 0.5pp of DCF baseline Rf (4.5%)?
+     >0.5pp above baseline = ⚠️ (IVs shown are optimistic), with shield-break test for bear IV.
+
+  Output: **✅ Ready to Deploy** (all clear → execute at full sizing), **⚠️ Conditional Deploy**
+  (cautions only → proceed at 50% or review), **❌ Hold** (any blocking issue → do not execute).
+
+  Example:
+  ```
+  | Check             | Status | Detail                                                      |
+  |-------------------|:------:|-------------------------------------------------------------|
+  | Earnings timing   |  ✅   | Next earnings: 2026-09-15 (98d) — clear of binary event window |
+  | Street consensus  |  ✅   | buy consensus (15 analysts) | target $420 (+23%)              |
+  | Price positioning |  ✅   | -18% off 52-week high | 45% from 52w low — fair entry       |
+  | Insider activity  |  ✅   | Net buying +22% of held shares (6m)                          |
+  | Macro rate check  |  ✅   | 10-yr yield 4.53% ≈ DCF baseline (+0.03pp) — IVs valid      |
+
+  ✅ Ready to Deploy — All checks clear. Execute at up to 6.0% per Capital Deployment guidance.
+  ```
+
 - **Macro Context box** — Top of every report. Fetches live 10-yr Treasury yield (^TNX) and
   3-month T-bill rate (^IRX) from yfinance. Computes delta vs DCF baseline Rf (4.5%) and shows
   rate-adjusted intrinsic values for all PA+ names. Yield curve inversion is flagged when
