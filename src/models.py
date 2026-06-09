@@ -195,6 +195,20 @@ class SpecialistProfile:
 
 
 @dataclass
+class MacroContext:
+    """Live macro environment data fetched at run time."""
+    ten_year_yield: Optional[float] = None      # % e.g. 4.53 — used as Rf proxy
+    three_month_yield: Optional[float] = None   # % e.g. 5.25 — yield curve shape
+    dcf_baseline_rf: float = 4.5                # Rf assumed in DCF base WACC (9%)
+    rate_delta_pp: Optional[float] = None       # ten_year_yield − dcf_baseline_rf (pp)
+    iv_impact_pct: Optional[float] = None       # approx % Δ in IVs from rate delta
+    defense_budget_bn: float = 895.0            # FY2026 DoD topline ($B)
+    defense_budget_growth_pct: float = 3.3      # YoY growth vs FY2025
+    fetch_date: Optional[str] = None
+    fetch_error: Optional[str] = None
+
+
+@dataclass
 class DCFResult:
     """Lightweight reference — full class lives in src/dcf.py"""
     ticker: str = ""

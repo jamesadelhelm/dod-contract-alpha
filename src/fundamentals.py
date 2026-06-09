@@ -18,8 +18,9 @@ Usage:
 
 from __future__ import annotations
 import json
+from datetime import datetime
 from typing import Optional, Dict
-from src.models import CompanyFundamentals
+from src.models import CompanyFundamentals, MacroContext
 from config import MOCK_FUNDAMENTALS_PATH, CURATED_GOV_REVENUE_PCT
 
 # ── Mock cache ────────────────────────────────────────────────────────────────
@@ -647,3 +648,47 @@ def get_fundamentals_or_stub(
         data_source="none",
         data_notes="No data available. Scores are conservative floor estimates. Verify manually.",
     )
+
+
+def get_macro_context(live: bool = True) -> MacroContext:
+    """
+    Fetch current macro environment data.
+    Pulls 10-yr and 3-month Treasury yields from yfinance (^TNX, ^IRX).
+    Falls back gracefully if offline or yfinance is unavailable.
+
+    DCF baseline Rf = 4.5% (implied by 9% base WACC, beta~1, ERP~4.5%).
+    Rate delta drives an approximate IV adjustment: ~10.8% per 1pp WACC move,
+    assuming terminal value = 70% of total IV, WACC=9%, terminal_g=2.5%.
+    """
+    ctx = MacroContext()
+    ctx.fetch_date = datetime.now().strftime("%Y-%m-%d")
+
+    if not live:
+        return ctx
+
+    try:
+        import yfinance as yf
+
+        # 10-year Treasury yield — primary risk-free rate proxy
+        tnx = yf.Ticker("^TNX")
+        hist = tnx.history(period="5d")
+        if not hist.empty:
+            ctx.ten_year_yield = round(float(hist["Close"].iloc[-1]), 2)
+
+        # 3-month T-Bill — yield curve shape / inversion signal
+        irx = yf.Ticker("^IRX")
+        hist3 = irx.history(period="5d")
+        if not hist3.empty:
+            ctx.three_month_yield = round(float(hist3["Close"].iloc[-1]), 2)
+
+    except Exception as e:
+        ctx.fetch_error = str(e)[:120]
+
+    if ctx.ten_year_yield is not None:
+        ctx.rate_delta_pp = round(ctx.ten_year_yield - ctx.dcf_baseline_rf, 2)
+        # IV sensitivity: TV = 70% of total IV, WACC=9%, terminal_g=2.5%
+        # dIV/IV ≈ -TV_pct / (WACC - g) × Δrate = -0.70/0.065 × Δrate ≈ -10.77× Δrate
+        sensitivity = 0.70 / (0.09 - 0.025)
+        ctx.iv_impact_pct = round(-sensitivity * (ctx.rate_delta_pp / 100) * 100, 1)
+
+    return ctx

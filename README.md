@@ -52,6 +52,9 @@ tickers, fetching live fundamentals, running a DCF, and ranking every company by
 |  Sector classifier: keyword voting on contract descriptions -> 15 sectors |
 |  Ticker overrides:  correct systematic misclassifications (BAH->AI/Data,  |
 |                     LDOS->Cloud IT, RTX->Defense Prime, etc.)             |
+|  Macro context:     ^TNX (10-yr yield) + ^IRX (3-mo T-bill) fetched live |
+|                     Rate delta vs DCF baseline Rf (4.5%) -> adjusted IVs  |
+|                     FY2026 DoD budget note + yield curve shape signal      |
 +----------------------------------+------------------------------------------+
                                    |
 +----------------------------------v------------------------------------------+
@@ -71,7 +74,8 @@ tickers, fetching live fundamentals, running a DCF, and ranking every company by
                                    |
 +----------------------------------v------------------------------------------+
 |  STEP 5: REPORT                                                             |
-|  Ranked markdown report with 12 sections:                                  |
+|  Ranked markdown report with Macro Context box + 12 sections:             |
+|  Macro Context       (live 10-yr yield, rate-adjusted IVs, budget note)  |
 |  Changes Since Last Run  (score/verdict/bear MoS deltas vs. prior run)   |
 |   1. Action Summary  (price, score, MoS, bear MoS, signal tiers,         |
 |                        entry prices, BUY/Start 75%/50% action labels)     |
@@ -131,6 +135,8 @@ Output: `reports/report_YYYYMMDD_HHMM.md` — open in VS Code, Obsidian, or any 
 [2/4] Grouping contracts by company...
       Public tickers: 32 | Private/unknown: 341
 [3/4] Scoring companies...
+[3b/4] Fetching macro context (10-yr yield)...
+       10-yr yield: 4.53% +0.03pp vs DCF baseline
 
 [4/4] Results
 
@@ -293,6 +299,26 @@ report sections. They're derived from composite scores, base MoS, and bear-case 
   name: "LMT becomes PA+ below $X" directly answers "when would I buy this?"
 - **Score trend arrows** — Changes Since Last Run shows ↑ / ↓ / → based on the rolling
   30-run score history in `data/score_history.json`. Trends require ≥3 runs; shown as `—` until then.
+- **Macro Context box** — Top of every report. Fetches live 10-yr Treasury yield (^TNX) and
+  3-month T-bill rate (^IRX) from yfinance. Computes delta vs DCF baseline Rf (4.5%) and shows
+  rate-adjusted intrinsic values for all PA+ names. Yield curve inversion is flagged when
+  10-yr minus 3-mo spread turns negative. Example output:
+
+  ```
+  | Indicator                      | Live  | DCF Baseline | Δ        |
+  |--------------------------------|------:|-------------:|---------:|
+  | 10-yr Treasury Yield (Rf proxy)| 4.80% | 4.50%        | +0.30pp  |
+  | 3-mo T-Bill                    | 5.25% | —            | —        |
+  | DoD Budget FY2026              | $895B | —            | +3.3% YoY|
+
+  > Rate environment: 10-yr (4.80%) is +0.30pp above DCF baseline.
+  > DCF intrinsic values are ~3.2% lower than shown at current rates.
+  > Rate-adjusted IVs: GD base IV $380 → $368 | bear IV $293 → $284 vs $341 now
+  ```
+
+  At +0.30pp above baseline, GD's bear IV drops from $380 to ~$368 — still above the current
+  price, confirming the 🛡️ shield. If rates spike +1pp, bear IV drops to ~$339 — below current
+  price, the shield breaks. This context is critical before sizing a position.
 
 ---
 

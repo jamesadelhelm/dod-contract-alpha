@@ -4,8 +4,8 @@ Report generator: produces a detailed markdown analyst-style report.
 
 from __future__ import annotations
 from datetime import datetime
-from typing import List, Dict
-from src.models import CompanyScore, Contract, Verdict, Sector, SpecialistTierStatus
+from typing import List, Dict, Optional
+from src.models import CompanyScore, Contract, Verdict, Sector, SpecialistTierStatus, MacroContext
 
 
 VERDICT_EMOJI = {
@@ -229,6 +229,116 @@ def _generate_changes_section(ranked_scores, last_scores, fundamentals_map, scor
     return lines
 
 
+def _generate_macro_context_section(
+    macro: Optional[MacroContext],
+    ranked_scores: List[CompanyScore],
+    fundamentals_map: Dict,
+) -> List[str]:
+    """
+    Render a Macro Context box showing the current interest rate environment
+    and its impact on all DCF intrinsic values shown in this report.
+
+    The DCF uses base WACC = 9%, which implies Rf ≈ 4.5% (beta~1, ERP~4.5%).
+    When the 10-yr yield deviates from 4.5%, intrinsic values shift:
+      +1pp WACC → -10.8% IV (terminal value dominates a 10-yr DCF at 9%/2.5%).
+    """
+    lines = ["## Macro Context", ""]
+
+    if macro is None or (macro.ten_year_yield is None and macro.fetch_error):
+        err = getattr(macro, "fetch_error", "unavailable")
+        lines += [
+            f"> ⚠️ Rate data unavailable ({err}). "
+            "DCF intrinsic values assume Rf = 4.5% (9% base WACC). "
+            "Verify current 10-yr Treasury yield before deploying capital.",
+            "",
+        ]
+    else:
+        yield_str = f"{macro.ten_year_yield:.2f}%" if macro.ten_year_yield is not None else "—"
+        tbill_str = f"{macro.three_month_yield:.2f}%" if macro.three_month_yield is not None else "—"
+        delta_str = f"{macro.rate_delta_pp:+.2f}pp" if macro.rate_delta_pp is not None else "—"
+
+        # Yield curve inversion signal
+        curve_note = ""
+        if macro.ten_year_yield is not None and macro.three_month_yield is not None:
+            spread = macro.ten_year_yield - macro.three_month_yield
+            if spread < -0.5:
+                curve_note = f" ⚠️ Inverted yield curve (spread {spread:+.2f}pp) — historically precedes recession within 12–18 months."
+            elif spread < 0:
+                curve_note = f" Flat/slightly inverted (spread {spread:+.2f}pp)."
+            else:
+                curve_note = f" Normal curve (spread +{spread:.2f}pp)."
+
+        lines += [
+            f"| Indicator | Live | DCF Baseline | Δ |",
+            f"|-----------|-----:|-------------:|--:|",
+            f"| 10-yr Treasury Yield (Rf proxy) | **{yield_str}** | 4.50% | {delta_str} |",
+            f"| 3-mo T-Bill | {tbill_str} | — | — |",
+            f"| DoD Budget FY2026 | ${macro.defense_budget_bn:.0f}B | — | +{macro.defense_budget_growth_pct:.1f}% YoY |",
+            "",
+        ]
+
+        if macro.ten_year_yield is not None and macro.rate_delta_pp is not None:
+            impact = macro.iv_impact_pct or 0.0
+            if abs(impact) < 1.0:
+                impact_msg = (
+                    f"10-yr yield ({macro.ten_year_yield:.2f}%) is within **1pp of DCF baseline (4.5%)**. "
+                    "DCF intrinsic values are essentially at-rate — no material adjustment needed."
+                )
+            elif impact > 0:
+                impact_msg = (
+                    f"10-yr yield ({macro.ten_year_yield:.2f}%) is **{macro.rate_delta_pp:.2f}pp below DCF baseline**. "
+                    f"Lower rates → DCF intrinsic values are approximately **{impact:.1f}% higher** than they'd be "
+                    f"at the baseline Rf. Favorable for IV but watch for rate normalization risk."
+                )
+            else:
+                impact_msg = (
+                    f"10-yr yield ({macro.ten_year_yield:.2f}%) is **{macro.rate_delta_pp:+.2f}pp above DCF baseline (4.5%)**. "
+                    f"Higher rates → DCF intrinsic values are approximately **{abs(impact):.1f}% lower** than shown. "
+                    f"Apply a mental haircut to IVs below."
+                )
+
+            lines.append(f"> 📊 **Rate environment:** {impact_msg}{curve_note}")
+            lines.append("")
+
+            # Show rate-adjusted IVs for each PA+ name
+            pa_plus = [
+                s for s in ranked_scores
+                if s.verdict in (Verdict.STRONG_CANDIDATE, Verdict.POTENTIALLY_ATTRACTIVE, Verdict.RESEARCH_FURTHER)
+                and s.dcf and s.dcf.base_iv is not None and s.dcf.base_iv > 0
+            ]
+            if pa_plus and abs(impact) >= 1.0:
+                lines.append(
+                    f"> **Rate-adjusted intrinsic values** ({macro.rate_delta_pp:+.2f}pp rate delta, "
+                    f"~{impact:.1f}% IV impact):"
+                )
+                for s in pa_plus:
+                    adj_base = s.dcf.base_iv * (1 + impact / 100)
+                    adj_bear = (s.dcf.bear_iv * (1 + impact / 100)) if s.dcf.bear_iv else None
+                    f_m = (fundamentals_map or {}).get(s.ticker)
+                    cur = f_m.current_price if f_m and f_m.current_price else None
+                    cur_str = f" vs ${cur:.0f} now" if cur else ""
+                    bear_adj_str = f" | bear IV → ${adj_bear:.0f}" if adj_bear else ""
+                    lines.append(
+                        f">   - **{s.ticker}**: base IV ${s.dcf.base_iv:.0f} → **${adj_base:.0f}**{bear_adj_str}{cur_str}"
+                    )
+                lines.append("")
+        else:
+            lines += [
+                "> Rate data unavailable. DCF intrinsic values assume Rf = 4.5% (9% base WACC).",
+                "",
+            ]
+
+    # Defense budget note (always shown)
+    lines += [
+        "> 🏛️ **Defense budget:** FY2026 DoD topline $895B (+3.3% vs FY2025). "
+        "Topline growth supports the bear-case revenue assumptions for defense primes. "
+        "DOGE-driven efficiency initiatives remain a headwind for IT services and consulting revenue.",
+        "",
+    ]
+
+    return lines
+
+
 def generate_report(
     ranked_scores: List[CompanyScore],
     private_contracts: List[Contract],
@@ -238,6 +348,7 @@ def generate_report(
     fundamentals_map: Dict = None,
     last_scores: Dict = None,
     score_history: Dict = None,
+    macro_context: Optional[MacroContext] = None,
 ) -> str:
     run_date = run_date or datetime.now().strftime("%Y-%m-%d %H:%M UTC")
 
@@ -310,6 +421,13 @@ def generate_report(
         "",
         "---",
         "",
+    ]
+
+    # ── Macro Context ─────────────────────────────────────────────────────────
+    lines += _generate_macro_context_section(macro_context, ranked_scores, fundamentals_map or {})
+    lines += ["---", ""]
+
+    lines += [
         "## Executive Summary",
         "",
     ]

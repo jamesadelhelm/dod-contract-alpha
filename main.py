@@ -25,7 +25,7 @@ from collections import defaultdict
 # Allow imports from project root
 
 from src.parse_contracts import load_and_enrich
-from src.fundamentals import get_fundamentals_or_stub
+from src.fundamentals import get_fundamentals_or_stub, get_macro_context
 from src.scoring import score_company
 from src.report import generate_report, save_report
 from src.models import CompanyScore, CompanyFundamentals, Verdict, Sector
@@ -249,6 +249,17 @@ def main():
         )
         scores.append(score)
 
+    # ── Macro context ─────────────────────────────────────────────────────────
+    print("[3b/4] Fetching macro context (10-yr yield)...")
+    macro_ctx = get_macro_context(live=live)
+    if macro_ctx.ten_year_yield is not None:
+        delta_str = f"{macro_ctx.rate_delta_pp:+.2f}pp vs DCF baseline" if macro_ctx.rate_delta_pp is not None else ""
+        print(f"       10-yr yield: {macro_ctx.ten_year_yield:.2f}% {delta_str}")
+    elif macro_ctx.fetch_error:
+        print(f"       10-yr yield: unavailable ({macro_ctx.fetch_error})")
+    else:
+        print("       10-yr yield: unavailable (offline mode)")
+
     # Sort by final score descending
     scores.sort(key=lambda s: s.final_score, reverse=True)
 
@@ -382,6 +393,7 @@ def main():
             fundamentals_map=fundamentals_map,
             last_scores=last_scores,
             score_history=score_history,
+            macro_context=macro_ctx,
         )
         save_report(report_content, output_path)
         print(f"\nReport → {output_path}")
