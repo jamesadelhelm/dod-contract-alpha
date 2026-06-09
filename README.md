@@ -79,6 +79,8 @@ tickers, fetching live fundamentals, running a DCF, and ranking every company by
 |  Changes Since Last Run  (score/verdict/bear MoS deltas vs. prior run)   |
 |   1. Action Summary  (price, score, MoS, bear MoS, signal tiers,         |
 |                        entry prices, BUY/Start 75%/50% action labels)     |
+|  1b. PA+ Buy Priority (ranked by deployability: bear MoS > 0 first,      |
+|                        gap to entry, pessimism premium, action labels)    |
 |   2. Valuation Snapshot (multiples + full DCF table)                      |
 |   3. Red Flags                                                             |
 |   4. Market Context (consensus, short interest, price momentum)           |
@@ -88,7 +90,7 @@ tickers, fetching live fundamentals, running a DCF, and ranking every company by
 |   8. Private Companies / Coverage Gap                                     |
 |   9. Contract Awards (all 1,000 sorted by value)                          |
 |  10. Sector Peer Comparison                                                |
-|  11. Data Quality & Limitations                                            |
+|  11. Data Quality & Limitations (per-company completeness breakdown)      |
 +-----------------------------------------------------------------------------+
 ```
 
@@ -252,56 +254,19 @@ python3 main.py --edgar
 # EDGAR XBRL (recommended for production) — 3-yr normalized FCF + shipbuilding backlog
 python3 main.py --xbrl
 
+# Position sizing calculator — converts % weights to dollar amounts and share counts
+python3 main.py --portfolio-size 100000   # $100K investable equity → $ amount + shares in Capital Deployment table
+python3 main.py --portfolio-size 50000    # $50K, etc.
+
 # Continuous monitoring — re-run every 24h, print only material changes (SELL/REDUCE/new BUY)
 python3 main.py --watch
 python3 main.py --watch --watch-interval 3600   # hourly (e.g. during volatile periods)
+
+# Watch mode with email alerts — requires DOD_AGENT_SMTP_PASSWORD env var (Gmail app password)
+python3 main.py --watch --alert-email you@example.com
+python3 main.py --watch --alert-email you@example.com --smtp-from sender@gmail.com
+python3 main.py --watch --alert-email you@example.com --smtp-server smtp.yourprovider.com
 ```
-
----
-
-## Portfolio Tracker
-
-Once you've deployed capital, the tool tracks your positions against current scores.
-
-**Setup:** Create `data/portfolio.json` (use `data/portfolio_template.json` as a template):
-
-```json
-{
-  "GD": {
-    "shares": 30,
-    "cost_basis": 341.50,
-    "entry_date": "2026-06-09",
-    "thesis_score": 70.2,
-    "thesis_verdict": "Potentially Attractive",
-    "thesis_bear_mos": 11.5,
-    "notes": "Highest conviction: bear MoS positive (shield)"
-  }
-}
-```
-
-**Console output** — Portfolio Review table printed automatically when `data/portfolio.json` exists:
-
-```
-======================================================================
-  PORTFOLIO REVIEW
-======================================================================
-Ticker  Shares  Cost     Now      P&L $     P&L%   Score   Bear    Thesis Status
---------------------------------------------------------------------------------
-GD          30 $341.50  $345.00      +$105   +1.0%   70.2  🛡+12%  ✅ Thesis intact
-LDOS        40 $123.00  $121.00       -$80   -1.6%   70.6    -12%  ✅ Thesis intact
---------------------------------------------------------------------------------
-  Total cost: $15,165 | Market value: $15,190 | P&L: +$25 (+0.2%)
-  ✅ All positions: thesis intact
-```
-
-**Thesis status logic:**
-- ✅ **Intact** — verdict still PA+, bear MoS sign unchanged, score stable
-- ⚠️ **WATCH** — score has dropped >3 pts since entry (not a flip, but monitor)
-- ⚠️ **REVIEW** — bear MoS sign flipped (downside protection lost)
-- 🟠 **REDUCE** — verdict downgraded from PA+ to Watchlist/below → trim to half
-- 🔴 **SELL** — verdict collapsed to Ignore → thesis broken, exit position
-
-The portfolio section also appears in the markdown report when positions exist.
 
 ---
 
@@ -366,8 +331,19 @@ report sections. They're derived from composite scores, base MoS, and bear-case 
 
 - **Score trend arrows** — Changes Since Last Run shows ↑ / ↓ / → based on the rolling
   30-run score history in `data/score_history.json`. Trends require ≥3 runs; shown as `—` until then.
+- **PA+ Buy Priority Table** (Section 1b) — Answers "which PA+ name do I buy *today*?" without
+  cross-referencing Section 1, Section 2b, and the Deep Dives manually. Ranks all PA+ names by
+  deployability: names with positive bear MoS (🛡️ shield) rank first, then by composite score.
+  Columns:
+  - **Gap to Entry** — (Bear IV − Price) / Price. Positive (🟢) = already inside the bear-case
+    safety margin; no pullback needed to hit a protected entry price.
+  - **Mkt vs Base** — implied growth rate minus base DCF growth rate. Negative = market is more
+    pessimistic than the base case; you are getting paid to be right about the thesis.
+  - **Size** / **Action** — position size guidance and label (BUY / Start 75% / Start 50% / 25% only)
+  - Cluster warnings fire when ≥3 PA+ names share DOGE or Aerospace concentration risk.
+
 - **Pre-Deployment Conviction Checklist** — Generated for every PA+ name in the Company Deep
-  Dive (Section 7). Answers the 5 questions a real investor must check before executing:
+  Dive (Section 7). Answers the 6 questions a real investor must check before executing:
   1. **Earnings timing** ✅/⚠️/❌ — Is the stock within the pre-earnings binary-event window?
      ❌ blocks entirely (<7d); ⚠️ notes the auto-halved sizing (<21d); ✅ confirms clear window.
   2. **Street consensus** ✅/⚠️ — Buy/strong buy = aligned; hold = cautious (contrarian opportunity
@@ -378,6 +354,9 @@ report sections. They're derived from composite scores, base MoS, and bear-case 
      heavy selling >40% = ❌, re-examine thesis.
   5. **Macro rate check** ✅/⚠️ — Is the live 10-yr yield within 0.5pp of DCF baseline Rf (4.5%)?
      >0.5pp above baseline = ⚠️ (IVs shown are optimistic), with shield-break test for bear IV.
+  6. **Data confidence** ✅/⚠️/❌ — Data completeness grade (A/B/C/D/F) for the company's key
+     fundamental fields. Grade C (60–74%) = score may be off ±3–5 pts; Grade D (<60%) = treat as
+     directional only; Grade F (<50%) = too many gaps, do not deploy capital before verifying 10-K.
 
   Output: **✅ Ready to Deploy** (all clear → execute at full sizing), **⚠️ Conditional Deploy**
   (cautions only → proceed at 50% or review), **❌ Hold** (any blocking issue → do not execute).
@@ -391,9 +370,21 @@ report sections. They're derived from composite scores, base MoS, and bear-case 
   | Price positioning |  ✅   | -18% off 52-week high | 45% from 52w low — fair entry       |
   | Insider activity  |  ✅   | Net buying +22% of held shares (6m)                          |
   | Macro rate check  |  ✅   | 10-yr yield 4.53% ≈ DCF baseline (+0.03pp) — IVs valid      |
+  | Data confidence   |  ✅   | Data completeness 100% (grade A) — key metrics fully populated |
 
   ✅ Ready to Deploy — All checks clear. Execute at up to 6.0% per Capital Deployment guidance.
   ```
+
+- **`--portfolio-size` capital calculator** — Pass `--portfolio-size 100000` (your investable
+  equity in dollars) and the Capital Deployment table in Section 1 adds two columns: **$ Amount**
+  (weight × portfolio size) and **Shares** (floor(dollar amount ÷ current price)). Removes the
+  mental math step between "6.0% sizing" and the actual order ticket. This is a calculator, not a
+  tracker — it does not record positions or track P&L.
+
+- **Data completeness breakdown** (Section 11) — A per-company table sorted worst-first shows
+  completeness %, letter grade (A–F), and which specific key fields are missing. Grades:
+  A ≥90%, B ≥75%, C ≥60%, D ≥50%, F <50%. Pairs with the Data Confidence checklist item to
+  surface exactly which fields to add to `data/mock_fundamentals.json` before trusting a score.
 
 - **Macro Context box** — Top of every report. Fetches live 10-yr Treasury yield (^TNX) and
   3-month T-bill rate (^IRX) from yfinance. Computes delta vs DCF baseline Rf (4.5%) and shows
@@ -655,6 +646,7 @@ Sector drives the DCF growth assumptions and terminal rate — misclassification
 | **No backtesting** | Scoring weights are constructed from first principles, not empirically validated on historical returns. This is the single most important limitation for real capital deployment. |
 | **Liquidity** | Avg daily dollar volume is shown as a warning when < $2M for PA+ names. Use `--min-liquidity 2` to exclude them from rankings. Volume data from yfinance `averageVolume10days`; not available in offline mock mode. |
 | **Score trend (minimum 3 runs)** | Trend arrows (↑ ↓ →) in Changes Since Last Run require ≥3 entries in `data/score_history.json`. They show `—` until then. History is appended on every live run, one entry per calendar day per ticker. |
+| **Email alerts** | `--alert-email` requires `DOD_AGENT_SMTP_PASSWORD` environment variable (Gmail app password or equivalent). Without it, the alert is skipped with a warning — watch mode still runs normally. Configure `--smtp-from` when the sending address differs from the account holding the password. |
 | **Earnings sizing (live only)** | Pre-announcement position halving requires `next_earnings_date` from yfinance. Offline mock mode has no earnings dates so the rule never fires in mock runs. |
 | **First-pass screen only** | Not a substitute for reading the 10-K, listening to earnings calls, or building your own discounted cash flow model. Use this tool to decide where to spend your research time, not to make the final call. |
 
