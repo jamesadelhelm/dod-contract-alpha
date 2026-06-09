@@ -394,6 +394,15 @@ report sections. They're derived from composite scores, base MoS, and bear-case 
   ✅ Ready to Deploy — All checks clear. Execute at up to 6.0% per Capital Deployment guidance.
   ```
 
+- **Enhanced Executive Summary** — The report opens with a 5-bullet situation summary:
+  (1) 10-yr yield vs. DCF baseline (are intrinsic values still valid?);
+  (2) Highest-conviction names (bear MoS ≥ 0%, both shield and breakeven cases);
+  (3) Starter-position names (PA+ but bear case carries tail risk — size accordingly);
+  (4) Quality-above-price names (PA+ verdict but DCF shows overvaluation — wait for pullback);
+  (5) Near-threshold Watchlist names (within 5 pts of PA+) + deployable capital summary.
+  The tier boundary for "highest conviction" is now bear MoS ≥ 0% (was >0%), correctly
+  including shield-breakeven names (like LMT at exactly +0%) in the top tier.
+
 - **One-Line Investment Thesis** — Each PA+ company deep dive opens with a machine-generated
   thesis sentence synthesizing the key numbers: current price vs. base IV, moat and DoD
   concentration, bear-case MoS status, and 3-year annualized return range (bear to bull).

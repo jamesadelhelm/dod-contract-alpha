@@ -1213,45 +1213,104 @@ def generate_report(
     _pa_plus = [s for s in ranked_scores if s.verdict in (
         Verdict.STRONG_CANDIDATE, Verdict.POTENTIALLY_ATTRACTIVE, Verdict.RESEARCH_FURTHER
     )]
+    _is_not_overvalued = lambda s: not any(
+        "overvalued at" in f.lower() or "dcf:" in f.lower() for f in (s.red_flags or [])
+    )
+    # Tier 1: bear MoS >= 0 (downside protection confirmed) AND not overvalued
     _tier1_ex = [s for s in _pa_plus
-                 if s.dcf and s.dcf.bear_mos is not None and s.dcf.bear_mos > 0
-                 and not any("overvalued at" in f.lower() or "dcf:" in f.lower() for f in (s.red_flags or []))]
-    _tier2_ex = [s for s in _pa_plus if s not in _tier1_ex
-                 and not any("overvalued at" in f.lower() or "dcf:" in f.lower() for f in (s.red_flags or []))]
+                 if s.dcf and s.dcf.bear_mos is not None and s.dcf.bear_mos >= 0
+                 and _is_not_overvalued(s)]
+    # Tier 2: PA+ and not overvalued but bear MoS negative (tail risk present)
+    _tier2_ex = [s for s in _pa_plus if s not in _tier1_ex and _is_not_overvalued(s)]
+    # Blocked: PA+ verdict but overvalued by DCF
+    _blocked_ex = [s for s in _pa_plus if not _is_not_overvalued(s)]
+
     _deploy_rows_ex = [(s, *_compute_position_size(s, (fundamentals_map or {}).get(s.ticker))) for s in ranked_scores]
     _total_pct_ex   = sum(pct for _, pct, _ in _deploy_rows_ex if pct > 0)
+    _cash_pct_ex    = 100.0 - _total_pct_ex
 
-    # Auto-generate executive summary
-    exec_parts = []
-    if _tier1_ex:
-        top = _tier1_ex[0]
-        b = top.dcf.bear_mos if top.dcf else None
-        bstr = f"🛡️ +{b:.0f}% bear MoS" if b and b > 0 else ""
-        if top.dcf:
-            exec_parts.append(
-                f"**{top.ticker}** is the highest-conviction name "
-                f"(score {top.final_score:.0f}, +{top.dcf.margin_of_safety_base:.0f}% base MoS, "
-                f"{bstr}): the market is pricing in only "
-                f"{top.dcf.implied_growth_rate:.0f}%/yr growth "
-                "despite a strong and growing defense franchise."
+    # ── Build enhanced executive summary ─────────────────────────────────────
+    exec_lines = []
+
+    # Macro environment note
+    if macro_context and macro_context.ten_year_yield is not None:
+        dcf_rf = 4.5
+        delta = macro_context.ten_year_yield - dcf_rf
+        if abs(delta) > 0.5:
+            direction = "above" if delta > 0 else "below"
+            exec_lines.append(
+                f"⚡ **Rate environment:** 10-yr yield {macro_context.ten_year_yield:.2f}% "
+                f"is {abs(delta):.2f}pp {direction} DCF baseline (4.50%) — "
+                + ("intrinsic values are ~{:.0f}% lower than stated.".format(abs(delta) * 10)
+                   if delta > 0 else "intrinsic values may be slightly optimistic.")
             )
         else:
-            exec_parts.append(f"**{top.ticker}** is the highest-conviction name: score {top.final_score:.0f}.")
-    if _tier2_ex:
-        names = ", ".join(
-            f"**{s.ticker}** (base +{s.dcf.margin_of_safety_base:.0f}%, bear {s.dcf.bear_mos:.0f}%)"
+            exec_lines.append(
+                f"✅ **Rate environment:** 10-yr yield {macro_context.ten_year_yield:.2f}% "
+                f"≈ DCF baseline (+{delta:+.2f}pp) — intrinsic values are valid as stated."
+            )
+
+    # PA+ landscape
+    if _tier1_ex:
+        shield_names = ", ".join(
+            f"**{s.ticker}** ({'+' if (s.dcf.bear_mos or 0) >= 0 else ''}"
+            f"{s.dcf.bear_mos:.0f}% bear MoS)"
             if s.dcf else f"**{s.ticker}**"
+            for s in _tier1_ex
+        )
+        top = _tier1_ex[0]
+        exec_lines.append(
+            f"🛡️ **Highest conviction ({len(_tier1_ex)} name{'s' if len(_tier1_ex)>1 else ''}):** "
+            f"{shield_names} — downside protection confirmed at current prices."
+        )
+        if top.dcf and top.dcf.implied_growth_rate is not None and top.dcf.base_growth is not None:
+            pessimism_pp = top.dcf.implied_growth_rate - top.dcf.base_growth
+            if pessimism_pp < -2:
+                exec_lines.append(
+                    f"  Market pricing in {top.dcf.implied_growth_rate:.0f}%/yr for **{top.ticker}** "
+                    f"vs. our base case of {top.dcf.base_growth:.0f}%/yr — "
+                    f"{abs(pessimism_pp):.0f}pp pessimism premium embedded in the price."
+                )
+
+    if _tier2_ex:
+        tail_names = ", ".join(
+            f"**{s.ticker}** (score {s.final_score:.0f}, base "
+            f"+{s.dcf.margin_of_safety_base:.0f}%, bear {s.dcf.bear_mos:.0f}%)"
+            if s.dcf and s.dcf.bear_mos is not None else f"**{s.ticker}** (score {s.final_score:.0f})"
             for s in _tier2_ex
         )
-        exec_parts.append(
-            f"Research Priority names with base-case undervaluation but meaningful tail risk: {names}."
+        exec_lines.append(
+            f"🟡 **Starter positions ({len(_tier2_ex)} name{'s' if len(_tier2_ex)>1 else ''}):** "
+            f"{tail_names} — good quality, size to bear-case risk."
         )
-    total_pa = len(_pa_plus)
-    if total_pa == 0:
-        exec_parts.append("No Potentially Attractive names in this batch — hold cash and wait.")
-    exec_parts.append(
-        f"Actionable position weight: **{_total_pct_ex:.1f}% of portfolio** — "
-        "high cash discipline is correct when opportunities are limited."
+
+    if _blocked_ex:
+        blocked_str = ", ".join(f"**{s.ticker}**" for s in _blocked_ex)
+        exec_lines.append(
+            f"⚠️ **Quality above price:** {blocked_str} score PA+ but DCF shows overvaluation — "
+            "wait for a pullback before sizing up."
+        )
+
+    if not _pa_plus:
+        exec_lines.append("**No Potentially Attractive names in this batch — hold cash and wait.**")
+
+    # Near-threshold watchlist note
+    _near_wl = [s for s in ranked_scores if s.verdict == Verdict.WATCHLIST and s.final_score >= 63]
+    if _near_wl:
+        near_str = ", ".join(f"**{s.ticker}** ({s.final_score:.0f})" for s in _near_wl)
+        exec_lines.append(
+            f"🔵 **Near-threshold Watchlist:** {near_str} — within 5 pts of PA+; "
+            "monitor for contract wins or multiple compression."
+        )
+
+    # Deployable capital summary
+    exec_lines.append(
+        f"📊 **Deployable: {_total_pct_ex:.1f}% of portfolio** | "
+        f"**Cash held: {_cash_pct_ex:.1f}%** — "
+        + ("High cash is correct discipline with limited conviction names."
+           if _cash_pct_ex > 80 else
+           "Diversified deployment across conviction names." if _cash_pct_ex < 50 else
+           "Moderate deployment; reserve cash for watchlist upgrades.")
     )
 
     lines += [
@@ -1281,7 +1340,7 @@ def generate_report(
         "## Executive Summary",
         "",
     ]
-    for part in exec_parts:
+    for part in exec_lines:
         lines.append(part)
         lines.append("")
     lines += ["---", ""]
