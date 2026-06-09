@@ -394,6 +394,11 @@ report sections. They're derived from composite scores, base MoS, and bear-case 
   ✅ Ready to Deploy — All checks clear. Execute at up to 6.0% per Capital Deployment guidance.
   ```
 
+- **WACC Sensitivity Table (Section 2c)** — For PA+ names, shows base IV at current WACC, then
+  at +0.5pp, +1.0pp, and +1.5pp rate increases. Also checks whether the bear-case shield (🛡️
+  bear MoS > 0) survives a +1pp rate shock. Example: GD base IV $343 → $293 at +1pp; bear IV
+  drops to $257 vs. $288 current (shield breaks — ❌). Compact table replaces prior bullet-list.
+
 - **Economic Value Added (EVA) analysis** — In each company's DCF Detail section, shows the
   EVA spread: ROIC minus WACC. Positive spread = company creates economic value when it
   reinvests (the core Buffett compounder criterion). Labels: +5pp = Exceptional / +0pp = Positive

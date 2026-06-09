@@ -1719,7 +1719,7 @@ def generate_report(
             f"| {s.ticker} | {price_str} | {bear} | {base} | {bull} | {bmos} | {mos} | {impl} | {rate} | {verd} |"
         )
 
-    # ── WACC sensitivity note for PA+ names ─────────────────────────────────
+    # ── WACC sensitivity table for PA+ names ────────────────────────────────
     # Approximation: dIV/IV ≈ -TV_pct / (WACC - terminal_g) per +1% WACC
     # Terminal value = ~70% of total IV for a 10-yr DCF with 3% terminal growth.
     pa_plus_dcf = [
@@ -1728,34 +1728,51 @@ def generate_report(
         and s.dcf and s.dcf.base_iv is not None and s.dcf.base_iv > 0
     ]
     if pa_plus_dcf:
-        sensitivity_parts = []
+        tg_est = 0.03
+        tv_pct = 0.70
+
+        def _wacc_adj_iv(base_iv, wacc_pct, delta_pp):
+            wacc = wacc_pct / 100.0
+            if wacc <= tg_est:
+                return base_iv
+            iv_drop = tv_pct / (wacc - tg_est) * (delta_pp / 100.0)
+            return base_iv * (1 - iv_drop)
+
+        rows = []
         for s in pa_plus_dcf:
             d = s.dcf
             f_c = (fundamentals_map or {}).get(s.ticker)
-            if d.discount_rate_base and d.bear_growth is not None:
-                # Terminal growth is stored per-scenario in bear; use base scenario's terminal growth
-                # Estimate: terminal_g ≈ 2.5–3.5% depending on sector, use 3.0 as midpoint
-                tg_est = 0.03
-                wacc = d.discount_rate_base / 100.0
-                if wacc > tg_est:
-                    tv_pct = 0.70  # TV as fraction of total IV
-                    # dIV/IV = -tv_pct * dr/(r-g); for dr=1pp: drop% = tv_pct/(r-g)*100
-                    iv_drop_pct = tv_pct / (wacc - tg_est) * 0.01  # fractional drop for +1pp WACC
-                    new_iv = d.base_iv * (1 - iv_drop_pct)
-                    sensitivity_parts.append(
-                        f"**{s.ticker}**: base IV ${d.base_iv:.0f} → ~${new_iv:.0f} at +1% WACC "
-                        f"({iv_drop_pct*100:.0f}% drop per +1pp)"
-                    )
-        if sensitivity_parts:
+            cur = f_c.current_price if f_c else None
+            if d.discount_rate_base and d.base_iv:
+                iv_05  = _wacc_adj_iv(d.base_iv, d.discount_rate_base, 0.5)
+                iv_10  = _wacc_adj_iv(d.base_iv, d.discount_rate_base, 1.0)
+                iv_15  = _wacc_adj_iv(d.base_iv, d.discount_rate_base, 1.5)
+                # Shield survives at +1pp? (bear IV at +1pp still > current price)
+                if d.bear_iv is not None and cur:
+                    bear_adj = _wacc_adj_iv(d.bear_iv, d.discount_rate_base, 1.0)
+                    shield_str = "✅" if bear_adj > cur else "❌"
+                else:
+                    shield_str = "—"
+                rows.append((s.ticker, d.discount_rate_base, d.base_iv, iv_05, iv_10, iv_15, shield_str))
+
+        if rows:
             lines += [
                 "",
-                "**WACC sensitivity (PA+ names):** A +1% increase in the discount rate reduces "
-                "intrinsic value by the amounts below — driven by terminal value sensitivity. "
-                "Use these as a stress test: does the thesis survive a higher-rate environment?",
+                "**2c. WACC Sensitivity — PA+ Names**",
                 "",
+                "> A +1pp rise in the discount rate reduces intrinsic value by ~{:.0f}–{:.0f}% "
+                "(terminal value sensitivity). Does the bear-case shield survive a rate spike?".format(
+                    min(tv_pct / (r[1]/100 - tg_est) * 1 for r in rows if r[1]/100 > tg_est),
+                    max(tv_pct / (r[1]/100 - tg_est) * 1 for r in rows if r[1]/100 > tg_est),
+                ),
+                "",
+                "| Ticker | WACC | Base IV | +0.5pp | +1.0pp | +1.5pp | 🛡️ Survives +1pp? |",
+                "|--------|:----:|--------:|-------:|-------:|-------:|:-----------------:|",
             ]
-            for sp in sensitivity_parts:
-                lines.append(f"> {sp}")
+            for ticker, wacc, base_iv, iv05, iv10, iv15, shield in rows:
+                lines.append(
+                    f"| {ticker} | {wacc:.1f}% | ${base_iv:.0f} | ${iv05:.0f} | ${iv10:.0f} | ${iv15:.0f} | {shield} |"
+                )
             lines.append("")
 
     lines += ["", "---", ""]
