@@ -259,6 +259,52 @@ python3 main.py --watch --watch-interval 3600   # hourly (e.g. during volatile p
 
 ---
 
+## Portfolio Tracker
+
+Once you've deployed capital, the tool tracks your positions against current scores.
+
+**Setup:** Create `data/portfolio.json` (use `data/portfolio_template.json` as a template):
+
+```json
+{
+  "GD": {
+    "shares": 30,
+    "cost_basis": 341.50,
+    "entry_date": "2026-06-09",
+    "thesis_score": 70.2,
+    "thesis_verdict": "Potentially Attractive",
+    "thesis_bear_mos": 11.5,
+    "notes": "Highest conviction: bear MoS positive (shield)"
+  }
+}
+```
+
+**Console output** — Portfolio Review table printed automatically when `data/portfolio.json` exists:
+
+```
+======================================================================
+  PORTFOLIO REVIEW
+======================================================================
+Ticker  Shares  Cost     Now      P&L $     P&L%   Score   Bear    Thesis Status
+--------------------------------------------------------------------------------
+GD          30 $341.50  $345.00      +$105   +1.0%   70.2  🛡+12%  ✅ Thesis intact
+LDOS        40 $123.00  $121.00       -$80   -1.6%   70.6    -12%  ✅ Thesis intact
+--------------------------------------------------------------------------------
+  Total cost: $15,165 | Market value: $15,190 | P&L: +$25 (+0.2%)
+  ✅ All positions: thesis intact
+```
+
+**Thesis status logic:**
+- ✅ **Intact** — verdict still PA+, bear MoS sign unchanged, score stable
+- ⚠️ **WATCH** — score has dropped >3 pts since entry (not a flip, but monitor)
+- ⚠️ **REVIEW** — bear MoS sign flipped (downside protection lost)
+- 🟠 **REDUCE** — verdict downgraded from PA+ to Watchlist/below → trim to half
+- 🔴 **SELL** — verdict collapsed to Ignore → thesis broken, exit position
+
+The portfolio section also appears in the markdown report when positions exist.
+
+---
+
 ## Signal Tiers
 
 The Action Summary produces a Signal Tiers box that organizes actionable names:

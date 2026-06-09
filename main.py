@@ -64,11 +64,14 @@ def parse_args():
                    help="Continuous monitoring mode: re-run every 24h, print only material changes")
     p.add_argument("--watch-interval", type=int, default=86400, dest="watch_interval",
                    help="Seconds between watch-mode re-runs (default: 86400 = 24h)")
+    p.add_argument("--portfolio", action="store_true",
+                   help="Show portfolio review: P&L and thesis-intact check for positions in data/portfolio.json")
     return p.parse_args()
 
 
 _LAST_SCORES_PATH    = DATA_DIR / "last_scores.json"
 _SCORE_HISTORY_PATH  = DATA_DIR / "score_history.json"
+_PORTFOLIO_PATH      = DATA_DIR / "portfolio.json"
 _HISTORY_MAX_ENTRIES = 30
 
 
@@ -134,6 +137,126 @@ def _save_last_scores(scores: list, fundamentals_map: dict) -> None:
         _LAST_SCORES_PATH.write_text(json.dumps(data, indent=2))
     except Exception:
         pass
+
+
+def _load_portfolio() -> dict:
+    """Load portfolio positions from data/portfolio.json."""
+    try:
+        if _PORTFOLIO_PATH.exists():
+            raw = json.loads(_PORTFOLIO_PATH.read_text())
+            # Strip comment keys used in the template
+            return {k: v for k, v in raw.items() if not k.startswith("_comment")}
+    except Exception:
+        pass
+    return {}
+
+
+def _print_portfolio_review(portfolio: dict, scores: list, fundamentals_map: dict) -> None:
+    """
+    Print a portfolio review table comparing held positions against current scores.
+    Detects thesis changes (verdict downgrade, bear MoS sign flip, score decay).
+    """
+    if not portfolio:
+        return
+
+    _PA_PLUS = {"Strong Candidate", "Research Further", "Potentially Attractive"}
+
+    score_map = {s.ticker: s for s in scores}
+    total_market_value = 0.0
+    total_cost_value   = 0.0
+    total_pnl          = 0.0
+    any_alert          = False
+
+    print("\n" + "=" * 70)
+    print("  PORTFOLIO REVIEW")
+    print("=" * 70)
+    print(f"{'Ticker':<7} {'Shares':>6} {'Cost':>8} {'Now':>8} {'P&L $':>9} {'P&L%':>6} "
+          f"{'Score':>6} {'Bear':>6}  {'Thesis Status'}")
+    print("-" * 80)
+
+    review_rows = []
+    for ticker, pos in portfolio.items():
+        cost    = pos.get("cost_basis", 0.0)
+        shares  = pos.get("shares", 0)
+        t_score = pos.get("thesis_score")
+        t_verd  = pos.get("thesis_verdict", "")
+        t_bear  = pos.get("thesis_bear_mos")
+
+        s = score_map.get(ticker)
+        f = fundamentals_map.get(ticker)
+        cur_price = (f.current_price if f and f.current_price else None)
+
+        # P&L
+        if cur_price and shares:
+            market_val = cur_price * shares
+            cost_val   = cost * shares
+            pnl_abs    = market_val - cost_val
+            pnl_pct    = (cur_price - cost) / cost * 100 if cost else 0
+            total_market_value += market_val
+            total_cost_value   += cost_val
+            total_pnl          += pnl_abs
+            now_str  = f"${cur_price:.2f}"
+            pnl_str  = f"${pnl_abs:+.0f}"
+            pnlp_str = f"{pnl_pct:+.1f}%"
+        else:
+            now_str = pnl_str = pnlp_str = "—"
+
+        # Thesis status
+        if s:
+            cur_verdict  = s.verdict.value
+            cur_score    = s.final_score
+            cur_bear     = s.dcf.bear_mos if s.dcf else None
+            was_pa_plus  = t_verd in _PA_PLUS
+            now_pa_plus  = cur_verdict in _PA_PLUS
+            bear_flipped = (
+                t_bear is not None and cur_bear is not None
+                and (t_bear > 0) != (cur_bear > 0)
+            )
+            score_decay  = (t_score is not None and cur_score < t_score - 3)
+
+            if was_pa_plus and cur_verdict == "Ignore":
+                status = "🔴 SELL — verdict collapsed"
+                any_alert = True
+            elif was_pa_plus and not now_pa_plus:
+                status = f"🟠 REDUCE — downgraded to {cur_verdict}"
+                any_alert = True
+            elif bear_flipped and was_pa_plus:
+                status = "⚠️  REVIEW — bear MoS sign flipped"
+                any_alert = True
+            elif score_decay:
+                status = f"⚠️  WATCH — score -({cur_score - t_score:.1f}) since entry"
+                any_alert = True
+            else:
+                status = "✅ Thesis intact"
+
+            score_str = f"{cur_score:.1f}"
+            bear_str = (
+                f"🛡+{cur_bear:.0f}%" if cur_bear and cur_bear > 0
+                else (f"{cur_bear:.0f}%" if cur_bear is not None else "—")
+            )
+        else:
+            status = "— (not in current run)"
+            score_str = "—"
+            bear_str  = "—"
+
+        review_rows.append((ticker, shares, cost, now_str, pnl_str, pnlp_str,
+                             score_str, bear_str, status))
+
+    for ticker, shares, cost, now_str, pnl_str, pnlp_str, score_str, bear_str, status in review_rows:
+        print(f"{ticker:<7} {shares:>6} ${cost:>7.2f} {now_str:>8} {pnl_str:>9} {pnlp_str:>6} "
+              f"{score_str:>6} {bear_str:>6}  {status}")
+
+    print("-" * 80)
+    if total_cost_value > 0:
+        total_pnl_pct = total_pnl / total_cost_value * 100
+        print(f"  Total cost: ${total_cost_value:,.0f} | "
+              f"Market value: ${total_market_value:,.0f} | "
+              f"P&L: ${total_pnl:+,.0f} ({total_pnl_pct:+.1f}%)")
+    if any_alert:
+        print("\n  ⚠️  ACTION REQUIRED: Position management signals above. See Changes Since Last Run in report.")
+    else:
+        print("  ✅ All positions: thesis intact")
+    print("=" * 70 + "\n")
 
 
 def main():
@@ -346,6 +469,11 @@ def main():
             chg_str = " new"
         print(f"{i:<3} {s.ticker:<8} {s.final_score:>6.1f} {chg_str:>5} {price_str:>7} {data_str:>5} {mos_str:>6} {bear_str:>7}  {emoji} {s.verdict.value:<26} {s.sector.value}")
 
+    # Portfolio review — auto-enabled if data/portfolio.json exists
+    portfolio = _load_portfolio()
+    if portfolio and (args.portfolio or _PORTFOLIO_PATH.exists()):
+        _print_portfolio_review(portfolio, scores, fundamentals_map)
+
     # Save scores for next-run delta comparison (only when live and not mock)
     if live and args.source != "mock":
         _save_last_scores(scores, fundamentals_map)
@@ -394,6 +522,7 @@ def main():
             last_scores=last_scores,
             score_history=score_history,
             macro_context=macro_ctx,
+            portfolio=portfolio,
         )
         save_report(report_content, output_path)
         print(f"\nReport → {output_path}")

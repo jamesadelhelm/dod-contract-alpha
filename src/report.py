@@ -505,6 +505,131 @@ def _generate_macro_context_section(
     return lines
 
 
+def _generate_portfolio_section(
+    portfolio: dict,
+    ranked_scores: List[CompanyScore],
+    fundamentals_map: Dict,
+) -> List[str]:
+    """
+    Generate a Portfolio Review section for the markdown report.
+    Reads held positions from data/portfolio.json and compares against current scores.
+    """
+    if not portfolio:
+        return []
+
+    _PA_PLUS = {"Strong Candidate", "Research Further", "Potentially Attractive"}
+    score_map = {s.ticker: s for s in ranked_scores}
+
+    lines = [
+        "## Portfolio Review",
+        "",
+        "> *Positions from `data/portfolio.json` compared against current scores.*",
+        "> *Thesis-intact check: ✅ = verdict unchanged; ⚠️ = watch; 🟠 = REDUCE; 🔴 = SELL.*",
+        "",
+        "| Ticker | Shares | Cost | Now | P&L $ | P&L % | Score | Bear MoS | Thesis Status |",
+        "|--------|-------:|-----:|----:|------:|------:|------:|---------:|---------------|",
+    ]
+
+    alerts = []
+    total_cost = 0.0
+    total_mkt  = 0.0
+
+    for ticker, pos in portfolio.items():
+        cost   = pos.get("cost_basis", 0.0)
+        shares = pos.get("shares", 0)
+        t_verd = pos.get("thesis_verdict", "")
+        t_score = pos.get("thesis_score")
+        t_bear  = pos.get("thesis_bear_mos")
+
+        s = score_map.get(ticker)
+        f = (fundamentals_map or {}).get(ticker)
+        cur_price = f.current_price if f and f.current_price else None
+
+        price_str = f"${cur_price:.2f}" if cur_price else "—"
+        cost_str  = f"${cost:.2f}"
+
+        if cur_price and shares:
+            mkt  = cur_price * shares
+            cv   = cost * shares
+            pnl  = mkt - cv
+            pnlp = (cur_price - cost) / cost * 100 if cost else 0
+            total_cost += cv
+            total_mkt  += mkt
+            pnl_str  = f"${pnl:+.0f}"
+            pnlp_str = f"{pnlp:+.1f}%"
+        else:
+            pnl_str = pnlp_str = "—"
+
+        if s:
+            cur_v    = s.verdict.value
+            cur_scr  = s.final_score
+            cur_bear = s.dcf.bear_mos if s.dcf else None
+            was_pa   = t_verd in _PA_PLUS
+            now_pa   = cur_v in _PA_PLUS
+            bear_flipped = (
+                t_bear is not None and cur_bear is not None
+                and (t_bear > 0) != (cur_bear > 0)
+            )
+            score_decay = t_score is not None and cur_scr < t_score - 3
+
+            if was_pa and cur_v == "Ignore":
+                status = "🔴 SELL"
+                alerts.append(f"🔴 **SELL {ticker}** — verdict collapsed from PA+ to Ignore.")
+            elif was_pa and not now_pa:
+                status = f"🟠 REDUCE → {cur_v}"
+                alerts.append(f"🟠 **REDUCE {ticker}** — downgraded from PA+ to {cur_v}.")
+            elif bear_flipped and was_pa:
+                status = "⚠️ REVIEW (bear flip)"
+                alerts.append(f"⚠️ **REVIEW {ticker}** — bear MoS sign flipped: thesis must be re-examined.")
+            elif score_decay:
+                status = f"⚠️ WATCH (score −{t_score - cur_scr:.1f})"
+                alerts.append(f"⚠️ **WATCH {ticker}** — score has declined {t_score - cur_scr:.1f} pts since entry.")
+            else:
+                status = "✅ Intact"
+
+            scr_str  = f"{cur_scr:.1f}"
+            bear_str = (
+                f"🛡️ +{cur_bear:.0f}%" if cur_bear and cur_bear > 0
+                else (f"{cur_bear:.0f}%" if cur_bear is not None else "—")
+            )
+        else:
+            status = "— (not in run)"
+            scr_str = bear_str = "—"
+
+        lines.append(
+            f"| **{ticker}** | {shares} | {cost_str} | {price_str} | {pnl_str} | {pnlp_str} | {scr_str} | {bear_str} | {status} |"
+        )
+
+    lines.append("")
+
+    if total_cost > 0:
+        total_pnl  = total_mkt - total_cost
+        total_pnlp = total_pnl / total_cost * 100
+        lines.append(
+            f"**Portfolio totals:** Cost ${total_cost:,.0f} | "
+            f"Market value ${total_mkt:,.0f} | "
+            f"P&L ${total_pnl:+,.0f} ({total_pnlp:+.1f}%)"
+        )
+        lines.append("")
+
+    if alerts:
+        lines += ["**⚠️ Action required:**", ""]
+        for a in alerts:
+            lines.append(f"> {a}")
+        lines.append("")
+    else:
+        lines.append("✅ **All positions: thesis intact** — no action required this run.")
+        lines.append("")
+
+    lines += [
+        "> To update positions, edit `data/portfolio.json`. "
+        "See `data/portfolio_template.json` for format.",
+        "",
+        "---", "",
+    ]
+    return lines
+
+
 def _conviction_checklist(
     s: CompanyScore,
     f,
@@ -679,6 +804,7 @@ def generate_report(
     last_scores: Dict = None,
     score_history: Dict = None,
     macro_context: Optional[MacroContext] = None,
+    portfolio: Dict = None,
 ) -> str:
     run_date = run_date or datetime.now().strftime("%Y-%m-%d %H:%M UTC")
 
@@ -756,6 +882,10 @@ def generate_report(
     # ── Macro Context ─────────────────────────────────────────────────────────
     lines += _generate_macro_context_section(macro_context, ranked_scores, fundamentals_map or {})
     lines += ["---", ""]
+
+    # ── Portfolio Review (if positions present) ───────────────────────────────
+    if portfolio:
+        lines += _generate_portfolio_section(portfolio, ranked_scores, fundamentals_map or {})
 
     lines += [
         "## Executive Summary",

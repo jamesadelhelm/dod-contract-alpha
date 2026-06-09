@@ -1,0 +1,22 @@
+{
+  "_comment": "Copy to portfolio.json and fill in your actual positions. Remove this _comment key.",
+  "_comment2": "thesis_* fields capture the state at entry so the tool can detect thesis changes.",
+  "GD": {
+    "shares": 30,
+    "cost_basis": 341.50,
+    "entry_date": "2026-06-09",
+    "thesis_score": 70.2,
+    "thesis_verdict": "Potentially Attractive",
+    "thesis_bear_mos": 11.5,
+    "notes": "Highest conviction: bear MoS positive (shield). Shipbuilding backlog 8.5x. Bear entry $293."
+  },
+  "LDOS": {
+    "shares": 40,
+    "cost_basis": 123.00,
+    "entry_date": "2026-06-09",
+    "thesis_score": 70.6,
+    "thesis_verdict": "Potentially Attractive",
+    "thesis_bear_mos": -12.2,
+    "notes": "Start 75%. Bear IV $108 is back-up-the-truck price. DOGE-resilient IT services."
+  }
+}
