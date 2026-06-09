@@ -394,6 +394,12 @@ report sections. They're derived from composite scores, base MoS, and bear-case 
   ✅ Ready to Deploy — All checks clear. Execute at up to 6.0% per Capital Deployment guidance.
   ```
 
+- **Contract Quality Scorecard** (Section 7 deep dives) — For each company, a compact summary
+  of the quality profile of their recent contract wins: sole-source rate (indicates competitive
+  moat), fixed-price rate (pricing confidence), average contract size, IDIQ ceiling rate.
+  High sole-source rate (≥60%) flags strong customer relationships; high IDIQ rate (with a
+  warning) flags that headline contract values may not fully fund.
+
 - **YTD Contract Velocity** (Section 6) — For each company, compares this fiscal year's new
   contract awards from the USAspending sample against the historical DoD revenue run-rate
   (annualized to account for partial FY elapsed). Indicators: 📈 accelerating (>115% of baseline),

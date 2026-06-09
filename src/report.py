@@ -2154,6 +2154,49 @@ def generate_report(
             # What would change my mind — thesis-break scenario analysis
             lines += _what_would_change(s, f_chk, macro=macro_context)
 
+        # Contract quality scorecard
+        if s.recent_contracts:
+            n = len(s.recent_contracts)
+            n_ss    = sum(1 for c in s.recent_contracts if c.is_sole_source)
+            n_fp    = sum(1 for c in s.recent_contracts if c.contract_type.value in (
+                "Fixed-Price", "Fixed Price", "Firm Fixed-Price", "FFP"))
+            n_idiq  = sum(1 for c in s.recent_contracts if c.is_idiq)
+            avg_val = (sum(c.contract_value for c in s.recent_contracts) / n) if n else 0
+            ss_pct  = n_ss / n * 100 if n else 0
+
+            ss_note = (
+                f"**{ss_pct:.0f}% sole-source** ({n_ss}/{n})" if ss_pct >= 50
+                else f"{ss_pct:.0f}% sole-source ({n_ss}/{n})"
+            )
+            fp_note = f"{n_fp}/{n} fixed-price" if n_fp > 0 else f"0/{n} fixed-price"
+            idiq_note = f"{n_idiq}/{n} IDIQ" if n_idiq > 0 else ""
+            avg_note = f"avg {_fmt_millions(avg_val)} per award"
+
+            quality_parts = [ss_note, fp_note, avg_note]
+            if idiq_note:
+                quality_parts.append(idiq_note)
+
+            lines += [
+                "#### Contract Quality Scorecard",
+                "",
+                f"> {n} contract{'s' if n != 1 else ''} in sample — {' | '.join(quality_parts)}",
+            ]
+            if ss_pct >= 60:
+                lines.append(
+                    "> ✅ High sole-source rate — strong competitive moat in this customer relationship."
+                )
+            elif ss_pct < 20 and n >= 3:
+                lines.append(
+                    "> ⚠️ Low sole-source rate — mostly competitive awards; contract renewal is not guaranteed."
+                )
+            if n_idiq > 0:
+                idiq_pct = n_idiq / n * 100
+                lines.append(
+                    f"> ⚠️ {idiq_pct:.0f}% of contracts are IDIQ (ceiling only) — "
+                    "actual funded value may be significantly lower than headline amounts."
+                )
+            lines.append("")
+
         # Recent contracts
         if s.recent_contracts:
             lines += ["#### Recent DoD Contracts", ""]
