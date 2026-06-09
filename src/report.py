@@ -83,6 +83,19 @@ def _score_table_row(label: str, score: float, weight_pct: int) -> str:
     return f"| {label:<30} | {score:>6.1f}/100 | {weight_pct:>4}% | {_bar(score)} |"
 
 
+def _data_confidence_grade(pct: float) -> tuple[str, str]:
+    """Return (letter_grade, emoji) for a data completeness percentage."""
+    if pct >= 90:
+        return "A", "✅"
+    if pct >= 75:
+        return "B", "✅"
+    if pct >= 60:
+        return "C", "⚠️"
+    if pct >= 50:
+        return "D", "⚠️"
+    return "F", "❌"
+
+
 def _score_trend(ticker: str, current_score: float, history: dict) -> str:
     """Return a trend arrow based on rolling history: ↑ / ↓ / → / (empty)."""
     entries = (history or {}).get(ticker, [])
@@ -758,6 +771,36 @@ def _conviction_checklist(
 
     checks.append(("Macro rate check", status, detail))
 
+    # ── 6. Data confidence ─────────────────────────────────────────────────────
+    pct = getattr(s, "data_completeness_pct", None)
+    if pct is not None:
+        grade, _ = _data_confidence_grade(pct)
+        if pct >= 75:
+            status, detail = "✅", f"Data completeness **{pct:.0f}%** (grade {grade}) — key metrics fully populated"
+        elif pct >= 60:
+            status, detail = "⚠️", (
+                f"Data completeness **{pct:.0f}%** (grade {grade}) — some key fields missing. "
+                "Score could be off by ±3–5 pts; verify missing fundamentals before sizing up."
+            )
+            warnings += 1
+        elif pct >= 50:
+            status, detail = "⚠️", (
+                f"Data completeness **{pct:.0f}%** (grade {grade}) — multiple key fields missing. "
+                "Treat score as directional only. Confirm via 10-K before deploying."
+            )
+            warnings += 1
+        else:
+            status, detail = "❌", (
+                f"Data completeness **{pct:.0f}%** (grade {grade}) — too many data gaps. "
+                "Score confidence is too low for capital deployment. "
+                "Add fundamentals to `data/mock_fundamentals.json` first."
+            )
+            warnings += 2
+    else:
+        status, detail = "—", "Data completeness unknown"
+
+    checks.append(("Data confidence", status, detail))
+
     # ── Render ─────────────────────────────────────────────────────────────────
     lines = [
         "#### Pre-Deployment Checklist",
@@ -794,6 +837,147 @@ def _conviction_checklist(
     return lines
 
 
+def _generate_pa_buy_priority(
+    ranked_scores: List[CompanyScore],
+    fundamentals_map: Dict,
+    macro: Optional[MacroContext] = None,
+) -> List[str]:
+    """
+    Side-by-side ranking of PA+ names: 'Which do I buy first today?'
+
+    Priority: bear MoS > 0 first (downside protection confirmed), then composite score.
+    Shows current price vs. bear IV entry target, market pessimism premium, action label.
+    Only rendered when 2+ PA+ names are present (single-name screen doesn't need comparison).
+    """
+    PA_PLUS = {Verdict.STRONG_CANDIDATE, Verdict.POTENTIALLY_ATTRACTIVE, Verdict.RESEARCH_FURTHER}
+    pa_names = [
+        s for s in ranked_scores if s.verdict in PA_PLUS
+        and not any("overvalued at" in fl.lower() or "dcf:" in fl.lower()
+                    for fl in (s.red_flags or []))
+    ]
+
+    if len(pa_names) < 2:
+        return []
+
+    def _priority_key(s):
+        b = s.dcf.bear_mos if s.dcf else None
+        return (0 if (b is not None and b > 0) else 1, -s.final_score)
+
+    sorted_pa = sorted(pa_names, key=_priority_key)
+
+    lines = [
+        "### 1b. Buy Priority — Which PA+ Name Do I Buy First?",
+        "",
+        "> **Priority order:** names with bear-case downside protection (🛡 bear MoS > 0) ranked first, then by score.",
+        "> **Gap to entry:** how far current price must fall to reach bear IV. +ve (🟢) = bear IV above price — no pullback needed.",
+        "> **Mkt vs Base:** reverse-DCF implied growth minus our base-case growth. Negative = market more pessimistic than us.",
+        "",
+        "| # | Ticker | Score | Bear MoS | Price | Bear IV | Gap to Entry | Mkt vs Base | Size | Action |",
+        "|---|--------|------:|:--------:|------:|--------:|:------------:|:-----------:|-----:|:------:|",
+    ]
+
+    rank_labels = ["🥇", "🥈", "🥉"] + [f"#{i}" for i in range(4, 12)]
+
+    for i, s in enumerate(sorted_pa):
+        f = (fundamentals_map or {}).get(s.ticker)
+        sz, _ = _compute_position_size(s, f)
+
+        bear_mos  = s.dcf.bear_mos if s.dcf else None
+        bear_iv   = s.dcf.bear_iv  if s.dcf else None
+        impl_g    = s.dcf.implied_growth_rate if s.dcf else None
+        base_g    = s.dcf.base_growth if s.dcf else None
+        cur_price = f.current_price if f and f.current_price else None
+
+        bear_mos_str = (
+            f"🛡️ +{bear_mos:.0f}%" if bear_mos is not None and bear_mos > 0
+            else (f"{bear_mos:.0f}%" if bear_mos is not None else "—")
+        )
+        price_str   = f"${cur_price:.0f}" if cur_price else "—"
+        bear_iv_str = f"${bear_iv:.0f}"   if bear_iv  else "—"
+
+        if bear_iv and cur_price and cur_price > 0:
+            gap_pct = (bear_iv - cur_price) / cur_price * 100
+            gap_str = f"+{gap_pct:.0f}% 🟢" if gap_pct >= 0 else f"{gap_pct:.0f}%"
+        else:
+            gap_str = "—"
+
+        pess_str = (
+            f"{(impl_g - base_g):+.0f}pp"
+            if impl_g is not None and base_g is not None else "—"
+        )
+
+        sz_str = f"{sz:.1f}%" if sz > 0 else "—"
+
+        if bear_mos is not None and bear_mos > 0:
+            action = "**BUY**"
+        elif bear_mos is not None and bear_mos >= -15:
+            action = "Start 75%"
+        elif bear_mos is not None and bear_mos >= -30:
+            action = "Start 50%"
+        elif bear_mos is not None:
+            action = "25% only"
+        else:
+            action = "—"
+
+        rank_str = rank_labels[i] if i < len(rank_labels) else f"#{i+1}"
+        lines.append(
+            f"| {rank_str} | **{s.ticker}** | {s.final_score:.1f} | {bear_mos_str} "
+            f"| {price_str} | {bear_iv_str} | {gap_str} | {pess_str} | {sz_str} | {action} |"
+        )
+
+    lines.append("")
+
+    # Narrative
+    top = sorted_pa[0]
+    top_f = (fundamentals_map or {}).get(top.ticker)
+    top_bear_mos = top.dcf.bear_mos if top.dcf else None
+    top_impl_g   = top.dcf.implied_growth_rate if top.dcf else None
+    top_base_g   = top.dcf.base_growth if top.dcf else None
+
+    reasoning = []
+    if top_bear_mos is not None and top_bear_mos > 0:
+        reasoning.append(
+            f"🥇 **{top.ticker}** is the highest-priority entry — the bear DCF scenario still "
+            f"yields +{top_bear_mos:.0f}% margin of safety. No pullback required before initiating."
+        )
+    else:
+        reasoning.append(
+            f"🥇 **{top.ticker}** ranks first by score ({top.final_score:.1f}) but no name "
+            "in this screen has bear-case protection. Use reduced sizing across the board."
+        )
+    if top_impl_g is not None and top_base_g is not None and top_impl_g < top_base_g - 2:
+        reasoning.append(
+            f"Market prices in only **{top_impl_g:.0f}%/yr growth** for {top.ticker} vs. "
+            f"our base-case {top_base_g:.0f}%/yr — market pessimism premium embedded in price."
+        )
+    if len(sorted_pa) >= 2:
+        second = sorted_pa[1]
+        sz2, _ = _compute_position_size(second, (fundamentals_map or {}).get(second.ticker))
+        reasoning.append(
+            f"🥈 **{second.ticker}** is the second entry — deploy at **{sz2:.0f}%** alongside {top.ticker}."
+        )
+
+    lines.append("**Deployment reasoning:**\n")
+    for r in reasoning:
+        lines.append(f"> {r}")
+
+    cluster_warnings = []
+    all_pa_tickers = {s.ticker for s in sorted_pa}
+    if all_pa_tickers & _DOGE_CLUSTER:
+        cluster_warnings.append(
+            f"⚠️ Federal IT cluster risk: {', '.join(sorted(all_pa_tickers & _DOGE_CLUSTER))} — combined cap {_DOGE_CAP_PCT:.0f}%"
+        )
+    if all_pa_tickers & _AEROSPACE_CLUSTER:
+        cluster_warnings.append(
+            f"⚠️ Aerospace/Defense cluster: {', '.join(sorted(all_pa_tickers & _AEROSPACE_CLUSTER))} — combined cap {_AEROSPACE_CAP_PCT:.0f}%"
+        )
+    for cw in cluster_warnings:
+        lines.append(f">\n> {cw}")
+
+    lines.append("")
+    return lines
+
+
 def generate_report(
     ranked_scores: List[CompanyScore],
     private_contracts: List[Contract],
@@ -805,6 +989,7 @@ def generate_report(
     score_history: Dict = None,
     macro_context: Optional[MacroContext] = None,
     portfolio: Dict = None,
+    portfolio_size: Optional[float] = None,
 ) -> str:
     run_date = run_date or datetime.now().strftime("%Y-%m-%d %H:%M UTC")
 
@@ -1134,21 +1319,37 @@ def generate_report(
         total_pct = sum(r[6] for r in deployable_rows)
         cash_pct = 100.0 - total_pct
 
+        # If portfolio_size provided, add dollar amount and share count columns
+        if portfolio_size and portfolio_size > 0:
+            header = "| Ticker | Now | Entry Target | Action | Tier | Bear MoS | Sizing Logic | Weight | $ Amount | Shares |"
+            divider = "|--------|----:|-------------:|:------:|------|:--------:|:-------------|-------:|---------:|-------:|"
+        else:
+            header = "| Ticker | Now | Entry Target | Action | Tier | Bear MoS | Sizing Logic | Weight |"
+            divider = "|--------|----:|-------------:|:------:|------|:--------:|:-------------|-------:|"
+
         lines += [
             "**Position sizing guidance (% of equity portfolio):**",
             "",
-            "| Ticker | Now | Entry Target | Action | Tier | Bear MoS | Sizing Logic | Weight |",
-            "|--------|----:|-------------:|:------:|------|:--------:|:-------------|-------:|",
+            header, divider,
         ]
         for ticker, tier_label, bmos_str, entry_str, action_str, rationale, size_pct, cur_price in deployable_rows:
             price_str = f"${cur_price:.0f}" if cur_price else "—"
-            lines.append(
-                f"| {ticker} | {price_str} | {entry_str} | {action_str} | {tier_label} | {bmos_str} | {rationale} | {size_pct:.1f}% |"
-            )
+            row = f"| {ticker} | {price_str} | {entry_str} | {action_str} | {tier_label} | {bmos_str} | {rationale} | {size_pct:.1f}% |"
+            if portfolio_size and portfolio_size > 0:
+                dollar_amt = portfolio_size * size_pct / 100.0
+                if cur_price and cur_price > 0:
+                    n_shares = int(dollar_amt / cur_price)
+                    shares_str = f"{n_shares:,}"
+                else:
+                    shares_str = "—"
+                row += f" ${dollar_amt:,.0f} | {shares_str} |"
+            lines.append(row)
+
         lines += [
             "",
-            f"**Actionable weight: {total_pct:.1f}% &nbsp;|&nbsp; "
-            f"Hold cash / await better entries: {cash_pct:.1f}%**",
+            f"**Actionable weight: {total_pct:.1f}%** ({f'${portfolio_size * total_pct / 100:,.0f} of ${portfolio_size:,.0f}' if portfolio_size else ''})"
+            f"&nbsp;|&nbsp; **Hold cash: {cash_pct:.1f}%**"
+            + (f" (${portfolio_size * cash_pct / 100:,.0f})" if portfolio_size else ""),
             "",
         ]
 
@@ -1183,6 +1384,9 @@ def generate_report(
             "> This is a sizing framework, not investment advice. Verify 10-K before any capital deployment.",
             "",
         ]
+
+    # ── 1b. PA+ Buy Priority ──────────────────────────────────────────────────
+    lines += _generate_pa_buy_priority(ranked_scores, fundamentals_map or {}, macro=macro_context)
 
     lines += ["---", "", ]
 
@@ -1786,6 +1990,47 @@ def generate_report(
             "**Fundamentals:** Offline mock mode — all figures are static estimates.",
             "Run `python main.py` (without `--no-live`) to fetch real-time data from yfinance.",
         ]
+
+    # ── Per-company data completeness breakdown ───────────────────────────────
+    # Helps users prioritize which entries to improve in mock_fundamentals.json.
+    _KEY_FIELDS = [
+        ("roic",                   "ROIC"),
+        ("free_cash_flow_margin",  "FCF margin"),
+        ("operating_margin",       "Op margin"),
+        ("pe_ratio",               "P/E"),
+        ("ev_ebitda",              "EV/EBITDA"),
+        ("fcf_yield",              "FCF yield"),
+        ("dod_revenue_pct",        "DoD rev %"),
+        ("backlog_to_revenue",     "Backlog/Rev"),
+        ("current_ratio",          "Current ratio"),
+        ("earnings_stability_years", "Earn stability"),
+    ]
+    if ranked_scores and fundamentals_map:
+        completeness_rows = []
+        for s in ranked_scores:
+            f_q = (fundamentals_map or {}).get(s.ticker)
+            if f_q is None:
+                continue
+            missing = [label for field, label in _KEY_FIELDS if getattr(f_q, field, None) is None]
+            grade, grade_emoji = _data_confidence_grade(s.data_completeness_pct)
+            completeness_rows.append((s.ticker, s.data_completeness_pct, grade, grade_emoji, missing))
+
+        completeness_rows.sort(key=lambda r: r[1])  # worst first
+
+        comp_lines = [
+            "### Data Completeness by Company",
+            "",
+            "> Companies with grade D or F should have fundamentals added to `data/mock_fundamentals.json`",
+            "> before deploying capital based on their scores.",
+            "",
+            "| Ticker | Completeness | Grade | Missing Key Fields |",
+            "|--------|:------------:|:-----:|-------------------|",
+        ]
+        for ticker, pct, grade, emoji, missing in completeness_rows:
+            missing_str = ", ".join(missing) if missing else "—"
+            comp_lines.append(f"| {ticker} | {pct:.0f}% | {emoji} {grade} | {missing_str} |")
+        comp_lines.append("")
+        lines += comp_lines
 
     lines += [
         "## 11. Data Quality & Limitations",

@@ -66,6 +66,16 @@ def parse_args():
                    help="Seconds between watch-mode re-runs (default: 86400 = 24h)")
     p.add_argument("--portfolio", action="store_true",
                    help="Show portfolio review: P&L and thesis-intact check for positions in data/portfolio.json")
+    p.add_argument("--portfolio-size", type=float, default=None, dest="portfolio_size",
+                   help="Total investable equity in dollars (e.g. 100000 for $100K). "
+                        "When set, the report shows exact dollar amounts and share counts for each position.")
+    p.add_argument("--alert-email", default=None, dest="alert_email",
+                   help="Email address for material-change alerts in --watch mode. "
+                        "Requires DOD_AGENT_SMTP_PASSWORD env var (Gmail app password recommended).")
+    p.add_argument("--smtp-server", default="smtp.gmail.com", dest="smtp_server",
+                   help="SMTP server for alert emails (default: smtp.gmail.com)")
+    p.add_argument("--smtp-from", default=None, dest="smtp_from",
+                   help="SMTP from address (defaults to --alert-email)")
     return p.parse_args()
 
 
@@ -523,12 +533,66 @@ def main():
             score_history=score_history,
             macro_context=macro_ctx,
             portfolio=portfolio,
+            portfolio_size=args.portfolio_size,
         )
         save_report(report_content, output_path)
         print(f"\nReport → {output_path}")
 
     print("\nDone.\n")
     return scores
+
+
+def _send_alert_email(
+    alerts: list,
+    to_email: str,
+    from_email: str = None,
+    smtp_server: str = "smtp.gmail.com",
+    smtp_port: int = 587,
+) -> bool:
+    """Send a material-change alert email via SMTP.
+
+    Credentials: set DOD_AGENT_SMTP_PASSWORD in your environment.
+    For Gmail: generate an App Password at myaccount.google.com/apppasswords
+    and export DOD_AGENT_SMTP_PASSWORD=<16-char app password>.
+    """
+    import smtplib
+    from email.mime.text import MIMEText
+
+    password = os.environ.get("DOD_AGENT_SMTP_PASSWORD")
+    if not password:
+        print("  ⚠️  DOD_AGENT_SMTP_PASSWORD not set — email alert skipped")
+        return False
+
+    from_email = from_email or to_email
+    run_date = datetime.now().strftime("%Y-%m-%d %H:%M")
+
+    body = (
+        f"DoD Contract Intelligence Agent — Material Changes Detected\n"
+        f"{run_date}\n"
+        f"{'─' * 60}\n\n"
+        + "\n".join(alerts)
+        + "\n\n"
+        + "─" * 60
+        + "\nThis is an automated alert from your DoD Contract Intelligence Agent.\n"
+        + "Run `python main.py` to see the full report.\n"
+    )
+
+    msg = MIMEText(body)
+    msg["Subject"] = f"[DoD Agent] Material Changes — {run_date}"
+    msg["From"] = from_email
+    msg["To"] = to_email
+
+    try:
+        with smtplib.SMTP(smtp_server, smtp_port) as server:
+            server.ehlo()
+            server.starttls()
+            server.login(from_email, password)
+            server.send_message(msg)
+        print(f"  📧 Alert email sent → {to_email}")
+        return True
+    except Exception as e:
+        print(f"  ⚠️  Email alert failed: {e}")
+        return False
 
 
 def _check_material_changes(scores: list, last_scores: dict, fundamentals_map: dict) -> list[str]:
@@ -613,6 +677,14 @@ def _run_watch_loop(args) -> None:
                     for a in alerts_txt:
                         print(a)
                     print("=" * 50 + "\n")
+                    # Send email alert if configured
+                    if getattr(args, "alert_email", None):
+                        _send_alert_email(
+                            alerts_txt,
+                            to_email=args.alert_email,
+                            from_email=getattr(args, "smtp_from", None),
+                            smtp_server=getattr(args, "smtp_server", "smtp.gmail.com"),
+                        )
                 else:
                     print("  No material changes.")
             else:
