@@ -394,6 +394,11 @@ report sections. They're derived from composite scores, base MoS, and bear-case 
   ✅ Ready to Deploy — All checks clear. Execute at up to 6.0% per Capital Deployment guidance.
   ```
 
+- **One-Line Investment Thesis** — Each PA+ company deep dive opens with a machine-generated
+  thesis sentence synthesizing the key numbers: current price vs. base IV, moat and DoD
+  concentration, bear-case MoS status, and 3-year annualized return range (bear to bull).
+  Example: *"$288 → base IV $343 (+19%) | Wide-moat, 55% DoD, 2.8× backlog | 🛡️ Bear MoS +5% | 3-yr: +4% to +22%/yr"* — everything needed to decide if it fits your investment criteria.
+
 - **Contract Quality Scorecard** (Section 7 deep dives) — For each company, a compact summary
   of the quality profile of their recent contract wins: sole-source rate (indicates competitive
   moat), fixed-price rate (pricing confidence), average contract size, IDIQ ceiling rate.

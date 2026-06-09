@@ -1941,6 +1941,52 @@ def generate_report(
             "",
             f"> {mkt_line}",
             "",
+        ]
+
+        # ── One-Line Thesis (PA+ only) ─────────────────────────────────────────
+        PA_PLUS_V2 = {Verdict.STRONG_CANDIDATE, Verdict.POTENTIALLY_ATTRACTIVE, Verdict.RESEARCH_FURTHER}
+        if s.verdict in PA_PLUS_V2 and f_ctx and f_ctx.current_price and s.dcf:
+            d = s.dcf
+            cur = f_ctx.current_price
+            moat = (getattr(f_ctx, "moat_rating", None) or "").strip()
+            moat_str = f"{moat}-moat" if moat and moat != "None" else "No-moat"
+            dod_pct  = f_ctx.dod_revenue_pct
+            bl       = f_ctx.backlog_to_revenue
+            base_mos = d.margin_of_safety_base
+            bear_mos = d.bear_mos
+            base_iv  = d.base_iv
+
+            # Build thesis components
+            parts = []
+            if base_iv and base_mos is not None:
+                parts.append(f"${cur:.0f} → base IV ${base_iv:.0f} ({base_mos:+.0f}% upside)")
+            if moat_str and dod_pct is not None:
+                bl_str = f", {bl:.1f}× backlog" if bl else ""
+                parts.append(f"{moat_str}, {dod_pct:.0f}% DoD revenue{bl_str}")
+            if bear_mos is not None:
+                if bear_mos > 0:
+                    parts.append(f"🛡️ Bear case confirms MoS (+{bear_mos:.0f}%)")
+                elif bear_mos >= -15:
+                    parts.append(f"Bear risk modest ({bear_mos:.0f}%)")
+                else:
+                    parts.append(f"Bear downside {bear_mos:.0f}% — size carefully")
+
+            # Return range (3-yr annualized)
+            def _ann3(iv):
+                if iv and cur > 0:
+                    div = (f_ctx.dividend_yield or 0.0) / 100.0
+                    return ((iv / cur) ** (1/3) - 1 + div) * 100
+                return None
+            ann_bear = _ann3(d.bear_iv)
+            ann_bull = _ann3(d.bull_iv)
+            if ann_bear is not None and ann_bull is not None:
+                parts.append(f"3-yr return: {ann_bear:+.0f}% to {ann_bull:+.0f}%/yr")
+
+            if parts:
+                lines.append(f"**Thesis:** {' | '.join(parts)}.")
+                lines.append("")
+
+        lines += [
             "#### Score Breakdown",
             "",
             "| Component | Score | Weight | Visual |",
