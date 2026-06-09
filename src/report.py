@@ -837,6 +837,211 @@ def _conviction_checklist(
     return lines
 
 
+def _estimate_graham_upgrade_price(s: CompanyScore, f) -> Optional[float]:
+    """
+    For a Watchlist name, estimate the stock price at which its score would cross the
+    PA+ threshold (68). Only Graham Value (weight 20%) is price-sensitive in the short run;
+    returns the target price or None when no upgrade is achievable via price alone.
+    """
+    from src.scoring import score_graham_value
+    import copy, dataclasses
+
+    if f is None or f.current_price is None or f.current_price <= 0:
+        return None
+
+    score_gap = 68.0 - s.final_score
+    if score_gap <= 0:
+        return None
+
+    # Graham weight is 20%: need graham_raw to increase by score_gap / 0.20
+    graham_raw_needed_gain = score_gap / 0.20
+    if graham_raw_needed_gain > 60:  # can't gain that much from Graham alone
+        return None
+
+    cur_price = f.current_price
+
+    # Binary-search price: try multipliers from 0.50 to 0.99 in fine steps
+    for mult_10 in range(99, 49, -1):
+        mult = mult_10 / 100.0
+        new_price = cur_price * mult
+
+        # Build a modified fundamentals copy with price-adjusted multiples
+        f_dict = {field: getattr(f, field, None) for field in f.__dataclass_fields__}
+
+        # Scale P/E proportionally (EPS unchanged)
+        if f.pe_ratio is not None and f.pe_ratio > 0:
+            f_dict["pe_ratio"] = f.pe_ratio * mult
+        # Scale Forward P/E proportionally
+        if f.forward_pe is not None and f.forward_pe > 0:
+            f_dict["forward_pe"] = f.forward_pe * mult
+        # FCF yield increases as price drops (FCF/share unchanged)
+        if f.fcf_yield is not None and f.fcf_yield > 0:
+            f_dict["fcf_yield"] = f.fcf_yield / mult
+        # P/B decreases proportionally (book value unchanged)
+        if f.price_to_book is not None and f.price_to_book > 0:
+            f_dict["price_to_book"] = f.price_to_book * mult
+        # EV/EBITDA: approximate — equity portion of EV changes, debt stays
+        # Use: new_ev_ebitda ≈ ev_ebitda × mult if fully equity-financed (conservative)
+        if f.ev_ebitda is not None and f.ev_ebitda > 0:
+            f_dict["ev_ebitda"] = f.ev_ebitda * mult
+
+        try:
+            f_copy = f.__class__(**f_dict)
+            new_graham_raw, _, _ = score_graham_value(f_copy)
+        except Exception:
+            continue
+
+        # Estimate new total score: replace Graham contribution
+        graham_gain = new_graham_raw - s.graham_value.raw
+        projected_score = s.final_score + graham_gain * 0.20
+
+        if projected_score >= 68.0:
+            return new_price
+
+    return None
+
+
+def _generate_watchlist_upgrade_targets(
+    ranked_scores: List[CompanyScore],
+    fundamentals_map: Dict,
+) -> List[str]:
+    """
+    For Watchlist names with score 58–67, estimate the stock price (via Graham Value
+    sensitivity) at which their score would cross the PA+ threshold of 68.
+    Answers: 'If LMT drops to $X, would it become a PA+ name?'
+    Only renders when price-only upgrades are achievable; shows a note otherwise.
+    """
+    near_threshold = [
+        s for s in ranked_scores
+        if s.verdict == Verdict.WATCHLIST and 58 <= s.final_score <= 67
+    ]
+    if not near_threshold:
+        return []
+
+    candidates = []
+    quality_bottleneck = []
+    for s in near_threshold:
+        f = (fundamentals_map or {}).get(s.ticker)
+        if f is None or f.current_price is None:
+            continue
+
+        upgrade_price = _estimate_graham_upgrade_price(s, f)
+        if upgrade_price is None:
+            quality_bottleneck.append(s.ticker)
+            continue
+
+        gap_pct = (upgrade_price / f.current_price - 1) * 100  # negative = needs to fall
+        # Only show if a plausible drop (10%–55%) achieves the upgrade
+        if gap_pct > -10 or gap_pct < -55:
+            quality_bottleneck.append(s.ticker)
+            continue
+
+        base_iv = s.dcf.base_iv if s.dcf else None
+        candidates.append((s, f, upgrade_price, gap_pct, base_iv))
+
+    lines = [
+        "### 1c. Watchlist — Price-to-Upgrade Targets",
+        "",
+        "> At what price would these Watchlist names cross the PA+ threshold (score ≥ 68)?",
+        "> Estimate uses Graham Value sensitivity to price (P/E, FCF yield, P/B, EV/EBITDA).",
+        "> Quality components (Buffett, DoD Stability, Management) are assumed unchanged.",
+        "",
+    ]
+
+    if candidates:
+        lines += [
+            "| Ticker | Now | Upgrade Price | Drop Needed | Base IV | Score Now | Est. Score at Target |",
+            "|--------|----:|--------------:|:-----------:|--------:|----------:|---------------------:|",
+        ]
+        for s, f, upgrade_price, gap_pct, base_iv in sorted(candidates, key=lambda x: -x[3]):
+            price_str   = f"${f.current_price:.0f}"
+            upgrade_str = f"${upgrade_price:.0f}"
+            gap_str     = f"{gap_pct:.0f}%"
+            biv_str     = f"${base_iv:.0f}" if base_iv else "—"
+            gap_gain    = 68.0 - s.final_score
+            est_score   = f"~{s.final_score + gap_gain:.0f}"
+            lines.append(
+                f"| {s.ticker} | {price_str} | {upgrade_str} | {gap_str} | {biv_str} "
+                f"| {s.final_score:.1f} | {est_score} |"
+            )
+        lines += [
+            "",
+            "> A name crossing PA+ requires a re-run to confirm — the upgrade price is an *estimate*, "
+            "not a guaranteed trigger. Catalyst events (contract wins, earnings beats) can also promote "
+            "a name via Buffett Quality or DoD Stability improvement independent of price.",
+        ]
+
+    if quality_bottleneck:
+        note = (
+            f"> **{', '.join(quality_bottleneck)}**: Watchlist due to quality/stability gaps — "
+            "a price drop alone cannot push these to PA+. Requires DoD revenue expansion, "
+            "FCF margin improvement, or a material contract win to improve non-Graham components."
+        )
+        lines.append(note)
+
+    lines.append("")
+    return lines
+
+
+def _generate_sector_allocation(
+    ranked_scores: List[CompanyScore],
+    fundamentals_map: Dict,
+) -> List[str]:
+    """
+    Summarise the implied sector weights from the Capital Deployment PA+ sizing table.
+    Flags over-concentration (>30% in one sector) and PA+ names with sizing blocked by
+    overvaluation flags (size = 0% despite PA+ verdict).
+    """
+    from collections import defaultdict as _dd
+
+    PA_PLUS = {Verdict.STRONG_CANDIDATE, Verdict.POTENTIALLY_ATTRACTIVE, Verdict.RESEARCH_FURTHER}
+    sector_weights: dict = _dd(float)
+    sector_tickers: dict = _dd(list)
+    blocked: list = []
+    total_deployed = 0.0
+
+    for s in ranked_scores:
+        if s.verdict not in PA_PLUS:
+            continue
+        f = (fundamentals_map or {}).get(s.ticker)
+        size_pct, _ = _compute_position_size(s, f)
+        if size_pct == 0:
+            blocked.append(s.ticker)
+            continue
+        sector_weights[s.sector.value] += size_pct
+        sector_tickers[s.sector.value].append(s.ticker)
+        total_deployed += size_pct
+
+    if not sector_weights or total_deployed == 0:
+        return []
+
+    lines = [
+        "**Implied Sector Allocation (PA+ names only):**",
+        "",
+        "| Sector | Weight | % of Deployed | Tickers | Note |",
+        "|--------|-------:|:-------------:|---------|------|",
+    ]
+
+    for sector_name, weight in sorted(sector_weights.items(), key=lambda x: -x[1]):
+        tickers_str = ", ".join(sector_tickers[sector_name])
+        pct_of_deployed = weight / total_deployed * 100
+        if pct_of_deployed > 30:
+            note = "⚠️ concentrated"
+        elif pct_of_deployed > 20:
+            note = "🟡 moderate"
+        else:
+            note = "✅"
+        lines.append(f"| {sector_name} | {weight:.1f}% | {pct_of_deployed:.0f}% | {tickers_str} | {note} |")
+
+    if blocked:
+        lines.append("")
+        lines.append(f"> ⚠️ Sizing blocked (overvaluation flags active): **{', '.join(blocked)}** — "
+                     "score qualifies but DCF shows stock above intrinsic value. Wait for a pullback.")
+
+    lines += ["", ""]
+    return lines
+
+
 def _generate_pa_buy_priority(
     ranked_scores: List[CompanyScore],
     fundamentals_map: Dict,
@@ -1385,8 +1590,14 @@ def generate_report(
             "",
         ]
 
+    # ── Sector allocation summary (after sizing table) ────────────────────────
+    lines += _generate_sector_allocation(ranked_scores, fundamentals_map or {})
+
     # ── 1b. PA+ Buy Priority ──────────────────────────────────────────────────
     lines += _generate_pa_buy_priority(ranked_scores, fundamentals_map or {}, macro=macro_context)
+
+    # ── 1c. Watchlist Upgrade Targets ─────────────────────────────────────────
+    lines += _generate_watchlist_upgrade_targets(ranked_scores, fundamentals_map or {})
 
     lines += ["---", "", ]
 

@@ -81,6 +81,7 @@ tickers, fetching live fundamentals, running a DCF, and ranking every company by
 |                        entry prices, BUY/Start 75%/50% action labels)     |
 |  1b. PA+ Buy Priority (ranked by deployability: bear MoS > 0 first,      |
 |                        gap to entry, pessimism premium, action labels)    |
+|  1c. Watchlist Upgrade Targets (price at which Watchlist names cross PA+) |
 |   2. Valuation Snapshot (multiples + full DCF table)                      |
 |   3. Red Flags                                                             |
 |   4. Market Context (consensus, short interest, price momentum)           |
@@ -331,6 +332,10 @@ report sections. They're derived from composite scores, base MoS, and bear-case 
 
 - **Score trend arrows** — Changes Since Last Run shows ↑ / ↓ / → based on the rolling
   30-run score history in `data/score_history.json`. Trends require ≥3 runs; shown as `—` until then.
+- **Sector Allocation Summary** — After the Capital Deployment table, a compact table shows
+  the implied sector weights from the PA+ sizing guidance (e.g., "Shipbuilding 36% of deployed").
+  Flags sectors with >30% concentration; notes PA+ names where sizing is blocked by overvaluation.
+
 - **PA+ Buy Priority Table** (Section 1b) — Answers "which PA+ name do I buy *today*?" without
   cross-referencing Section 1, Section 2b, and the Deep Dives manually. Ranks all PA+ names by
   deployability: names with positive bear MoS (🛡️ shield) rank first, then by composite score.
@@ -341,6 +346,13 @@ report sections. They're derived from composite scores, base MoS, and bear-case 
     pessimistic than the base case; you are getting paid to be right about the thesis.
   - **Size** / **Action** — position size guidance and label (BUY / Start 75% / Start 50% / 25% only)
   - Cluster warnings fire when ≥3 PA+ names share DOGE or Aerospace concentration risk.
+
+- **Watchlist Upgrade Price Targets** (Section 1c) — For Watchlist names near the PA+ threshold
+  (score 58–67), estimates the stock price at which their score would cross 68, based on Graham
+  Value sensitivity (P/E, FCF yield, P/B, EV/EBITDA adjust proportionally to price). Useful for
+  setting limit-order alerts. When upgrade isn't achievable via price alone (Graham is already
+  strong but quality/DoD components are the bottleneck), shows a note identifying the specific
+  components that need to improve: "SAIC requires FCF margin improvement or DoD revenue expansion."
 
 - **Pre-Deployment Conviction Checklist** — Generated for every PA+ name in the Company Deep
   Dive (Section 7). Answers the 6 questions a real investor must check before executing:
