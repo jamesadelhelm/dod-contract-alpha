@@ -394,6 +394,12 @@ report sections. They're derived from composite scores, base MoS, and bear-case 
   ✅ Ready to Deploy — All checks clear. Execute at up to 6.0% per Capital Deployment guidance.
   ```
 
+- **Economic Value Added (EVA) analysis** — In each company's DCF Detail section, shows the
+  EVA spread: ROIC minus WACC. Positive spread = company creates economic value when it
+  reinvests (the core Buffett compounder criterion). Labels: +5pp = Exceptional / +0pp = Positive
+  / near-zero = ⚠️ marginal / negative = ❌ growth destroys value. Example: GD +6.4pp = strong
+  compounder; a company with ROIC below its WACC is destroying capital on every reinvestment.
+
 - **Enhanced Executive Summary** — The report opens with a 5-bullet situation summary:
   (1) 10-yr yield vs. DCF baseline (are intrinsic values still valid?);
   (2) Highest-conviction names (bear MoS ≥ 0%, both shield and breakeven cases);

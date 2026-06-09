@@ -2074,11 +2074,29 @@ def generate_report(
         # DCF deep dive
         if s.dcf:
             d = s.dcf
+            # EVA spread — only when ROIC is available
+            eva_line = ""
+            if f_ctx:
+                roic = getattr(f_ctx, "roic", None)
+                if roic is not None and roic != 0 and d.discount_rate_base is not None:
+                    eva_spread = roic - d.discount_rate_base
+                    if eva_spread > 5:
+                        eva_line = f"✅ EVA spread: ROIC {roic:.1f}% − WACC {d.discount_rate_base:.1f}% = **+{eva_spread:.1f}pp** — company creates significant economic value when it reinvests."
+                    elif eva_spread > 0:
+                        eva_line = f"✅ EVA spread: ROIC {roic:.1f}% − WACC {d.discount_rate_base:.1f}% = **+{eva_spread:.1f}pp** — reinvestment creates value (positive spread)."
+                    elif eva_spread > -3:
+                        eva_line = f"⚠️ EVA spread: ROIC {roic:.1f}% − WACC {d.discount_rate_base:.1f}% = **{eva_spread:.1f}pp** — near breakeven; growth adds modest value."
+                    else:
+                        eva_line = f"❌ EVA spread: ROIC {roic:.1f}% − WACC {d.discount_rate_base:.1f}% = **{eva_spread:.1f}pp** — growth destroys value at current returns; watch for ROIC improvement."
+
             lines += [
                 "#### DCF Detail",
                 "",
                 f"*Discount rate: **{d.discount_rate_base:.1f}%***",
             ]
+            if eva_line:
+                lines.append(f"*{eva_line}*")
+                lines.append("")
             for adj in d.discount_rate_adjustments:
                 lines.append(f"- {adj}")
             lines += [
