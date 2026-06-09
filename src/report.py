@@ -229,6 +229,172 @@ def _generate_changes_section(ranked_scores, last_scores, fundamentals_map, scor
     return lines
 
 
+def _what_would_change(
+    s: CompanyScore,
+    f,
+    macro: Optional[MacroContext] = None,
+) -> List[str]:
+    """
+    'What would change my mind' analysis for a single PA+ company.
+
+    Computes component fragility (which component needs the smallest absolute
+    drop in raw score to flip the verdict from PA+ to Watchlist), then
+    maps the most fragile components to specific real-world scenarios.
+
+    PA+ threshold = 68. Points to flip = final_score − 68.
+    Component raw-score drop to flip = (points_to_flip) / weight.
+    """
+    PA_PLUS_FLOOR  = 68.0
+    points_to_flip = s.final_score - PA_PLUS_FLOOR
+
+    weights = {
+        "Buffett Quality": (s.buffett_quality.raw,   0.25),
+        "Graham Value":    (s.graham_value.raw,       0.20),
+        "DoD Stability":   (s.dod_stability.raw,      0.20),
+        "Management":      (s.management.raw,         0.15),
+        "Contract Catalyst":(s.contract_catalyst.raw, 0.10),
+        "Balance Sheet":   (s.balance_sheet.raw,      0.10),
+    }
+
+    rows = []
+    for comp_name, (raw, wt) in weights.items():
+        raw_drop_needed = points_to_flip / wt  # how many raw pts this component must drop
+        rows.append((comp_name, raw, wt, raw_drop_needed))
+
+    rows.sort(key=lambda r: r[3])  # most fragile first
+
+    lines = [
+        "#### What Would Change My Mind",
+        "",
+        f"*Current score: **{s.final_score:.1f}** — needs to drop **{points_to_flip:.1f} pts** to fall below PA+ threshold (68).*",
+        "",
+        "| Component | Raw Score | Weight | Raw-pts Drop Needed | Fragility |",
+        "|-----------|----------:|-------:|--------------------:|:---------:|",
+    ]
+    for comp_name, raw, wt, drop_needed in rows:
+        fragility = (
+            "🔴 Critical" if drop_needed <= 10 else
+            "🟡 Moderate" if drop_needed <= 20 else
+            "🟢 Resilient"
+        )
+        lines.append(
+            f"| {comp_name} | {raw:.0f} | {wt*100:.0f}% | −{drop_needed:.1f} pts | {fragility} |"
+        )
+    lines.append("")
+
+    # ── Scenario narratives for the 2 most fragile components ────────────────
+    scenarios = []
+    seen_comps = set()
+    for comp_name, raw, wt, drop_needed in rows[:3]:
+        seen_comps.add(comp_name)
+        if comp_name == "Graham Value":
+            if f and f.current_price and s.dcf and s.dcf.base_iv:
+                pct_rise_to_flip = (s.final_score - PA_PLUS_FLOOR) / wt / 100 * s.dcf.base_iv
+                new_price = f.current_price + pct_rise_to_flip
+                scenarios.append(
+                    f"📈 **Multiple expansion**: If the stock rallies to ~${new_price:.0f} "
+                    f"(+{pct_rise_to_flip:.0f} from ${f.current_price:.0f}), the MoS compresses "
+                    f"and Graham Value score drops ~{drop_needed:.0f} pts → verdict flips to Watchlist. "
+                    "Don't chase momentum; set a maximum entry price and hold discipline."
+                )
+            else:
+                scenarios.append(
+                    f"📈 **Multiple expansion**: A significant price run-up without a corresponding "
+                    f"improvement in earnings would compress FCF yield and P/E, dropping Graham Value "
+                    f"~{drop_needed:.0f} raw pts → verdict flips."
+                )
+
+        elif comp_name == "DoD Stability":
+            dod = f.dod_revenue_pct if f and f.dod_revenue_pct else 0
+            required_drop = drop_needed * (dod / 100) if dod > 0 else None
+            doge_note = " (DOGE budget cuts are the primary tail risk for this component)" if s.sector.value in ("AI / Data / Software", "Cloud / IT Services", "Consulting / Services") else ""
+            if required_drop is not None:
+                scenarios.append(
+                    f"🏛️ **DoD contract loss**: DoD revenue concentration is currently {dod:.0f}%. "
+                    f"A reduction sufficient to drop DoD Stability ~{drop_needed:.0f} raw pts would flip the verdict. "
+                    f"Monitor quarterly contract announcements and recompete results.{doge_note}"
+                )
+            else:
+                scenarios.append(
+                    f"🏛️ **DoD concentration decline**: DoD Stability is the watch metric. "
+                    f"Needs to drop ~{drop_needed:.0f} raw pts to flip verdict.{doge_note}"
+                )
+
+        elif comp_name == "Buffett Quality":
+            fcf = f.free_cash_flow_margin if f and f.free_cash_flow_margin else None
+            roic = f.roic if f and f.roic else None
+            fcf_note = f" (current FCF margin: {fcf:.1f}%)" if fcf else ""
+            roic_note = f" / ROIC {roic:.1f}%" if roic else ""
+            scenarios.append(
+                f"⚠️ **Quality deterioration**: FCF margin compression{fcf_note}{roic_note} would reduce "
+                f"Buffett Quality by the required ~{drop_needed:.0f} pts. "
+                "Watch the earnings trend across 2 consecutive quarters before assuming the thesis has broken."
+            )
+
+        elif comp_name == "Management":
+            scenarios.append(
+                f"👔 **Management signal**: An abrupt CEO transition, poor capital allocation "
+                f"(large dilutive acquisition or equity offering), or insider distribution exceeding 40% "
+                f"over 6 months would reduce Management score by ~{drop_needed:.0f} pts → verdict flips."
+            )
+
+        elif comp_name == "Balance Sheet":
+            de = f.debt_equity if f and f.debt_equity else None
+            de_note = f" (current D/E: {de:.1f}x)" if de else ""
+            scenarios.append(
+                f"🏦 **Balance sheet deterioration**: Significant leverage increase{de_note}, "
+                f"interest coverage dropping below 3×, or a credit downgrade would reduce "
+                f"Balance Sheet score by ~{drop_needed:.0f} pts → verdict flips."
+            )
+
+        elif comp_name == "Contract Catalyst":
+            scenarios.append(
+                f"📋 **Contract pipeline dries up**: A sustained period without material new awards "
+                f"or meaningful IDIQ task orders would reduce Contract Catalyst by ~{drop_needed:.0f} pts. "
+                "Watch quarterly USAspending data for award velocity."
+            )
+
+    # DCF bear MoS scenario (always worth including for PA+ names)
+    if s.dcf and s.dcf.bear_mos is not None and macro and macro.rate_delta_pp is not None:
+        sensitivity = 0.70 / (0.09 - 0.025)  # ~10.8x
+        rate_to_break_shield = None
+        if s.dcf.bear_mos > 0:
+            # At what additional rate rise does bear MoS flip negative?
+            # sensitivity is pct-IV-drop per pp-WACC. bear_mos is %. So:
+            # rate_to_break (pp) = bear_mos_pct / sensitivity_pct_per_pp
+            rate_to_break = s.dcf.bear_mos / sensitivity  # pp of 10-yr rise
+            total_yield = (macro.ten_year_yield or 4.5) + rate_to_break
+            scenarios.append(
+                f"📈 **Rate spike**: Bear MoS is currently 🛡️ +{s.dcf.bear_mos:.0f}%. "
+                f"A rate rise of +{rate_to_break:.2f}pp (10-yr reaching ~{total_yield:.2f}%) "
+                f"would erase the bear-case downside protection. "
+                "If yield approaches this level, reduce to 75% sizing and re-run."
+            )
+        elif s.dcf.bear_mos < -10:
+            scenarios.append(
+                f"⚠️ **Rate sensitivity**: Bear MoS is {s.dcf.bear_mos:.0f}%. At current rates "
+                f"({(macro.ten_year_yield or 4.5):.2f}%), the bear case already implies capital loss. "
+                "A further +50bps in 10-yr yield makes the bear IV meaningfully worse. "
+                "Keep to 50% sizing until bear MoS improves."
+            )
+
+    if scenarios:
+        lines += [
+            "**Thesis-break scenarios (in order of fragility):**",
+            "",
+        ]
+        for sc in scenarios:
+            lines.append(f"> {sc}")
+        lines.append("")
+
+    lines += [
+        "> *Exit rule: If any ❌ scenario materializes AND the PA+ verdict flips to Watchlist on the*",
+        "> *next full run, execute the REDUCE signal from the Changes Since Last Run section.*",
+        "",
+    ]
+    return lines
+
+
 def _generate_macro_context_section(
     macro: Optional[MacroContext],
     ranked_scores: List[CompanyScore],
@@ -1333,6 +1499,9 @@ def generate_report(
             f_chk = (fundamentals_map or {}).get(s.ticker)
             sz_chk, _ = _compute_position_size(s, f_chk)
             lines += _conviction_checklist(s, f_chk, sz_chk, macro=macro_context)
+
+            # What would change my mind — thesis-break scenario analysis
+            lines += _what_would_change(s, f_chk, macro=macro_context)
 
         # Recent contracts
         if s.recent_contracts:

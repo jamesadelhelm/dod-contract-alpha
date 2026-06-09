@@ -297,6 +297,27 @@ report sections. They're derived from composite scores, base MoS, and bear-case 
   thesis quality; sizing is restored to full on the next run post-earnings.
 - **Watchlist buy triggers** — Signal Tiers lists the base IV for each Watchlist/overvalued
   name: "LMT becomes PA+ below $X" directly answers "when would I buy this?"
+- **What Would Change My Mind** — Generated for every PA+ name in the Company Deep Dive
+  (Section 7). Answers the most important question before deploying capital: *"What specific
+  event would cause me to exit this position?"* Two-part output:
+
+  1. **Component fragility table** — For each of the 6 scoring components, shows the raw-score
+     drop required to flip the verdict from PA+ to Watchlist, ranked from most to least fragile.
+     🔴 Critical = can drop ≤10 raw pts before verdict flips; 🟡 Moderate = 11–20 pts; 🟢 Resilient.
+
+  2. **Thesis-break scenario narratives** — 3–4 specific real-world events that would flip the
+     verdict, derived from the 2 most fragile components plus a DCF rate sensitivity scenario:
+     - *Quality deterioration*: FCF margin / ROIC drop that reduces Buffett Quality score
+     - *Multiple expansion*: rally to X price where MoS compresses → Graham Value drops
+     - *DoD contract loss*: concentration drop that hits DoD Stability score
+     - *Rate spike*: 10-yr yield rise required to erase the 🛡️ bear-case shield
+
+     For GD (score 70.2, 2.2pts to flip): "A rate rise of +1.11pp (10-yr → 5.64%) erases
+     the bear-case downside protection. Reduce to 75% sizing if 10-yr approaches 5.5%."
+
+  Exit rule embedded: "If any ❌ scenario materializes AND verdict flips on next run → execute
+  the REDUCE signal from Changes Since Last Run."
+
 - **Score trend arrows** — Changes Since Last Run shows ↑ / ↓ / → based on the rolling
   30-run score history in `data/score_history.json`. Trends require ≥3 runs; shown as `—` until then.
 - **Pre-Deployment Conviction Checklist** — Generated for every PA+ name in the Company Deep
