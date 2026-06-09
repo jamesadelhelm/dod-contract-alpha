@@ -347,6 +347,13 @@ report sections. They're derived from composite scores, base MoS, and bear-case 
   - **Size** / **Action** — position size guidance and label (BUY / Start 75% / Start 50% / 25% only)
   - Cluster warnings fire when ≥3 PA+ names share DOGE or Aerospace concentration risk.
 
+- **Expected Return (3-Year Horizon)** — In Section 7 Company Deep Dives, each PA+ name now
+  shows a 3-year annualized return estimate for each DCF scenario (bear/base/bull), including
+  dividend yield. Labels: Exceptional (≥15%), Attractive (≥10%), Adequate (≥5%), Thin, Negative.
+  For bear-case negative-return names, shows the break-even holding period in years — so you know
+  upfront how long the stock would take just to recover cost if the downside scenario plays out.
+  Example (GD): Bear +3.6%/yr | Base +8.1%/yr | Bull +22.3%/yr — makes the asymmetry concrete.
+
 - **Watchlist Upgrade Price Targets** (Section 1c) — For Watchlist names near the PA+ threshold
   (score 58–67), estimates the stock price at which their score would cross 68, based on Graham
   Value sensitivity (P/E, FCF yield, P/B, EV/EBITDA adjust proportionally to price). Useful for

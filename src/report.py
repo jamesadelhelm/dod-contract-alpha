@@ -2006,6 +2006,74 @@ def generate_report(
                     lines.append(f"- {c}")
                 lines.append("")
 
+            # ── Expected Return analysis (PA+ names only) ─────────────────────
+            PA_PLUS_V = {Verdict.STRONG_CANDIDATE, Verdict.POTENTIALLY_ATTRACTIVE, Verdict.RESEARCH_FURTHER}
+            if s.verdict in PA_PLUS_V and f_ctx and f_ctx.current_price and f_ctx.current_price > 0:
+                cur = f_ctx.current_price
+                div_yield = (f_ctx.dividend_yield or 0.0) / 100.0
+
+                def _ann_return(iv, yrs=3):
+                    if iv is None or iv <= 0 or cur <= 0:
+                        return None
+                    price_return = (iv / cur) ** (1.0 / yrs) - 1.0
+                    return (price_return + div_yield) * 100.0
+
+                ann_bear = _ann_return(d.bear_iv)
+                ann_base = _ann_return(d.base_iv)
+                ann_bull = _ann_return(d.bull_iv)
+
+                lines += ["#### Expected Return (3-Year Horizon)", ""]
+                lines.append(
+                    "> Assumes price converges to DCF intrinsic value over 3 years. "
+                    "Includes dividend yield. **Not a return guarantee — just the implied "
+                    "math if our DCF is right.**"
+                )
+                lines.append("")
+                lines += [
+                    "| Scenario | Target IV | 3-Yr Ann. Return | Verdict |",
+                    "|----------|----------:|:----------------:|---------|",
+                ]
+                for label, iv, ann in [
+                    ("🐻 Bear", d.bear_iv, ann_bear),
+                    ("📊 Base", d.base_iv, ann_base),
+                    ("🐂 Bull", d.bull_iv, ann_bull),
+                ]:
+                    iv_str  = f"${iv:.0f}" if iv is not None else "—"
+                    ann_str = f"{ann:+.1f}%/yr" if ann is not None else "—"
+                    if ann is None:
+                        verdict_str = "—"
+                    elif ann >= 15:
+                        verdict_str = "Exceptional"
+                    elif ann >= 10:
+                        verdict_str = "Attractive"
+                    elif ann >= 5:
+                        verdict_str = "Adequate"
+                    elif ann >= 0:
+                        verdict_str = "Thin"
+                    else:
+                        verdict_str = "⚠️ Negative — thesis must hold"
+                    lines.append(f"| {label} | {iv_str} | {ann_str} | {verdict_str} |")
+
+                lines.append("")
+
+                # Break-even note for names where bear case is negative return
+                if ann_bear is not None and ann_bear < 0 and d.bear_iv is not None:
+                    # How many years to break even in bear case?
+                    if d.bear_iv > 0 and cur > 0 and d.bear_iv < cur:
+                        import math as _math
+                        with_div = True
+                        # price_return × yrs ≈ ann years; solve (bear_iv/cur)^(1/yrs) × (1+div)^yrs = 1
+                        # Simplified: just find yrs where (bear_iv/cur)^(1/yrs) + div_yield ≥ 0
+                        for yrs in range(4, 16):
+                            if _ann_return(d.bear_iv, yrs) is not None and _ann_return(d.bear_iv, yrs) >= 0:
+                                lines.append(
+                                    f"> ⚠️ Bear case break-even: ~{yrs} years to recover cost "
+                                    f"(bear IV ${d.bear_iv:.0f} vs. current ${cur:.0f}). "
+                                    "Sizing discipline critical — avoid full position in bear scenario."
+                                )
+                                lines.append("")
+                                break
+
         # Key signals callout for PA+ companies
         is_pa_plus = s.verdict in (
             Verdict.STRONG_CANDIDATE, Verdict.POTENTIALLY_ATTRACTIVE, Verdict.RESEARCH_FURTHER
