@@ -1833,11 +1833,27 @@ def generate_report(
     lines += ["---", ""]
 
     # ── 6. Government Funding Durability ──────────────────────────────────────
+    import datetime as _dt_mod
+    _today = _dt_mod.date.today()
+    _fy_start_month = 10  # DoD FY starts Oct 1
+    _fy_start = (
+        _dt_mod.date(_today.year, _fy_start_month, 1) if _today.month >= _fy_start_month
+        else _dt_mod.date(_today.year - 1, _fy_start_month, 1)
+    )
+    _days_elapsed = (_today - _fy_start).days or 1
+    _annualize = 365.0 / _days_elapsed  # scale YTD contracts to annual run rate
+
     lines += [
         "## 6. Government Funding Durability",
         "",
-        "| Ticker | DoD Rev% | Gov Rev% | Backlog/Rev | Moat | Sole Source | DoD Stability Score |",
-        "|--------|:--------:|:--------:|:-----------:|:----:|:-----------:|:-------------------:|",
+        f"> **YTD contract velocity** ({_fy_start} → {_today}): new FY contract awards captured in "
+        "the 1,000-contract sample vs. historical DoD revenue run-rate. 📈 accelerating / "
+        "➡️ on-track (±15%) / 📉 below run-rate. **Note:** Large primes (GD, LMT, NOC) have "
+        "hundreds of contracts/yr — the 1,000-award sample captures only their largest awards, "
+        "understating their true activity. This metric is most reliable for specialist/mid-cap names.",
+        "",
+        "| Ticker | DoD Rev% | Gov Rev% | Backlog/Rev | Moat | Sole Source | YTD Contracts | Velocity | DoD Stability |",
+        "|--------|:--------:|:--------:|:-----------:|:----:|:-----------:|:-------------:|:--------:|:-------------:|",
     ]
     for s in ranked_scores:
         f = (fundamentals_map or {}).get(s.ticker)
@@ -1848,8 +1864,30 @@ def generate_report(
         dod_pct  = f"{f.dod_revenue_pct:.0f}%"       if f.dod_revenue_pct is not None else "—"
         gov_pct  = f"{f.government_revenue_pct:.0f}%" if f.government_revenue_pct is not None else "—"
         bl       = f"{f.backlog_to_revenue:.1f}x"     if f.backlog_to_revenue else "—"
+
+        # YTD contract velocity — contract_value is already in millions
+        ytd_total_m = sum(
+            getattr(c, "contract_value", 0) or 0 for c in s.recent_contracts
+        )
+        ytd_str = _fmt_millions(ytd_total_m) if ytd_total_m > 0 else "—"
+
+        velocity_str = "—"
+        if (ytd_total_m > 0
+                and f.annual_revenue_millions is not None and f.annual_revenue_millions > 0
+                and f.dod_revenue_pct is not None):
+            historical_dod_rev_m = f.annual_revenue_millions * f.dod_revenue_pct / 100.0
+            annual_run_rate_m = ytd_total_m * _annualize
+            ratio = annual_run_rate_m / historical_dod_rev_m
+            if ratio >= 1.15:
+                velocity_str = f"📈 {ratio:.1f}×"
+            elif ratio >= 0.85:
+                velocity_str = f"➡️ {ratio:.1f}×"
+            else:
+                velocity_str = f"📉 {ratio:.1f}×"
+
         lines.append(
-            f"| {s.ticker} | {dod_pct} | {gov_pct} | {bl} | {f.moat_rating or '—'} | {ss} | {s.dod_stability.raw:.0f} |"
+            f"| {s.ticker} | {dod_pct} | {gov_pct} | {bl} | {f.moat_rating or '—'} "
+            f"| {ss} | {ytd_str} | {velocity_str} | {s.dod_stability.raw:.0f} |"
         )
     lines += ["", "---", ""]
 

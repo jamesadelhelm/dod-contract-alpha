@@ -387,6 +387,12 @@ report sections. They're derived from composite scores, base MoS, and bear-case 
   ✅ Ready to Deploy — All checks clear. Execute at up to 6.0% per Capital Deployment guidance.
   ```
 
+- **YTD Contract Velocity** (Section 6) — For each company, compares this fiscal year's new
+  contract awards from the USAspending sample against the historical DoD revenue run-rate
+  (annualized to account for partial FY elapsed). Indicators: 📈 accelerating (>115% of baseline),
+  ➡️ on-track (±15%), 📉 below run-rate. Most reliable for specialist/mid-cap names; large primes
+  have hundreds of contracts/yr and the 1,000-award sample captures only their largest awards.
+
 - **`--portfolio-size` capital calculator** — Pass `--portfolio-size 100000` (your investable
   equity in dollars) and the Capital Deployment table in Section 1 adds two columns: **$ Amount**
   (weight × portfolio size) and **Shares** (floor(dollar amount ÷ current price)). Removes the
