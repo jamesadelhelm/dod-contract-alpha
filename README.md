@@ -47,8 +47,8 @@ tickers, fetching live fundamentals, running a DCF, and ranking every company by
 |   Curated overlay:  44-entry database -- DoD revenue %, gov revenue %,    |
 |                     backlog/revenue, moat rating, earnings stability yrs   |
 |                     (supplements or corrects yfinance for 44 defense and  |
-|                     adjacent companies including RTX, BA, LHX, CACI,      |
-|                     HON, OSK, CNC, UNH, VSAT, and all major primes)       |
+|                     adjacent companies including RTX, BA, LHX, CACI, HII,  |
+|                     HON, OSK, CNC, UNH, VSAT, AVAV, TXT, and all primes)  |
 |  Sector classifier: keyword voting on contract descriptions -> 15 sectors |
 |  Ticker overrides:  correct systematic misclassifications (BAH->AI/Data,  |
 |                     LDOS->Cloud IT, RTX->Defense Prime, etc.)             |
@@ -547,6 +547,18 @@ report sections. They're derived from composite scores, base MoS, and bear-case 
   build, large capex, contract receivables lag). Complements the operating margin vs. FCF margin
   divergence check.
 
+- **Dividend sustainability check** — When a company pays a meaningful dividend (yield >2%) and
+  the payout ratio exceeds 100% of net income, or FCF margin is less than half the dividend yield,
+  a ⚠️ DATA CHECK flag appears in Red Flags prompting independent FCF coverage verification.
+  Catches yield-trap situations where a high yield is unsustainable from free cash flow.
+
+- **DOGE/efficiency mandate risk as explicit Red Flag** — For federal IT and consulting companies
+  (AI_DATA_SOFTWARE, CLOUD_IT_SERVICES, CONSULTING_SERVICES sectors) with ≥40% federal revenue
+  exposure and TTM revenue declining more than 3%, an explicit Red Flag appears in Section 3.
+  Previously this was narrative-only in the "Why it might not matter" section — surfacing it in
+  Section 3 ensures it is not missed during a PM review. Example: BAH with 97% federal exposure
+  and −6.5% TTM revenue growth correctly shows a DOGE Red Flag.
+
 - **`--brief` flag** — Condensed executive summary for daily PM briefings. Contains: macro
   context (rate environment), full rankings table with signal strength (X/10) and action label,
   one-line thesis + top risk flag for each PA+ name. Omits DCF tables, contract listings,
@@ -705,7 +717,9 @@ Automatically flagged and surfaced in Section 3 of the report:
 | Interest coverage dangerously low | IC < 1.5x |
 | Current ratio | < 1.0 |
 | IDIQ funded ratio | Funded < 25% of ceiling |
-| DCF overvaluation | MoS < −35% (non-infrastructure) — includes reverse DCF implied growth rate as sanity check |
+| DCF overvaluation | MoS < −30% (non-infrastructure) — post-DCF verdict corrected to "High Quality But Expensive" |
+| Dividend sustainability | Yield >2% + payout >100% of earnings OR FCF margin < half the yield |
+| DOGE/efficiency risk | Federal IT/consulting sector + ≥40% gov revenue + TTM revenue declining >3% |
 
 ---
 
@@ -767,8 +781,10 @@ To force re-resolution of a cached awardee: `rm data/resolved_cache.json`
 
 ### Improving fundamentals coverage
 
-`data/mock_fundamentals.json` is a 44-entry curated database that supplements yfinance with
+`data/mock_fundamentals.json` is a 46-entry curated database that supplements yfinance with
 fields it cannot reliably provide, and serves as the full data source for offline (`--no-live`) runs.
+The mock screener (`--source mock`) covers 20 companies: GD, LMT, NOC, BWXT, SAIC, LDOS, BAH, ACN,
+TMO, HUM, PSN, KTOS, PLTR, CRWD, RKLB plus HII, RTX, LHX, CACI, and AVAV.
 
 **Fields applied as overlay on top of yfinance (live runs):**
 These override yfinance only when yfinance returns None:
@@ -860,6 +876,9 @@ dod_contract_agent/
 │   ├── sample_contracts.json    # Mock contracts for offline testing
 │   ├── edgar_company_index.json # Auto-generated SEC company index cache
 │   └── resolved_cache.json      # Auto-generated EDGAR lookup cache
+├── tests/
+│   ├── test_scoring.py          # 46 unit tests: scoring components, verdict, flags
+│   └── test_dcf.py              # 31 unit tests: DCF math, WACC, growth blend
 └── src/
     ├── models.py                # Dataclasses: Contract, CompanyFundamentals, CompanyScore
     ├── fetch_usaspending.py     # USAspending API client (fiscal year mode)
@@ -872,6 +891,8 @@ dod_contract_agent/
     ├── report.py                # 11-section markdown report generator
     └── edgar.py                 # SEC 10-K extraction (--edgar flag)
 ```
+
+**Run tests:** `pytest tests/ -v` (77 tests: 46 scoring + 31 DCF, all should pass in <1s)
 
 ---
 
