@@ -1183,6 +1183,164 @@ def _generate_pa_buy_priority(
     return lines
 
 
+def _generate_sector_peer_comparison(
+    ranked_scores: List[CompanyScore],
+    fundamentals_map: Dict,
+) -> List[str]:
+    """
+    For each sector with 2+ scored companies, show a side-by-side comparison of key
+    valuation and quality metrics. Helps fund managers identify relative value within
+    a cohort before selecting which name to own.
+    """
+    from collections import defaultdict as _dd
+
+    sector_groups: dict = _dd(list)
+    for s in ranked_scores:
+        sector_groups[s.sector].append(s)
+
+    multi = {k: v for k, v in sector_groups.items() if len(v) >= 2}
+    if not multi:
+        return []
+
+    lines = [
+        "### 1d. Sector Peer Comparison",
+        "",
+        "> For each sector with two or more companies in the screen, this table shows"
+        " valuation and quality metrics side-by-side so you can identify the best-value"
+        " name within each cohort. ⭐ = highest composite score in that sector.",
+        "",
+    ]
+
+    for sector, scores in sorted(multi.items(), key=lambda x: x[0].value):
+        scores_sorted = sorted(scores, key=lambda s: -s.final_score)
+        best_ticker = scores_sorted[0].ticker
+
+        lines += [
+            f"**{sector.value}** ({len(scores)} companies)",
+            "",
+            "| | Ticker | Score | EV/EBITDA | FCF Yield | ROIC | Base IV Upside | Bear MoS | Verdict |",
+            "|--|--------|------:|:---------:|:---------:|:----:|:--------------:|:--------:|---------|",
+        ]
+
+        for s in scores_sorted:
+            f = (fundamentals_map or {}).get(s.ticker)
+            ev   = f.ev_ebitda         if f and f.ev_ebitda   is not None else None
+            fcfy = f.fcf_yield         if f and f.fcf_yield   is not None else None
+            roic = f.roic              if f and f.roic         is not None else None
+            base_up = s.dcf.margin_of_safety_base if s.dcf and s.dcf.margin_of_safety_base is not None else None
+            bear_m  = s.dcf.bear_mos              if s.dcf and s.dcf.bear_mos  is not None else None
+
+            ev_str   = f"{ev:.1f}x"    if ev   is not None else "—"
+            fcfy_str = f"{fcfy:.1f}%"  if fcfy is not None else "—"
+            roic_str = f"{roic:.1f}%"  if roic is not None else "—"
+            up_str   = (f"+{base_up:.0f}% 🟢" if base_up is not None and base_up > 0
+                        else (f"{base_up:.0f}%" if base_up is not None else "—"))
+            bear_str = (f"🛡️ +{bear_m:.0f}%" if bear_m is not None and bear_m > 0
+                        else (f"{bear_m:.0f}%" if bear_m is not None else "—"))
+
+            star = "⭐" if s.ticker == best_ticker else ""
+            vshort = {
+                "Strong Candidate": "SC ✅",
+                "Potentially Attractive": "PA+ 🟡",
+                "Research Further": "RF 🟡",
+                "Watchlist": "Watch 🔵",
+                "Low Conviction": "Low ⚪",
+                "Ignore": "Ignore 🔴",
+                "High Quality But Expensive": "Expensive 🟠",
+            }.get(s.verdict.value, s.verdict.value[:12])
+
+            lines.append(
+                f"| {star} | **{s.ticker}** | {s.final_score:.1f}"
+                f" | {ev_str} | {fcfy_str} | {roic_str}"
+                f" | {up_str} | {bear_str} | {vshort} |"
+            )
+
+        lines.append("")
+
+    return lines
+
+
+def _generate_tier2_entry_targets(
+    ranked_scores: List[CompanyScore],
+    fundamentals_map: Dict,
+) -> List[str]:
+    """
+    For PA+ names where the bear-case DCF is negative (Tier 2: base MoS positive,
+    bear MoS negative), show the specific price at which each name becomes a
+    full-conviction Tier 1 buy. That price is simply the bear-case intrinsic value —
+    when price = bear_iv, bear_mos = 0.
+
+    This is the most actionable output for a patient, price-disciplined fund manager.
+    """
+    PA_PLUS = {Verdict.STRONG_CANDIDATE, Verdict.POTENTIALLY_ATTRACTIVE, Verdict.RESEARCH_FURTHER}
+
+    tier2 = [
+        s for s in ranked_scores
+        if s.verdict in PA_PLUS
+        and s.dcf
+        and s.dcf.bear_mos is not None
+        and s.dcf.bear_mos < 0
+        and s.dcf.bear_iv is not None
+        and not any("overvalued at" in fl.lower() or "dcf:" in fl.lower()
+                    for fl in (s.red_flags or []))
+    ]
+
+    if not tier2:
+        return []
+
+    lines = [
+        "### 1e. Tier 2 → Full-Conviction Entry Prices",
+        "",
+        "> These PA+ names have a positive **base-case** margin of safety but a **negative bear-case** MoS.",
+        "> The table shows the price at which each name crosses into Tier 1 (bear MoS ≥ 0).",
+        "> That price equals the bear-case intrinsic value — the floor scenario already bakes in",
+        "> a growth slowdown and multiple compression. Initiating at or below this price means",
+        "> **even the pessimistic scenario still pays you**.",
+        "",
+        "| Ticker | Current Price | Bear IV (Target Entry) | Drop Needed | Base IV | Bear MoS Now | Comment |",
+        "|--------|:------------:|:---------------------:|:-----------:|--------:|:------------:|---------|",
+    ]
+
+    for s in sorted(tier2, key=lambda s: -(s.dcf.bear_mos or 0)):
+        f = (fundamentals_map or {}).get(s.ticker)
+        cur = f.current_price if f and f.current_price else None
+        bear_iv  = s.dcf.bear_iv
+        base_iv  = s.dcf.base_iv
+        bear_mos = s.dcf.bear_mos
+
+        if cur and cur > 0:
+            drop_pct = (bear_iv - cur) / cur * 100
+            drop_str = f"{drop_pct:.0f}%"
+        else:
+            drop_str = "—"
+
+        cur_str  = f"${cur:.0f}"     if cur     else "—"
+        biv_str  = f"${bear_iv:.0f}" if bear_iv else "—"
+        base_str = f"${base_iv:.0f}" if base_iv else "—"
+        mos_str  = f"{bear_mos:.0f}%"
+
+        if bear_mos >= -10:
+            comment = "Close — minor pullback achieves Tier 1"
+        elif bear_mos >= -20:
+            comment = "Moderate gap — watch for market weakness"
+        else:
+            comment = "Wide gap — needs significant re-rating"
+
+        lines.append(
+            f"| **{s.ticker}** | {cur_str} | {biv_str} | {drop_str}"
+            f" | {base_str} | {mos_str} | {comment} |"
+        )
+
+    lines += [
+        "",
+        "> 💡 **How to use:** Set a limit order at or near the Bear IV column price."
+        " If the stock reaches that level, the bear-case scenario still yields positive returns"
+        " — making it a structurally lower-risk entry than initiating at today's price.",
+        "",
+    ]
+    return lines
+
+
 def generate_report(
     ranked_scores: List[CompanyScore],
     private_contracts: List[Contract],
@@ -1657,6 +1815,12 @@ def generate_report(
 
     # ── 1c. Watchlist Upgrade Targets ─────────────────────────────────────────
     lines += _generate_watchlist_upgrade_targets(ranked_scores, fundamentals_map or {})
+
+    # ── 1d. Sector Peer Comparison ────────────────────────────────────────────
+    lines += _generate_sector_peer_comparison(ranked_scores, fundamentals_map or {})
+
+    # ── 1e. Tier 2 → Full-Conviction Entry Prices ─────────────────────────────
+    lines += _generate_tier2_entry_targets(ranked_scores, fundamentals_map or {})
 
     lines += ["---", "", ]
 
@@ -2214,6 +2378,31 @@ def generate_report(
                                 lines.append("")
                                 break
 
+                # ── Risk/Reward ratio ──────────────────────────────────────────
+                if d.margin_of_safety_base is not None and d.bear_mos is not None:
+                    base_up = d.margin_of_safety_base
+                    bear_dn = d.bear_mos
+                    if base_up > 0:
+                        if bear_dn >= 0:
+                            rr_str   = "∞"
+                            rr_label = "★★★ Asymmetric — even the pessimistic scenario pays you"
+                        else:
+                            rr = base_up / abs(bear_dn)
+                            rr_str   = f"{rr:.1f}:1"
+                            if rr >= 3.0:
+                                rr_label = "★★★ Excellent — upside dwarfs tail risk"
+                            elif rr >= 2.0:
+                                rr_label = "★★ Good — base upside well in excess of bear risk"
+                            elif rr >= 1.5:
+                                rr_label = "★ Adequate — manageable downside"
+                            else:
+                                rr_label = "⚠️ Unfavorable — bear risk rivals base upside; size conservatively"
+                        lines.append(
+                            f"> **Risk/Reward:** Base upside **+{base_up:.0f}%** vs. bear downside"
+                            f" **{bear_dn:+.0f}%** → R/R **{rr_str}** — {rr_label}"
+                        )
+                        lines.append("")
+
         # Key signals callout for PA+ companies
         is_pa_plus = s.verdict in (
             Verdict.STRONG_CANDIDATE, Verdict.POTENTIALLY_ATTRACTIVE, Verdict.RESEARCH_FURTHER
@@ -2531,6 +2720,63 @@ def generate_report(
             comp_lines.append(f"| {ticker} | {pct:.0f}% | {emoji} {grade} | {missing_str} |")
         comp_lines.append("")
         lines += comp_lines
+
+    # ── Score stability across runs ───────────────────────────────────────────
+    # Multi-run consistency is the most under-rated signal for fund conviction.
+    # A company that scores 71 every run is much more investable than one that
+    # swings 58–79. Stability = score range ≤ 4 pts over ≥ 3 runs.
+    if score_history:
+        import statistics as _st_stats
+        stability_rows = []
+        for s in ranked_scores:
+            hist = score_history.get(s.ticker, [])
+            if len(hist) < 2:
+                continue
+            scores_h = [h["score"] for h in hist if "score" in h]
+            if len(scores_h) < 2:
+                continue
+            score_min = min(scores_h)
+            score_max = max(scores_h)
+            spread    = score_max - score_min
+            n_runs    = len(scores_h)
+            trend_scores = scores_h[-3:]  # last 3 runs
+            if len(trend_scores) >= 2:
+                trend_delta = trend_scores[-1] - trend_scores[0]
+                if trend_delta >= 1.5:
+                    trend_str = f"▲ +{trend_delta:.1f}"
+                elif trend_delta <= -1.5:
+                    trend_str = f"▼ {trend_delta:.1f}"
+                else:
+                    trend_str = "→ Stable"
+            else:
+                trend_str = "—"
+            if spread <= 2:
+                stability = "✅ High"
+            elif spread <= 5:
+                stability = "🟡 Moderate"
+            elif spread <= 10:
+                stability = "⚠️ Low"
+            else:
+                stability = "❌ Very Low"
+            stability_rows.append((s.ticker, n_runs, score_min, score_max, spread, trend_str, stability))
+
+        if stability_rows:
+            stability_rows.sort(key=lambda r: r[4], reverse=True)
+            lines += [
+                "### Score Stability (Multi-Run History)",
+                "",
+                "> Score consistency across runs builds fund conviction. A narrow range"
+                " (≤2 pts) means the signal is robust to data timing. A wide range (>10 pts)"
+                " means data gaps or contract timing cause score volatility — treat with caution.",
+                "",
+                "| Ticker | Runs | Score Range | Spread | Trend (last 3) | Stability |",
+                "|--------|:----:|:-----------:|:------:|:--------------:|-----------|",
+            ]
+            for ticker, n, lo, hi, spread, trend, stab in stability_rows:
+                lines.append(
+                    f"| {ticker} | {n} | {lo:.1f}–{hi:.1f} | {spread:.1f} pts | {trend} | {stab} |"
+                )
+            lines.append("")
 
     lines += [
         "## 11. Data Quality & Limitations",

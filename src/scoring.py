@@ -946,6 +946,98 @@ def determine_verdict(
     return Verdict.IGNORE
 
 
+# ── Data validation ───────────────────────────────────────────────────────────
+
+def _validate_fundamentals(f: CompanyFundamentals) -> List[str]:
+    """
+    Flag data quality issues that could silently corrupt scores. These are NOT
+    investment judgments — they are data hygiene alerts for the analyst to verify
+    before acting on any score computed from these inputs.
+
+    Returns a list of flag strings (empty = clean).
+    """
+    flags: List[str] = []
+
+    # PE ratio sanity
+    if f.pe_ratio is not None:
+        if 0 < f.pe_ratio < 2:
+            flags.append(
+                f"⚠️ DATA CHECK: P/E {f.pe_ratio:.1f}x is suspiciously low — likely a yfinance "
+                "calculation artifact (e.g. one-time gain inflating EPS). Verify EPS quality."
+            )
+        if f.pe_ratio > 5000:
+            flags.append(
+                f"⚠️ DATA CHECK: P/E {f.pe_ratio:.0f}x is nonsensically high — yfinance data error. "
+                "Treat P/E-based valuation as unreliable for this run."
+            )
+
+    # EV/EBITDA sanity
+    if f.ev_ebitda is not None and f.ev_ebitda < 0:
+        flags.append(
+            f"⚠️ DATA CHECK: EV/EBITDA {f.ev_ebitda:.1f}x is negative — this occurs when a company "
+            "has more cash than its market cap (net-cash). Not an error, but EV/EBITDA scoring "
+            "is not meaningful in this state; treat EV/EBITDA component as N/A."
+        )
+
+    # FCF yield sanity
+    if f.fcf_yield is not None and f.fcf_yield > 30:
+        flags.append(
+            f"⚠️ DATA CHECK: FCF yield {f.fcf_yield:.1f}% appears unusually high. Verify: "
+            "(a) working capital movements artificially inflating free cash flow, or "
+            "(b) yfinance FCF definition differs from owner-earnings. Treat as directional only."
+        )
+
+    # ROIC vs FCF yield consistency
+    if (f.roic is not None and f.fcf_yield is not None
+            and f.fcf_yield > 0 and f.roic > 0):
+        ratio = f.fcf_yield / f.roic
+        if ratio > 4.0:
+            flags.append(
+                f"⚠️ DATA CHECK: FCF yield ({f.fcf_yield:.1f}%) is {ratio:.1f}× ROIC ({f.roic:.1f}%) — "
+                "unusual divergence suggests one or both metrics may use inconsistent denominators. "
+                "Verify FCF yield (price-based) vs. ROIC (invested capital–based) data sources."
+            )
+
+    # Interest coverage vs debt consistency
+    if (f.interest_coverage is not None and f.interest_coverage == 0
+            and f.net_debt_millions is not None and f.net_debt_millions > 100):
+        flags.append(
+            f"⚠️ DATA CHECK: Interest coverage = 0 but net debt ${f.net_debt_millions:.0f}M — "
+            "zero coverage on levered balance sheet is likely a data gap, not literal inability "
+            "to cover interest. Verify in latest 10-K income statement."
+        )
+
+    # Debt/EBITDA vs Debt/Equity consistency
+    if (f.debt_ebitda is not None and f.debt_equity is not None
+            and f.debt_ebitda > 0 and f.debt_equity > 0):
+        if f.debt_ebitda > 8.0 and f.debt_equity < 1.0:
+            flags.append(
+                f"⚠️ DATA CHECK: Debt/EBITDA {f.debt_ebitda:.1f}x but D/E {f.debt_equity:.1f}x — "
+                "inconsistency may indicate EBITDA is very low (near breakeven) or D/E uses "
+                "book equity distorted by goodwill impairments. Verify both independently."
+            )
+
+    # ROIC outlier
+    if f.roic is not None and f.roic > 80:
+        flags.append(
+            f"⚠️ DATA CHECK: ROIC {f.roic:.1f}% is extremely high — common causes: "
+            "(a) negative book equity (buyback-heavy), (b) one-time gains in NOPAT, "
+            "(c) yfinance using total equity vs. invested capital. Verify calculation base."
+        )
+
+    # Operating margin vs FCF margin divergence
+    if (f.operating_margin is not None and f.free_cash_flow_margin is not None):
+        if f.operating_margin > 15 and f.free_cash_flow_margin < -5:
+            flags.append(
+                f"⚠️ DATA CHECK: Operating margin {f.operating_margin:.1f}% but FCF margin "
+                f"{f.free_cash_flow_margin:.1f}% — large divergence. Check for: heavy capex cycle, "
+                "working capital build, or one-time cash outflow. If structural, operating "
+                "margin overstates true earnings power."
+            )
+
+    return flags
+
+
 # ── Top-level: score a company ────────────────────────────────────────────────
 
 def _is_low_confidence(contracts, ticker: str, threshold: float) -> bool:
@@ -990,6 +1082,9 @@ def score_company(
 
     final = compute_final_score(bq_raw, gv_raw, ds_raw, mq_raw, cc_raw, bs_raw)
     all_flags = bq_flags + gv_flags + ds_flags + mq_flags + cc_flags + bs_flags
+
+    # Data validation — flag suspicious fundamentals before any capital deployment
+    all_flags += _validate_fundamentals(f)
 
     # Balance sheet danger override on final.
     # Require actual current_ratio data — missing data must not default to 1.5
@@ -1199,7 +1294,7 @@ def score_company(
             ["score capped", "capped at", "dangerous", "dilution", "negative fcf",
              "negative roe", "contracting", "consensus", "short interest",
              "destroying", "binary catalyst", "distressed", "dcf:", "overvalued at",
-             "bear case"])],
+             "bear case", "data check"])],
         low_ticker_confidence=_is_low_confidence(contracts, ticker, OVERRIDE_RULES["low_ticker_confidence_flag_threshold"]),
         specialist=specialist,
         dcf=dcf,

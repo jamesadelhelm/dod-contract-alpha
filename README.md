@@ -70,6 +70,8 @@ tickers, fetching live fundamentals, running a DCF, and ranking every company by
 |                             (negative IC = operating loss -> flagged)      |
 |  + 3-scenario DCF (bear/base/bull) + reverse DCF (implied growth rate)   |
 |  + Specialist Tier bonus for mid-cap, high-DoD-concentration companies   |
+|  + Data validation pass: flags suspicious P/E, EV/EBITDA, ROIC, FCF      |
+|    yield outliers and metric inconsistencies before scores are used       |
 +----------------------------------+------------------------------------------+
                                    |
 +----------------------------------v------------------------------------------+
@@ -82,16 +84,20 @@ tickers, fetching live fundamentals, running a DCF, and ranking every company by
 |  1b. PA+ Buy Priority (ranked by deployability: bear MoS > 0 first,      |
 |                        gap to entry, pessimism premium, action labels)    |
 |  1c. Watchlist Upgrade Targets (price at which Watchlist names cross PA+) |
-|   2. Valuation Snapshot (multiples + full DCF table)                      |
-|   3. Red Flags                                                             |
+|  1d. Sector Peer Comparison (EV/EBITDA, FCF yield, ROIC, IV upside,      |
+|       bear MoS per sector — best-value name starred ⭐)                   |
+|  1e. Tier 2 → Full-Conviction Entry Prices (bear IV target for PA+ names  |
+|       where bear MoS < 0 — the "back up the truck" price)                |
+|   2. Valuation Snapshot (multiples + full DCF table + WACC sensitivity)  |
+|   3. Red Flags (including data validation flags)                          |
 |   4. Market Context (consensus, short interest, price momentum)           |
 |   5. Specialist Tier analysis                                              |
-|   6. Government Funding Durability                                         |
-|   7. Company Deep Dives (score breakdown + contracts + thesis)            |
+|   6. Government Funding Durability (+ YTD contract velocity)             |
+|   7. Company Deep Dives (thesis + R/R ratio + expected return + checklist)|
 |   8. Private Companies / Coverage Gap                                     |
 |   9. Contract Awards (all 1,000 sorted by value)                          |
-|  10. Sector Peer Comparison                                                |
-|  11. Data Quality & Limitations (per-company completeness breakdown)      |
+|  10. Sector Peer Comparison (P/E, EV/EBITDA, FCF yield vs. sector median) |
+|  11. Data Quality & Limitations (completeness + score stability history)  |
 +-----------------------------------------------------------------------------+
 ```
 
@@ -393,6 +399,49 @@ report sections. They're derived from composite scores, base MoS, and bear-case 
 
   ✅ Ready to Deploy — All checks clear. Execute at up to 6.0% per Capital Deployment guidance.
   ```
+
+- **Sector Peer Comparison (Section 1d)** — Early in Section 1, before the valuation deep-dives,
+  a side-by-side table shows every scored company grouped by sector. For each sector with 2+ companies,
+  columns show EV/EBITDA, FCF Yield, ROIC, Base IV Upside, Bear MoS, and Verdict. The ⭐ marks the
+  top-ranked name within the sector. This lets a fund manager instantly compare LMT vs. NOC (both
+  Aerospace) or SAIC vs. LDOS vs. ACN (all Cloud/IT) without cross-referencing multiple report
+  sections. A separate Section 10 then shows P/E, EV/EBITDA, and FCF yield vs. sector medians
+  (premium/discount view). Both are complementary: Section 1d is quick actionable selection,
+  Section 10 is the full peer-median benchmark.
+
+- **Tier 2 → Full-Conviction Entry Prices (Section 1e)** — For PA+ names where the base-case DCF
+  is positive but the bear-case is negative (Tier 2 names), shows a dedicated table with the
+  exact price at which each name crosses into Tier 1 (bear MoS ≥ 0). That price equals the
+  bear-case intrinsic value — entering at or below it means even the pessimistic scenario pays you.
+  Includes a "Drop Needed" column and a comment on how achievable the entry is (close / moderate
+  gap / wide gap). Designed for patient, price-disciplined fund managers who want to pre-set
+  limit orders at a specific conviction price rather than chasing the current price.
+
+- **Risk/Reward Ratio** — Each PA+ company deep dive (Section 7) now includes a Risk/Reward
+  summary line after the Expected Return table: base upside (%) vs. bear downside (%), expressed
+  as a ratio. R/R ≥ 3:1 = "★★★ Excellent — upside dwarfs tail risk". R/R 2–3:1 = "★★ Good".
+  R/R 1.5–2:1 = "★ Adequate". R/R < 1.5:1 = "⚠️ Unfavorable — size conservatively." When bear
+  MoS ≥ 0, R/R = ∞ (asymmetric: even the downside scenario pays you). This collapses the
+  bear/base/bull scenario table into a single actionable number for position sizing decisions.
+
+- **Data Validation Pass** — Before scoring affects the verdict, a new `_validate_fundamentals()`
+  function runs 8 plausibility checks on the input data and appends ⚠️ DATA CHECK flags to the
+  Red Flags section when suspicious values are found. Checks include: P/E < 2 (likely artifact),
+  EV/EBITDA < 0 (net-cash edge case), FCF yield > 30% (working capital distortion), ROIC vs.
+  FCF yield ratio > 4× (inconsistent denominators), interest coverage = 0 with significant debt
+  (data gap), Debt/EBITDA vs. D/E inconsistency, ROIC > 80% (negative book equity artifact),
+  and operating margin vs. FCF margin divergence > 20pp (capex cycle or one-time item). These
+  flags appear in Red Flags for visibility and are ⚠️-prefixed so analysts can distinguish
+  data quality alerts from fundamental concerns.
+
+- **Score Stability History (Section 11)** — After the data completeness breakdown, a new table
+  shows each company's score range and trend across all historical runs tracked in
+  `data/score_history.json`. Columns: Runs tracked | Score Range | Spread (pts) | Trend (▲/▼/→)
+  | Stability grade (✅ High ≤2pt / 🟡 Moderate ≤5pt / ⚠️ Low ≤10pt / ❌ Very Low >10pt).
+  A company with 3+ runs all within 2 pts earns High stability — the score is robust to data
+  timing and contract sampling variation. Wide spread (>10 pts) means the signal is volatile and
+  should be treated with less conviction. Requires ≥2 runs to display (entries accumulate in
+  `data/score_history.json` automatically after each live run).
 
 - **WACC Sensitivity Table (Section 2c)** — For PA+ names, shows base IV at current WACC, then
   at +0.5pp, +1.0pp, and +1.5pp rate increases. Also checks whether the bear-case shield (🛡️
