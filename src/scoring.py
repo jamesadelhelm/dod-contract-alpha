@@ -1050,6 +1050,21 @@ def _validate_fundamentals(f: CompanyFundamentals) -> List[str]:
                 "margin overstates true earnings power."
             )
 
+    # FCF conversion quality: FCF margin as fraction of operating margin
+    # When FCF is well below op margin, earnings may be accrual-heavy (working capital,
+    # D&A plugs, deferred revenue). Not necessarily a red flag, but worth flagging when severe.
+    if (f.operating_margin is not None and f.free_cash_flow_margin is not None
+            and f.operating_margin > 8):
+        conversion = f.free_cash_flow_margin / f.operating_margin
+        if conversion < 0.3 and f.free_cash_flow_margin < 5:
+            flags.append(
+                f"⚠️ DATA CHECK: FCF conversion ratio {conversion:.0%} (FCF margin "
+                f"{f.free_cash_flow_margin:.1f}% / op margin {f.operating_margin:.1f}%) — "
+                "reported earnings significantly exceed cash generation. Common causes: "
+                "large capex programs, working capital build, contract receivables lag. "
+                "Verify FCF trend in cash flow statement before relying on operating margin."
+            )
+
     return flags
 
 

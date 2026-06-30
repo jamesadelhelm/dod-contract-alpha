@@ -2389,6 +2389,20 @@ def generate_report(
                 lines.append(f"**Thesis:** {' | '.join(parts)}.")
                 lines.append("")
 
+            # Revenue visibility from backlog
+            bl = f_ctx.backlog_to_revenue if f_ctx else None
+            if bl is not None and bl > 0:
+                if bl >= 3.0:
+                    vis_label = f"✅ {bl:.1f}× backlog — {bl:.1f}+ years of forward revenue locked in. Exceptional visibility."
+                elif bl >= 2.0:
+                    vis_label = f"✅ {bl:.1f}× backlog — ~{bl:.1f} years of revenue visibility. Strong."
+                elif bl >= 1.0:
+                    vis_label = f"🟡 {bl:.1f}× backlog — roughly one year of revenue in the pipeline."
+                else:
+                    vis_label = f"⚠️ {bl:.1f}× backlog — sub-1× coverage. Monitor book-to-bill for pipeline erosion."
+                lines.append(f"> **Revenue Visibility:** {vis_label}")
+                lines.append("")
+
         # ── Signal Strength (conviction score) — PA+ only ─────────────────────
         if s.verdict in (Verdict.STRONG_CANDIDATE, Verdict.POTENTIALLY_ATTRACTIVE, Verdict.RESEARCH_FURTHER):
             conv_pts, conv_label = _compute_conviction_score(s, f_ctx, score_history)
