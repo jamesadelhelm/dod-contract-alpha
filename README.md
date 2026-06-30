@@ -184,19 +184,20 @@ Report -> reports/report_20260608_HHMM.md
 ```
 ## 1. Action Summary
 
-| # | Ticker | Price | Company                       | Sector               | Score | MoS  | Bear    | Data | Verdict                   |
+| # | Ticker | Price | Company                       | Sector               | Score | MoS  | Bear    | Sig  | Verdict                   |
 |---|--------|------:|-------------------------------|----------------------|------:|-----:|--------:|-----:|---------------------------|
-| 1 | BAH    | $79   | Booz Allen Hamilton           | AI / Data / Software | 71.8  | +54% | -24%    | 100% | Potentially Attractive    |
-| 2 | LDOS   | $123  | Leidos Holdings               | Cloud / IT Services  | 70.6  | +29% | -12%    | 100% | Potentially Attractive    |
-| 3 | GD     | $260  | General Dynamics Corporation  | Shipbuilding         | 70.2  | +37% | S+12%   | 100% | Potentially Attractive    |
-| 4 | SAIC   | $160  | Science Applications Intl     | Cloud / IT Services  | 65.7  | +0%  | -33%    | 100% | Watchlist                 |
+| 1 | GD     | $353  | General Dynamics Corporation  | Shipbuilding         | 72.5  | +38% | S+9%    | 8/10 | Potentially Attractive    |
+| 2 | LDOS   | $102  | Leidos Holdings               | Cloud / IT Services  | 70.0  |+104% | S+43%   | 8/10 | Potentially Attractive    |
+| 3 | HII    | $281  | Huntington Ingalls Industries | Shipbuilding         | 69.8  | +64% | S+30%   | 6/10 | Potentially Attractive    |
+| 4 | NOC    | $504  | Northrop Grumman Corporation  | Aerospace            | 69.2  | -26% | -42%    | 4/10 | Potentially Attractive    |
 ...
-|29 | CNC    | $60   | Centene Corporation           | Military Healthcare  | 42.1  | -+   | -+      |  94% | Ignore                    |
+|20 | RKLB   | $102  | Rocket Lab Corporation        | Space                | 30.1  |  N/A |  N/A    | 1/10 | Ignore                    |
 ```
 
 > **Price column** — current market price at time of run. Use as the entry price anchor.
 > **MoS** = (Base IV - Price) / Price. Positive = stock below intrinsic value (base case).
 > **Bear** = margin of safety in the pessimistic scenario. S = shield (positive in bear case).
+> **Sig** = Signal Strength 0–10: composite score (0–3) + bear MoS protection (0–3) + data grade (0–2) + score stability (0–1) + no data flags (0–1). ≥7 = high conviction, 5–6 = moderate, ≤4 = research required before deploying capital.
 > **-+** = MoS suppressed for Ignore-rated companies — see Section 2b for full DCF detail.
 
 ### What the report looks like (Section 2b — DCF Table)
@@ -801,6 +802,16 @@ These override yfinance only when yfinance returns None:
 
 **Always overrides yfinance:**
 - `earnings_stability_years` — yfinance caps at 4 years; established primes need the real number
+- `free_cash_flow_margin` — yfinance TTM FCF can be distorted by capex investment cycles or
+  working capital timing. The overlay stores a 5-year normalized FCF/revenue from 10-K data.
+  For example, defense primes in active program ramp phases (B-21, CVN-80) show depressed TTM
+  FCF that understates normalized free cash generation.
+
+**Special override flag:**
+- `annual_revenue_override: true` — when set, forces the overlay's `annual_revenue_millions`
+  to win over yfinance. Use only for companies where yfinance systematically returns wrong revenue
+  (e.g., fiscal year timing gaps, segment-only data). Currently applied to LHX (yfinance returns
+  ~$12.9B for a $21B company due to fiscal year timing).
 
 **To add a new ticker** (minimum useful entry):
 ```json
@@ -855,6 +866,7 @@ Sector drives the DCF growth assumptions and terminal rate — misclassification
 | **3-year revenue CAGR context** | A single-year revenue decline can be cyclical (budget timing, contract transitions) or structural. When 1yr revenue falls > 5% but 3yr CAGR is positive, the tool adds context: "3yr CAGR +X% — decline may be cyclical rather than structural; monitor next 2 quarters before concluding trend reversal." |
 | **Portfolio concentration** | When ≥ 3 actionable names share a common risk factor (Federal IT/DOGE exposure, Aerospace prime concentration), the Action Summary adds a ⚠️ cluster warning so sector risk is visible at the portfolio level — not just per-company. |
 | **No backtesting** | Scoring weights are constructed from first principles, not empirically validated on historical returns. This is the single most important limitation for real capital deployment. |
+| **DCF bull growth calibration** | When a company's blended actual growth is below 40% of the sector default (e.g., BAH at 2.2% vs AI/Data sector base 8.5%), the bull-case rate is capped at max(actual×1.5, base+4) rather than the full sector ceiling. This prevents federal IT companies under DOGE pressure from being assigned tech-sector bull growth assumptions. |
 | **Liquidity** | Avg daily dollar volume is shown as a warning when < $2M for PA+ names. Use `--min-liquidity 2` to exclude them from rankings. Volume data from yfinance `averageVolume10days`; not available in offline mock mode. |
 | **Score trend (minimum 3 runs)** | Trend arrows (↑ ↓ →) in Changes Since Last Run require ≥3 entries in `data/score_history.json`. They show `—` until then. History is appended on every live run, one entry per calendar day per ticker. |
 | **Email alerts** | `--alert-email` requires `DOD_AGENT_SMTP_PASSWORD` environment variable (Gmail app password or equivalent). Without it, the alert is skipped with a warning — watch mode still runs normally. Configure `--smtp-from` when the sending address differs from the account holding the password. |
