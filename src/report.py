@@ -2440,6 +2440,46 @@ def generate_report(
             "",
         ]
 
+        # Management capital allocation summary — for PA+ names with sufficient data
+        _PA_PLUS_VERDICTS = {Verdict.STRONG_CANDIDATE, Verdict.POTENTIALLY_ATTRACTIVE, Verdict.RESEARCH_FURTHER}
+        if s.verdict in _PA_PLUS_VERDICTS and f_ctx:
+            mgmt_lines = []
+            sc = getattr(f_ctx, "shares_chg_1yr_pct", None)
+            ins = getattr(f_ctx, "insider_ownership_pct", None)
+            roic = getattr(f_ctx, "roic", None)
+            if sc is not None:
+                if sc <= -3:
+                    mgmt_lines.append(f"**Share count:** {sc:+.1f}%/yr — active buyback program, returning capital to shareholders ✅")
+                elif sc <= -1:
+                    mgmt_lines.append(f"**Share count:** {sc:+.1f}%/yr — modest buyback pace")
+                elif sc >= 5:
+                    mgmt_lines.append(f"**Share count:** {sc:+.1f}%/yr — significant dilution ⚠️ (equity offerings or SBC)")
+                elif sc >= 2:
+                    mgmt_lines.append(f"**Share count:** {sc:+.1f}%/yr — mild dilution (SBC)")
+                else:
+                    mgmt_lines.append(f"**Share count:** {sc:+.1f}%/yr — roughly stable")
+            if ins is not None:
+                if ins >= 10:
+                    mgmt_lines.append(f"**Insider ownership:** {ins:.1f}% — founder/key executive alignment is high ✅")
+                elif ins >= 3:
+                    mgmt_lines.append(f"**Insider ownership:** {ins:.1f}% — meaningful skin in the game")
+                else:
+                    mgmt_lines.append(f"**Insider ownership:** {ins:.1f}% — low; management incentive is primarily option/bonus-based")
+            if roic is not None:
+                if roic >= 20:
+                    mgmt_lines.append(f"**ROIC:** {roic:.1f}% — exceptional capital allocation; reinvestment generates strong returns ✅")
+                elif roic >= 15:
+                    mgmt_lines.append(f"**ROIC:** {roic:.1f}% — above cost of capital; management creates value when reinvesting")
+                elif roic >= 10:
+                    mgmt_lines.append(f"**ROIC:** {roic:.1f}% — adequate but not exceptional")
+                else:
+                    mgmt_lines.append(f"**ROIC:** {roic:.1f}% — below typical cost of capital; growth may not add value ⚠️")
+            if mgmt_lines:
+                lines.append("**Capital Allocation Quality:**")
+                for ml in mgmt_lines:
+                    lines.append(f"- {ml}")
+                lines.append("")
+
         # DCF deep dive
         if s.dcf:
             d = s.dcf
