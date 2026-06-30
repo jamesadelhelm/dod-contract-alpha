@@ -342,10 +342,15 @@ def _overlay(f: CompanyFundamentals, mock: dict) -> None:
     # free_cash_flow_margin: yfinance TTM FCF can be distorted by capex cycles or
     # one-time operating cash items. The curated overlay stores a 5-year normalized
     # FCF/revenue average from 10-K data — that value is used when present.
+    # annual_revenue_override: set to true in the overlay when yfinance systematically
+    # returns wrong revenue (e.g., fiscal year timing issues, segment-only data).
     always_override = ["earnings_stability_years", "free_cash_flow_margin"]
     for fld in always_override:
         if fld in mock and mock[fld] is not None:
             setattr(f, fld, mock[fld])
+
+    if mock.get("annual_revenue_override") and "annual_revenue_millions" in mock:
+        f.annual_revenue_millions = mock["annual_revenue_millions"]
 
 
 # ── ROIC derivation ───────────────────────────────────────────────────────────
