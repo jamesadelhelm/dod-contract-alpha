@@ -225,7 +225,10 @@
     "earnings_stability_years": 12,
     "moat_rating": "Wide",
     "data_notes": "Mock data \u2014 verify via 10-K. Newport News and Ingalls are sole US suppliers of nuclear carriers and amphibious warships. Price ~$242 approx mid-2025.",
-    "dividend_yield": 2.5
+    "dividend_yield": 2.5,
+    "revenue_cagr_3yr": 3.9,
+    "revenue_growth_forward": 5.0,
+    "shares_chg_1yr_pct": -2.5
   },
   "LDOS": {
     "company_name": "Leidos Holdings Inc",
@@ -671,7 +674,10 @@
     "net_debt_millions": 19000,
     "debt_ebitda": 2.2,
     "insider_ownership_pct": 0.2,
-    "shares_millions": 1345
+    "shares_millions": 1345,
+    "revenue_cagr_3yr": 7.2,
+    "revenue_growth_forward": 4.5,
+    "shares_chg_1yr_pct": -1.8
   },
   "BA": {
     "company_name": "The Boeing Company",
@@ -731,7 +737,10 @@
     "net_debt_millions": 11000,
     "debt_ebitda": 3.0,
     "insider_ownership_pct": 0.3,
-    "shares_millions": 170
+    "shares_millions": 170,
+    "revenue_cagr_3yr": 4.1,
+    "revenue_growth_forward": 3.2,
+    "shares_chg_1yr_pct": -3.2
   },
   "TXT": {
     "company_name": "Textron Inc",
@@ -761,7 +770,10 @@
     "net_debt_millions": 3500,
     "debt_ebitda": 2.3,
     "insider_ownership_pct": 1.5,
-    "shares_millions": 190
+    "shares_millions": 190,
+    "revenue_cagr_3yr": 4.8,
+    "revenue_growth_forward": 3.1,
+    "shares_chg_1yr_pct": -2.3
   },
   "CACI": {
     "company_name": "CACI International Inc",
@@ -791,7 +803,10 @@
     "net_debt_millions": 3200,
     "debt_ebitda": 2.5,
     "insider_ownership_pct": 2.0,
-    "shares_millions": 21
+    "shares_millions": 21,
+    "revenue_cagr_3yr": 9.2,
+    "revenue_growth_forward": 6.5,
+    "shares_chg_1yr_pct": -1.5
   },
   "AVAV": {
     "company_name": "AeroVironment Inc",
@@ -821,7 +836,10 @@
     "net_debt_millions": -200,
     "debt_ebitda": 0.5,
     "insider_ownership_pct": 5.0,
-    "shares_millions": 28
+    "shares_millions": 28,
+    "revenue_cagr_3yr": 18.5,
+    "revenue_growth_forward": 12.0,
+    "shares_chg_1yr_pct": 1.2
   },
   "PANW": {
     "company_name": "Palo Alto Networks Inc",
@@ -843,7 +861,10 @@
     "earnings_stability_years": 10,
     "dividend_yield": 0.7,
     "data_source": "curated_overlay",
-    "data_notes": "KBR: government engineering/operations services. ~55% DoD (LOGCAP, army sustainment, Ft Bliss). Backlog est. from 2024 10-K."
+    "data_notes": "KBR: government engineering/operations services. ~55% DoD (LOGCAP, army sustainment, Ft Bliss). Backlog est. from 2024 10-K.",
+    "revenue_cagr_3yr": 7.5,
+    "revenue_growth_forward": 6.0,
+    "shares_chg_1yr_pct": -2.1
   },
   "VVX": {
     "company_name": "V2X Inc",
@@ -873,7 +894,10 @@
     "net_debt_millions": 1700,
     "debt_ebitda": 4.0,
     "insider_ownership_pct": 1.0,
-    "shares_millions": 32
+    "shares_millions": 32,
+    "revenue_cagr_3yr": 6.8,
+    "revenue_growth_forward": 5.5,
+    "shares_chg_1yr_pct": -0.8
   },
   "AMTM": {
     "company_name": "Amentum Holdings Inc",
@@ -903,7 +927,10 @@
     "net_debt_millions": 4000,
     "debt_ebitda": 3.5,
     "insider_ownership_pct": 2.0,
-    "shares_millions": 160
+    "shares_millions": 160,
+    "revenue_cagr_3yr": 5.2,
+    "revenue_growth_forward": 4.0,
+    "shares_chg_1yr_pct": 1.5
   },
   "FLR": {
     "company_name": "Fluor Corporation",
@@ -933,7 +960,10 @@
     "net_debt_millions": 400,
     "debt_ebitda": 1.8,
     "insider_ownership_pct": 5.0,
-    "shares_millions": 131
+    "shares_millions": 131,
+    "revenue_cagr_3yr": 3.1,
+    "revenue_growth_forward": 2.8,
+    "shares_chg_1yr_pct": 0.5
   },
   "GE": {
     "company_name": "GE Aerospace",
@@ -963,7 +993,10 @@
     "net_debt_millions": 20000,
     "debt_ebitda": 2.5,
     "insider_ownership_pct": 0.2,
-    "shares_millions": 870
+    "shares_millions": 870,
+    "revenue_cagr_3yr": 15.3,
+    "revenue_growth_forward": 10.0,
+    "shares_chg_1yr_pct": -1.9
   },
   "TDG": {
     "company_name": "TransDigm Group Inc",
@@ -1145,7 +1178,10 @@
     "moat_rating": "Narrow",
     "dividend_yield": 1.8,
     "shares_millions": 60,
-    "data_notes": "Curated overlay. Defense segment (JLTV, FMTV, HEMTT) is 30% of revenue. Commercial: JLG aerial work platforms, McNeilus concrete/refuse trucks, and airport fire equipment (Pierce). DoD concentration is meaningful but commercial offsets reduce pure-play defense exposure. JLTV win is a long-duration program. Clean balance sheet vs. peers. Price ~$110 mid-2026."
+    "data_notes": "Curated overlay. Defense segment (JLTV, FMTV, HEMTT) is 30% of revenue. Commercial: JLG aerial work platforms, McNeilus concrete/refuse trucks, and airport fire equipment (Pierce). DoD concentration is meaningful but commercial offsets reduce pure-play defense exposure. JLTV win is a long-duration program. Clean balance sheet vs. peers. Price ~$110 mid-2026.",
+    "revenue_cagr_3yr": 8.4,
+    "revenue_growth_forward": 5.5,
+    "shares_chg_1yr_pct": -1.6
   },
   "CNC": {
     "company_name": "Centene Corporation",

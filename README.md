@@ -278,6 +278,11 @@ python3 main.py --watch --watch-interval 3600   # hourly (e.g. during volatile p
 python3 main.py --watch --alert-email you@example.com
 python3 main.py --watch --alert-email you@example.com --smtp-from sender@gmail.com
 python3 main.py --watch --alert-email you@example.com --smtp-server smtp.yourprovider.com
+
+# Brief mode — condensed 1-page executive summary for PM emails / morning briefings
+python3 main.py --brief                             # live run, brief output
+python3 main.py --source mock --no-live --brief     # offline demo, brief output
+python3 main.py --brief --top 10                    # brief summary, top 10 names only
 ```
 
 ---
