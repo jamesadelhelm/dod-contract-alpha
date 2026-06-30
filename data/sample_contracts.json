@@ -13,7 +13,15 @@
     "is_sole_source": true,
     "is_competitive": false,
     "is_idiq": false,
-    "keywords": ["submarine", "Virginia-class", "Block VI", "nuclear", "shipbuilding", "SSN"]
+    "keywords": [
+      "submarine",
+      "Virginia-class",
+      "Block VI",
+      "nuclear",
+      "shipbuilding",
+      "SSN"
+    ],
+    "pricing_type": "Cost-Plus"
   },
   {
     "awardee_name": "Leidos Inc",
@@ -29,7 +37,15 @@
     "is_sole_source": false,
     "is_competitive": true,
     "is_idiq": true,
-    "keywords": ["IT services", "cybersecurity", "sustainment", "Air Force", "enterprise IT", "help desk"]
+    "keywords": [
+      "IT services",
+      "cybersecurity",
+      "sustainment",
+      "Air Force",
+      "enterprise IT",
+      "help desk"
+    ],
+    "pricing_type": "Cost-Plus"
   },
   {
     "awardee_name": "Palantir Technologies",
@@ -45,7 +61,16 @@
     "is_sole_source": false,
     "is_competitive": true,
     "is_idiq": false,
-    "keywords": ["AI", "machine learning", "data analytics", "Army Vantage", "decision support", "logistics", "predictive maintenance"]
+    "keywords": [
+      "AI",
+      "machine learning",
+      "data analytics",
+      "Army Vantage",
+      "decision support",
+      "logistics",
+      "predictive maintenance"
+    ],
+    "pricing_type": "Fixed-Price"
   },
   {
     "awardee_name": "BWX Technologies Inc",
@@ -61,7 +86,16 @@
     "is_sole_source": true,
     "is_competitive": false,
     "is_idiq": false,
-    "keywords": ["nuclear", "reactor", "fuel fabrication", "submarine", "carrier", "sole-source", "naval propulsion"]
+    "keywords": [
+      "nuclear",
+      "reactor",
+      "fuel fabrication",
+      "submarine",
+      "carrier",
+      "sole-source",
+      "naval propulsion"
+    ],
+    "pricing_type": "Cost-Plus"
   },
   {
     "awardee_name": "Booz Allen Hamilton Inc",
@@ -77,7 +111,15 @@
     "is_sole_source": false,
     "is_competitive": true,
     "is_idiq": true,
-    "keywords": ["intelligence", "data exploitation", "machine learning", "DIA", "national security", "analytics"]
+    "keywords": [
+      "intelligence",
+      "data exploitation",
+      "machine learning",
+      "DIA",
+      "national security",
+      "analytics"
+    ],
+    "pricing_type": "Cost-Plus"
   },
   {
     "awardee_name": "Kratos Defense & Security Solutions Inc",
@@ -93,7 +135,17 @@
     "is_sole_source": true,
     "is_competitive": false,
     "is_idiq": false,
-    "keywords": ["drone", "UAV", "Valkyrie", "XQ-58A", "unmanned", "air combat", "target", "hypersonic"]
+    "keywords": [
+      "drone",
+      "UAV",
+      "Valkyrie",
+      "XQ-58A",
+      "unmanned",
+      "air combat",
+      "target",
+      "hypersonic"
+    ],
+    "pricing_type": "Fixed-Price"
   },
   {
     "awardee_name": "Humana Government Business Inc",
@@ -109,7 +161,17 @@
     "is_sole_source": false,
     "is_competitive": false,
     "is_idiq": false,
-    "keywords": ["TRICARE", "managed care", "military healthcare", "DHA", "East Region", "active duty", "retirees", "beneficiaries"]
+    "keywords": [
+      "TRICARE",
+      "managed care",
+      "military healthcare",
+      "DHA",
+      "East Region",
+      "active duty",
+      "retirees",
+      "beneficiaries"
+    ],
+    "pricing_type": "Fixed-Price"
   },
   {
     "awardee_name": "Lockheed Martin Corporation",
@@ -125,7 +187,15 @@
     "is_sole_source": true,
     "is_competitive": false,
     "is_idiq": false,
-    "keywords": ["THAAD", "missile defense", "interceptor", "MDA", "logistics", "modification"]
+    "keywords": [
+      "THAAD",
+      "missile defense",
+      "interceptor",
+      "MDA",
+      "logistics",
+      "modification"
+    ],
+    "pricing_type": "Fixed-Price"
   },
   {
     "awardee_name": "Thermo Fisher Scientific Inc",
@@ -141,7 +211,16 @@
     "is_sole_source": false,
     "is_competitive": true,
     "is_idiq": false,
-    "keywords": ["biodefense", "CBRN", "mass spectrometry", "biological threat", "detection", "diagnostics", "DTRA"]
+    "keywords": [
+      "biodefense",
+      "CBRN",
+      "mass spectrometry",
+      "biological threat",
+      "detection",
+      "diagnostics",
+      "DTRA"
+    ],
+    "pricing_type": "Fixed-Price"
   },
   {
     "awardee_name": "CrowdStrike Inc",
@@ -157,7 +236,16 @@
     "is_sole_source": false,
     "is_competitive": true,
     "is_idiq": false,
-    "keywords": ["cybersecurity", "EDR", "XDR", "endpoint detection", "DISA", "DoD network", "Zero Trust"]
+    "keywords": [
+      "cybersecurity",
+      "EDR",
+      "XDR",
+      "endpoint detection",
+      "DISA",
+      "DoD network",
+      "Zero Trust"
+    ],
+    "pricing_type": "Fixed-Price"
   },
   {
     "awardee_name": "SAIC",
@@ -173,7 +261,16 @@
     "is_sole_source": false,
     "is_competitive": true,
     "is_idiq": true,
-    "keywords": ["C4I", "software development", "systems engineering", "cyber", "Navy", "command control", "communications"]
+    "keywords": [
+      "C4I",
+      "software development",
+      "systems engineering",
+      "cyber",
+      "Navy",
+      "command control",
+      "communications"
+    ],
+    "pricing_type": "Cost-Plus"
   },
   {
     "awardee_name": "Northrop Grumman Systems Corporation",
@@ -189,7 +286,17 @@
     "is_sole_source": true,
     "is_competitive": false,
     "is_idiq": false,
-    "keywords": ["B-21", "Raider", "bomber", "stealth", "nuclear", "long-range strike", "LRIP", "Air Force"]
+    "keywords": [
+      "B-21",
+      "Raider",
+      "bomber",
+      "stealth",
+      "nuclear",
+      "long-range strike",
+      "LRIP",
+      "Air Force"
+    ],
+    "pricing_type": "Cost-Plus"
   },
   {
     "awardee_name": "Accenture Federal Services LLC",
@@ -205,7 +312,16 @@
     "is_sole_source": false,
     "is_competitive": true,
     "is_idiq": true,
-    "keywords": ["ERP", "supply chain", "digital transformation", "logistics", "DLA", "modernization", "enterprise"]
+    "keywords": [
+      "ERP",
+      "supply chain",
+      "digital transformation",
+      "logistics",
+      "DLA",
+      "modernization",
+      "enterprise"
+    ],
+    "pricing_type": "T&M"
   },
   {
     "awardee_name": "Rocket Lab USA Inc",
@@ -221,7 +337,17 @@
     "is_sole_source": false,
     "is_competitive": true,
     "is_idiq": false,
-    "keywords": ["space", "launch", "Electron", "LEO", "SDA", "satellite", "proliferated LEO", "transport layer"]
+    "keywords": [
+      "space",
+      "launch",
+      "Electron",
+      "LEO",
+      "SDA",
+      "satellite",
+      "proliferated LEO",
+      "transport layer"
+    ],
+    "pricing_type": "Fixed-Price"
   },
   {
     "awardee_name": "Parsons Corporation",
@@ -237,7 +363,16 @@
     "is_sole_source": false,
     "is_competitive": true,
     "is_idiq": false,
-    "keywords": ["electronic warfare", "directed energy", "base defense", "infrastructure", "INDOPACOM", "Europe", "hardening"]
+    "keywords": [
+      "electronic warfare",
+      "directed energy",
+      "base defense",
+      "infrastructure",
+      "INDOPACOM",
+      "Europe",
+      "hardening"
+    ],
+    "pricing_type": "Fixed-Price"
   },
   {
     "awardee_name": "Sunrise Medical Laboratories LLC",
@@ -253,6 +388,14 @@
     "is_sole_source": false,
     "is_competitive": true,
     "is_idiq": false,
-    "keywords": ["laboratory", "clinical", "healthcare", "DHA", "military treatment facility", "diagnostic"]
+    "keywords": [
+      "laboratory",
+      "clinical",
+      "healthcare",
+      "DHA",
+      "military treatment facility",
+      "diagnostic"
+    ],
+    "pricing_type": "Fixed-Price"
   }
 ]

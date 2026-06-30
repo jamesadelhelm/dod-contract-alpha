@@ -70,6 +70,8 @@ class Contract:
     keywords: List[str] = field(default_factory=list)
     investment_relevance_notes: str = ""
     raw_text: str = ""
+    # "Fixed-Price", "Cost-Plus", "T&M", "Other", None = unknown
+    pricing_type: Optional[str] = None
 
 
 @dataclass

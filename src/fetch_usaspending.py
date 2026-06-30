@@ -247,6 +247,31 @@ def usaspending_awards_to_contracts(raw_awards: List[Dict]) -> List[Dict]:
         is_sole = "sole source" in desc.lower() or "sole-source" in desc.lower()
         is_comp = "full and open" in desc.lower() or "competitive" in desc.lower()
 
+        # Map USAspending pricing type codes to human-readable categories
+        _FIXED_PRICE_CODES = {"A", "B", "J", "K", "L", "M"}
+        _COST_PLUS_CODES = {"R", "S", "T", "U"}
+        _TM_CODES = {"V", "W"}
+        raw_pt = (a.get("Type of Contract Pricing") or "").strip().upper()
+        if raw_pt in _FIXED_PRICE_CODES:
+            pricing_type = "Fixed-Price"
+        elif raw_pt in _COST_PLUS_CODES:
+            pricing_type = "Cost-Plus"
+        elif raw_pt in _TM_CODES:
+            pricing_type = "T&M"
+        elif raw_pt in {"Y", "Z", ""}:
+            # Detect from description text as fallback
+            dl = desc.lower()
+            if "firm-fixed-price" in dl or "firm fixed price" in dl or "ffp" in dl:
+                pricing_type = "Fixed-Price"
+            elif "cost-plus" in dl or "cost plus" in dl or "cpff" in dl or "cpaf" in dl:
+                pricing_type = "Cost-Plus"
+            elif "time-and-materials" in dl or "time and materials" in dl:
+                pricing_type = "T&M"
+            else:
+                pricing_type = None
+        else:
+            pricing_type = "Other"
+
         normalized.append({
             "awardee_name": a.get("Recipient Name", "Unknown"),
             "contract_value": float(a.get("Award Amount", 0)) / 1_000_000,  # → millions
@@ -262,6 +287,7 @@ def usaspending_awards_to_contracts(raw_awards: List[Dict]) -> List[Dict]:
             "is_competitive": is_comp,
             "is_idiq": is_idiq,
             "keywords": [],
+            "pricing_type": pricing_type,
             "_usaspending_id": a.get("generated_internal_id", ""),
         })
     return normalized

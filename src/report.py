@@ -2661,21 +2661,32 @@ def generate_report(
         if s.recent_contracts:
             n = len(s.recent_contracts)
             n_ss    = sum(1 for c in s.recent_contracts if c.is_sole_source)
-            n_fp    = sum(1 for c in s.recent_contracts if c.contract_type.value in (
-                "Fixed-Price", "Fixed Price", "Firm Fixed-Price", "FFP"))
             n_idiq  = sum(1 for c in s.recent_contracts if c.is_idiq)
             avg_val = (sum(c.contract_value for c in s.recent_contracts) / n) if n else 0
             ss_pct  = n_ss / n * 100 if n else 0
+
+            # Pricing type breakdown (uses new pricing_type field from USAspending codes)
+            n_fp  = sum(1 for c in s.recent_contracts if c.pricing_type == "Fixed-Price")
+            n_cp  = sum(1 for c in s.recent_contracts if c.pricing_type == "Cost-Plus")
+            n_tm  = sum(1 for c in s.recent_contracts if c.pricing_type == "T&M")
+            n_known = n_fp + n_cp + n_tm
 
             ss_note = (
                 f"**{ss_pct:.0f}% sole-source** ({n_ss}/{n})" if ss_pct >= 50
                 else f"{ss_pct:.0f}% sole-source ({n_ss}/{n})"
             )
-            fp_note = f"{n_fp}/{n} fixed-price" if n_fp > 0 else f"0/{n} fixed-price"
+            if n_known > 0:
+                fp_pct = n_fp / n_known * 100
+                cp_pct = n_cp / n_known * 100
+                pricing_note = f"pricing mix: {fp_pct:.0f}% fixed-price / {cp_pct:.0f}% cost-plus"
+                if n_tm > 0:
+                    pricing_note += f" / {n_tm/n_known*100:.0f}% T&M"
+            else:
+                pricing_note = "pricing type: not available in this sample"
             idiq_note = f"{n_idiq}/{n} IDIQ" if n_idiq > 0 else ""
             avg_note = f"avg {_fmt_millions(avg_val)} per award"
 
-            quality_parts = [ss_note, fp_note, avg_note]
+            quality_parts = [ss_note, pricing_note, avg_note]
             if idiq_note:
                 quality_parts.append(idiq_note)
 
@@ -2692,6 +2703,25 @@ def generate_report(
                 lines.append(
                     "> ⚠️ Low sole-source rate — mostly competitive awards; contract renewal is not guaranteed."
                 )
+            if n_known > 0:
+                fp_pct = n_fp / n_known * 100
+                cp_pct = n_cp / n_known * 100
+                if cp_pct >= 70:
+                    lines.append(
+                        f"> ✅ High cost-plus rate ({cp_pct:.0f}%) — government reimburses costs plus fixed fee. "
+                        "Revenue and margin are highly predictable; company bears minimal execution risk."
+                    )
+                elif fp_pct >= 70:
+                    lines.append(
+                        f"> ⚠️ High fixed-price rate ({fp_pct:.0f}%) — company bears cost overrun risk. "
+                        "Strong margin when execution is on-track; verify no active cost-overrun programs "
+                        "in the latest 10-K (see Section 3 Red Flags for program concentration signals)."
+                    )
+                elif fp_pct >= 40:
+                    lines.append(
+                        f"> Revenue quality: mixed pricing — {fp_pct:.0f}% fixed-price, {cp_pct:.0f}% cost-plus. "
+                        "Balanced margin predictability. Review which programs are fixed-price before sizing."
+                    )
             if n_idiq > 0:
                 idiq_pct = n_idiq / n * 100
                 lines.append(

@@ -54,6 +54,17 @@ def _detect_competitive(text: str) -> bool:
     return any(w in t for w in ["competitive", "full and open competition", "solicitation"])
 
 
+def _detect_pricing_type(text: str) -> Optional[str]:
+    t = text.lower()
+    if "firm-fixed-price" in t or "firm fixed price" in t or " ffp" in t:
+        return "Fixed-Price"
+    if "cost-plus" in t or "cost plus" in t or "cpff" in t or "cpaf" in t or "cpif" in t:
+        return "Cost-Plus"
+    if "time-and-materials" in t or "time and materials" in t or " t&m" in t:
+        return "T&M"
+    return None
+
+
 # ── Parse from JSON file ──────────────────────────────────────────────────────
 
 def parse_from_json(path: Path = SAMPLE_CONTRACTS_PATH) -> List[Contract]:
@@ -79,6 +90,7 @@ def parse_from_json(path: Path = SAMPLE_CONTRACTS_PATH) -> List[Contract]:
             is_idiq=raw.get("is_idiq", _detect_is_idiq(desc, ct)),
             keywords=raw.get("keywords", []),
             raw_text=desc,
+            pricing_type=raw.get("pricing_type") or _detect_pricing_type(desc),
         )
         contracts.append(c)
     return contracts
@@ -248,6 +260,7 @@ def parse_from_json_list(raw_list: list) -> List[Contract]:
             is_idiq=raw.get("is_idiq", _detect_is_idiq(desc, ct)),
             keywords=raw.get("keywords", []),
             raw_text=desc,
+            pricing_type=raw.get("pricing_type") or _detect_pricing_type(desc),
         )
         contracts.append(c)
     return contracts
