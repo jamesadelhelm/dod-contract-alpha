@@ -510,10 +510,43 @@ report sections. They're derived from composite scores, base MoS, and bear-case 
   Example: *"$288 → base IV $343 (+19%) | Wide-moat, 55% DoD, 2.8× backlog | 🛡️ Bear MoS +5% | 3-yr: +4% to +22%/yr"* — everything needed to decide if it fits your investment criteria.
 
 - **Contract Quality Scorecard** (Section 7 deep dives) — For each company, a compact summary
-  of the quality profile of their recent contract wins: sole-source rate (indicates competitive
-  moat), fixed-price rate (pricing confidence), average contract size, IDIQ ceiling rate.
-  High sole-source rate (≥60%) flags strong customer relationships; high IDIQ rate (with a
-  warning) flags that headline contract values may not fully fund.
+  of the quality profile of their recent contract wins: sole-source rate (moat signal), pricing
+  mix (fixed-price vs. cost-plus vs. T&M), average contract size, IDIQ ceiling rate.
+  High sole-source rate (≥60%) = strong competitive moat. High cost-plus rate (≥70%) = predictable
+  margin (government reimburses costs plus fixed fee; company bears no execution risk). High
+  fixed-price rate (≥70%) = margin upside if execution is on-track, but cost overrun risk if not.
+  Pricing type is sourced from the USAspending `Type of Contract Pricing` field (mapped from
+  government codes: J/K/L/M = Fixed-Price, R/S/T/U = Cost-Plus, V/W = T&M) with description-text
+  fallback.
+
+- **Capital Allocation Quality** (Section 7 deep dives) — Three management signals surfaced
+  explicitly for each PA+ name, without requiring cross-referencing Section 4 or 11:
+  (1) **Share count trend** — active buyback ≤-3%/yr / modest / stable / dilutive; heavy
+  dilution (>5%/yr) = SBC or equity offering concern.
+  (2) **Insider ownership** — founder/key-exec alignment ≥10% / meaningful ≥3% / incentive-only.
+  (3) **ROIC vs cost of capital** — exceptional ≥20% / above WACC ≥15% / adequate ≥10% / below
+  WACC = "growth destroys value at current returns."
+
+- **Revenue Visibility** (Section 7 deep dives) — Backlog/revenue ratio interpreted as forward
+  years of locked revenue: ≥3× = "Exceptional visibility" / ≥2× = Strong / ≥1× = Fair /
+  <1× = "Monitor for pipeline erosion." Placed after the thesis line, before Signal Strength.
+
+- **Post-DCF verdict correction** — After the DCF runs, if base MoS < -30% on a PA+ name
+  (excluding Infrastructure where FCF-DCF understates), the verdict is corrected to
+  "High Quality But Expensive." Previously this was only triggered by PE >80x or EV/EBITDA >60x
+  multiples, missing cases like BWXT ($113 vs base IV $75) where the quality score is strong
+  but the current price is 34% above intrinsic value.
+
+- **FCF conversion quality check** — Added to the data validation pass: when FCF margin is <30%
+  of operating margin and FCF margin <5%, flags potential accrual-heavy earnings (working capital
+  build, large capex, contract receivables lag). Complements the operating margin vs. FCF margin
+  divergence check.
+
+- **`--brief` flag** — Condensed executive summary for daily PM briefings. Contains: macro
+  context (rate environment), full rankings table with signal strength (X/10) and action label,
+  one-line thesis + top risk flag for each PA+ name. Omits DCF tables, contract listings,
+  Sections 3-11. Ideal for email distribution or morning screen refresh.
+  Usage: `python main.py --brief`
 
 - **YTD Contract Velocity** (Section 6) — For each company, compares this fiscal year's new
   contract awards from the USAspending sample against the historical DoD revenue run-rate
