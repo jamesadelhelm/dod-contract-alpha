@@ -339,7 +339,10 @@ def _overlay(f: CompanyFundamentals, mock: dict) -> None:
         if getattr(f, fld) is None and fld in mock:
             setattr(f, fld, mock[fld])
 
-    always_override = ["earnings_stability_years"]
+    # free_cash_flow_margin: yfinance TTM FCF can be distorted by capex cycles or
+    # one-time operating cash items. The curated overlay stores a 5-year normalized
+    # FCF/revenue average from 10-K data — that value is used when present.
+    always_override = ["earnings_stability_years", "free_cash_flow_margin"]
     for fld in always_override:
         if fld in mock and mock[fld] is not None:
             setattr(f, fld, mock[fld])

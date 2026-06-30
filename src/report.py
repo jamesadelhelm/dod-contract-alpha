@@ -1542,9 +1542,7 @@ def _generate_brief_report(
         else:
             bear_str = "—"
 
-        # Signal strength (abbreviated)
-        conv_pts, _ = _compute_conviction_score(s, f_ctx, score_history or {})
-        signal_str = f"{conv_pts}/10"
+        signal_str = f"{s.signal_strength}/10"
 
         # Action label
         if s.verdict in (Verdict.STRONG_CANDIDATE, Verdict.POTENTIALLY_ATTRACTIVE, Verdict.RESEARCH_FURTHER):
