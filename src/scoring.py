@@ -1291,13 +1291,17 @@ def score_company(
     if dcf is not None and dcf.margin_of_safety_base is not None:
         mos = dcf.margin_of_safety_base
         infra = sector in (Sector.INFRASTRUCTURE_CONSTRUCTION,)
-        if mos < -35 and not infra:
+        if mos < -30 and not infra:
             ig = dcf.implied_growth_rate
             ig_note = f" Reverse DCF implies {ig:.0f}%/yr growth priced in." if ig else ""
             all_flags.append(
                 f"DCF: {abs(mos):.0f}% overvalued at current price.{ig_note} "
                 "No margin of safety — consider lower entry points or smaller position sizing."
             )
+            # Correct verdict to HIGH_QUALITY_BUT_EXPENSIVE for PA+ names where the DCF
+            # confirms overvaluation even when the multiple-based heuristic didn't flag it.
+            if verdict in (Verdict.STRONG_CANDIDATE, Verdict.POTENTIALLY_ATTRACTIVE, Verdict.RESEARCH_FURTHER):
+                verdict = Verdict.HIGH_QUALITY_BUT_EXPENSIVE
 
     # ── Bear-case tail risk flag ──────────────────────────────────────────────
     # For Potentially Attractive / Strong Candidate companies, flag when the
