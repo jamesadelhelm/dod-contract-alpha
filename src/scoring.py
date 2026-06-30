@@ -1355,6 +1355,13 @@ def score_company(
 
     data_completeness = _compute_data_completeness(f)
 
+    red_flags_list = [flag for flag in all_flags if any(kw in flag.lower() for kw in
+        ["score capped", "capped at", "dangerous", "dilution", "negative fcf",
+         "negative roe", "contracting", "consensus", "short interest",
+         "destroying", "binary catalyst", "distressed", "dcf:", "overvalued at",
+         "bear case", "data check", "doge/efficiency", "program concentration",
+         "dividend payout", "dividend yield"])]
+
     return CompanyScore(
         ticker=ticker,
         company_name=f.company_name or company_name,
@@ -1391,12 +1398,7 @@ def score_company(
         why_it_might_not_matter=why_not,
         key_risks=risks,
         what_to_verify=verify,
-        red_flags=[flag for flag in all_flags if any(kw in flag.lower() for kw in
-            ["score capped", "capped at", "dangerous", "dilution", "negative fcf",
-             "negative roe", "contracting", "consensus", "short interest",
-             "destroying", "binary catalyst", "distressed", "dcf:", "overvalued at",
-             "bear case", "data check", "doge/efficiency", "program concentration",
-             "dividend payout", "dividend yield"])],
+        red_flags=red_flags_list,
         low_ticker_confidence=_is_low_confidence(contracts, ticker, OVERRIDE_RULES["low_ticker_confidence_flag_threshold"]),
         specialist=specialist,
         dcf=dcf,

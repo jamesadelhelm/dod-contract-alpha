@@ -432,8 +432,16 @@ def _growth_assumptions(
         # Base yr1–5: 60% actual, 40% sector
         base_g1 = round(actual * 0.60 + base_g1 * 0.40, 1)
         base_g1 = max(-2.0, min(base_g1, 40.0))
-        # Bull yr1–5: ~85% of recent momentum sustained; at least 3pp above base
-        bull_g1 = round(max(actual * 0.85, bull_g1 * 0.90), 1)
+        # Bull yr1–5: blend actual momentum with sector upside.
+        # When actual growth is well below sector base (company underperforming sector),
+        # limit the sector-bull contribution so we don't assume full sector recovery.
+        if actual < base_g1 * 0.4:
+            # Underperformer vs sector: bull = recovery scenario, not full sector upside.
+            # Cap at 1.5× actual growth or base+4, whichever is larger.
+            bull_g1 = round(max(actual * 1.5, base_g1 + 4.0), 1)
+        else:
+            # Normal case: blend recent momentum (85%) with sector ceiling (90%).
+            bull_g1 = round(max(actual * 0.85, bull_g1 * 0.90), 1)
         bull_g1 = max(bull_g1, base_g1 + 3.0)
         bull_g1 = min(bull_g1, 50.0)
         # Bear yr1–5: 40% of actual growth (significant deceleration)

@@ -1661,6 +1661,12 @@ def generate_report(
     # Blocked: PA+ verdict but overvalued by DCF
     _blocked_ex = [s for s in _pa_plus if not _is_not_overvalued(s)]
 
+    # Store authoritative signal_strength (history-aware) on each CompanyScore so all
+    # sections can reference s.signal_strength rather than recomputing inline.
+    for s in ranked_scores:
+        f_ctx_ss = (fundamentals_map or {}).get(s.ticker)
+        s.signal_strength, _ = _compute_conviction_score(s, f_ctx_ss, score_history or {})
+
     _deploy_rows_ex = [(s, *_compute_position_size(s, (fundamentals_map or {}).get(s.ticker))) for s in ranked_scores]
     _total_pct_ex   = sum(pct for _, pct, _ in _deploy_rows_ex if pct > 0)
     _cash_pct_ex    = 100.0 - _total_pct_ex
@@ -1795,14 +1801,11 @@ def generate_report(
         "",
         "Highest-priority companies from this contract batch, ranked by composite score.",
         "",
-        "| # | Ticker | Price | Company | Sector | Score | MoS | Bear | Data | Verdict |",
-        "|---|--------|------:|---------|--------|------:|----:|-----:|-----:|---------|",
+        "| # | Ticker | Price | Company | Sector | Score | MoS | Bear | Sig | Verdict |",
+        "|---|--------|------:|---------|--------|------:|----:|-----:|----:|---------|",
     ]
     for i, s in enumerate(ranked_scores, 1):
         emoji = VERDICT_EMOJI.get(s.verdict, "⚪")
-        data_str = f"{s.data_completeness_pct:.0f}%"
-        if s.data_completeness_pct < 50:
-            data_str += "⚠"
         f_ctx = (fundamentals_map or {}).get(s.ticker)
         price_str = f"${f_ctx.current_price:.0f}" if f_ctx and f_ctx.current_price else "—"
         mos_str = "—"
@@ -1825,9 +1828,10 @@ def generate_report(
                 bear_str = f"🛡️{bm:+.0f}%"
             else:
                 bear_str = "+0%" if abs(bm) < 0.5 else f"{bm:+.0f}%"
+        sig_str = f"{s.signal_strength}/10"
         lines.append(
             f"| {i} | **{s.ticker}** | {price_str} | {s.company_name} | {s.sector.value} "
-            f"| **{s.final_score:.1f}** | {mos_str} | {bear_str} | {data_str} | {emoji} {s.verdict.value} |"
+            f"| **{s.final_score:.1f}** | {mos_str} | {bear_str} | {sig_str} | {emoji} {s.verdict.value} |"
         )
 
     lines += [
@@ -1837,6 +1841,8 @@ def generate_report(
         " Full DCF detail in Section 2b.",
         "**Bear MoS** = bear-case DCF margin of safety. 🛡️ = positive even in the downside scenario"
         " (downside protection confirmed). Negative = thesis must be right for capital to be safe.",
+        "**Sig** = Signal Strength 0–10 (score quality + bear MoS protection + data completeness +"
+        " score stability). ≥7 = high conviction, 5–6 = moderate, ≤4 = research required.",
         "",
         "**Signal counts:**",
         f"- 🟢 Strong Candidate / Research Further: **{len(strong)}**",

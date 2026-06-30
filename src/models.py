@@ -168,6 +168,7 @@ class CompanyScore:
     specialist: object = None  # SpecialistProfile, set after scoring
     dcf: object = None           # DCFResult, set after scoring
     data_completeness_pct: float = 0.0  # % of key fundamentals fields that are non-None
+    signal_strength: int = 0  # 0–10 conviction score (score + bear MoS + data + backlog + sole-source − red flags)
 
 
 class SpecialistTierStatus(str, Enum):
