@@ -1441,6 +1441,127 @@ def _generate_tier2_entry_targets(
     return lines
 
 
+def _generate_brief_report(
+    ranked_scores: List[CompanyScore],
+    all_contracts: List[Contract],
+    run_date: str,
+    fundamentals_map: Dict = None,
+    macro_context = None,
+    score_history: Dict = None,
+) -> str:
+    """
+    Condensed executive summary — 1-page PM-ready format.
+    Includes: macro context, Action Summary, PA+ thesis+signal+R/R, key risks.
+    Omits: DCF detail, full contract tables, Section 3-11 analysis.
+    """
+    run_date = run_date or datetime.now().strftime("%Y-%m-%d %H:%M UTC")
+    lines = [
+        f"# DoD Contract Intelligence — Executive Summary",
+        f"*{run_date} | --brief mode | Full report: `python main.py` without --brief*",
+        "",
+    ]
+
+    # Macro context box (compact)
+    if macro_context and macro_context.ten_year_yield is not None:
+        rf = macro_context.ten_year_yield
+        delta = rf - 4.5
+        delta_str = f"{delta:+.2f}pp vs 4.5% baseline"
+        direction = "above" if delta > 0 else "below"
+        lines += [
+            f"> **Rates:** 10-yr {rf:.2f}% ({delta_str}) — IVs are ~{abs(delta)*10:.1f}% "
+            f"{'lower' if delta > 0 else 'higher'} than baseline.",
+            "",
+        ]
+
+    # PA+ action table (compact)
+    pa_plus = [s for s in ranked_scores if s.verdict in (
+        Verdict.STRONG_CANDIDATE, Verdict.POTENTIALLY_ATTRACTIVE, Verdict.RESEARCH_FURTHER
+    )]
+    lines += [
+        "## Actionable Names",
+        "",
+        "| Ticker | Score | Price | Bear MoS | Signal | Action |",
+        "|--------|------:|------:|---------:|:------:|--------|",
+    ]
+    for s in ranked_scores:
+        f_ctx = (fundamentals_map or {}).get(s.ticker)
+        price_str = f"${f_ctx.current_price:.0f}" if f_ctx and f_ctx.current_price else "—"
+        if s.dcf and s.dcf.bear_mos is not None:
+            bm = s.dcf.bear_mos
+            if bm >= 0:
+                bear_str = f"🛡️ +{bm:.0f}%"
+            else:
+                bear_str = f"{bm:+.0f}%"
+        else:
+            bear_str = "—"
+
+        # Signal strength (abbreviated)
+        conv_pts, _ = _compute_conviction_score(s, f_ctx, score_history or {})
+        signal_str = f"{conv_pts}/10"
+
+        # Action label
+        if s.verdict in (Verdict.STRONG_CANDIDATE, Verdict.POTENTIALLY_ATTRACTIVE, Verdict.RESEARCH_FURTHER):
+            if s.dcf and s.dcf.bear_mos is not None:
+                bm = s.dcf.bear_mos
+                if bm >= 0:
+                    action = "**BUY**"
+                elif bm >= -15:
+                    action = "Start 75%"
+                elif bm >= -30:
+                    action = "Start 50%"
+                else:
+                    action = "25% only"
+            else:
+                action = "Research"
+        elif s.verdict == Verdict.WATCHLIST:
+            action = "Monitor"
+        elif s.verdict == Verdict.HIGH_QUALITY_BUT_EXPENSIVE:
+            action = "Wait for entry"
+        else:
+            action = "Pass"
+
+        lines.append(
+            f"| {s.ticker} | {s.final_score:.1f} | {price_str} | {bear_str} | {signal_str} | {action} |"
+        )
+    lines.append("")
+
+    # One-line thesis per PA+ name
+    if pa_plus:
+        lines += ["## Investment Thesis (PA+ names)", ""]
+        for s in pa_plus:
+            f_ctx = (fundamentals_map or {}).get(s.ticker)
+            # Reproduce one-liner from deep dive
+            parts = []
+            if f_ctx and f_ctx.current_price and s.dcf and s.dcf.base_iv:
+                cur = f_ctx.current_price
+                base_iv = s.dcf.base_iv
+                mos = s.dcf.margin_of_safety_base
+                parts.append(f"${cur:.0f} → IV ${base_iv:.0f} ({mos:+.0f}%)")
+            if f_ctx:
+                moat = (getattr(f_ctx, "moat_rating", None) or "").strip()
+                dod = f_ctx.dod_revenue_pct
+                bl = f_ctx.backlog_to_revenue
+                if moat and moat != "None" and dod:
+                    bl_str = f", {bl:.1f}× BL" if bl else ""
+                    parts.append(f"{moat}-moat, {dod:.0f}% DoD{bl_str}")
+            if s.dcf and s.dcf.bear_mos is not None:
+                bm = s.dcf.bear_mos
+                parts.append(f"🛡️ Bear +{bm:.0f}%" if bm >= 0 else f"Bear {bm:.0f}%")
+            if parts:
+                lines.append(f"**{s.ticker}** ({s.company_name}): {' | '.join(parts)}")
+                # Key risk (first red flag if any)
+                if s.red_flags:
+                    lines.append(f"  ⚠️ *Top risk: {s.red_flags[0][:120]}*")
+                lines.append("")
+
+    lines += [
+        "---",
+        f"*Full report: `python main.py` | Brief mode omits DCF detail, Sections 3-11, contract tables.*",
+        "*Not investment advice. Verify all figures against source filings before acting.*",
+    ]
+    return "\n".join(lines)
+
+
 def generate_report(
     ranked_scores: List[CompanyScore],
     private_contracts: List[Contract],
@@ -1453,7 +1574,17 @@ def generate_report(
     macro_context: Optional[MacroContext] = None,
     portfolio: Dict = None,
     portfolio_size: Optional[float] = None,
+    brief: bool = False,
 ) -> str:
+    if brief:
+        return _generate_brief_report(
+            ranked_scores=ranked_scores,
+            all_contracts=all_contracts,
+            run_date=run_date,
+            fundamentals_map=fundamentals_map,
+            macro_context=macro_context,
+            score_history=score_history,
+        )
     run_date = run_date or datetime.now().strftime("%Y-%m-%d %H:%M UTC")
 
     lines = []

@@ -76,6 +76,9 @@ def parse_args():
                    help="SMTP server for alert emails (default: smtp.gmail.com)")
     p.add_argument("--smtp-from", default=None, dest="smtp_from",
                    help="SMTP from address (defaults to --alert-email)")
+    p.add_argument("--brief", action="store_true",
+                   help="Generate a condensed 1-page executive summary: Action Summary + thesis + key risks only. "
+                        "Omits DCF detail, Section 3-11. Ideal for emailing to a PM.")
     return p.parse_args()
 
 
@@ -534,6 +537,7 @@ def main():
             macro_context=macro_ctx,
             portfolio=portfolio,
             portfolio_size=args.portfolio_size,
+            brief=getattr(args, "brief", False),
         )
         save_report(report_content, output_path)
         print(f"\nReport → {output_path}")
