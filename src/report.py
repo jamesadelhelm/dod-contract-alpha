@@ -96,6 +96,106 @@ def _data_confidence_grade(pct: float) -> tuple[str, str]:
     return "F", "❌"
 
 
+def _compute_conviction_score(
+    s: CompanyScore,
+    f,
+    score_history: dict = None,
+) -> tuple[int, str]:
+    """
+    Compute a 0–10 Signal Strength score that answers: "How much should I trust
+    this signal before deploying capital?"
+
+    Components:
+      0–3 pts: Composite score position relative to PA+ threshold
+      0–3 pts: Bear-case margin of safety (downside protection quality)
+      0–2 pts: Data completeness (grade A/B vs. C/D/F)
+      0–1 pt : Score stability across multiple runs
+      0–1 pt : No data validation red flags
+
+    Returns (score_int, rationale_str).
+    """
+    pts = 0
+    parts = []
+
+    # ── Component 1: composite score relative to PA+ threshold (68) ──────────
+    fs = s.final_score
+    if fs >= 75:
+        pts += 3
+        parts.append("score ≥75 (+3)")
+    elif fs >= 68:
+        pts += 2
+        parts.append("score ≥68 (+2)")
+    elif fs >= 63:
+        pts += 1
+        parts.append("score ≥63 (+1)")
+    else:
+        parts.append("score <63 (+0)")
+
+    # ── Component 2: bear-case MoS ──────────────────────────────────────────
+    bm = s.dcf.bear_mos if s.dcf else None
+    if bm is None:
+        parts.append("no bear IV (+0)")
+    elif bm >= 5:
+        pts += 3
+        parts.append(f"bear MoS +{bm:.0f}% (+3)")
+    elif bm >= 0:
+        pts += 2
+        parts.append(f"bear MoS {bm:.0f}% (+2)")
+    elif bm >= -15:
+        pts += 1
+        parts.append(f"bear MoS {bm:.0f}% (+1)")
+    else:
+        parts.append(f"bear MoS {bm:.0f}% (+0)")
+
+    # ── Component 3: data completeness ───────────────────────────────────────
+    pct = getattr(s, "data_completeness_pct", 0.0) or 0.0
+    grade, _ = _data_confidence_grade(pct)
+    if grade in ("A",):
+        pts += 2
+        parts.append("data A (+2)")
+    elif grade in ("B",):
+        pts += 1
+        parts.append("data B (+1)")
+    else:
+        parts.append(f"data {grade} (+0)")
+
+    # ── Component 4: score stability ─────────────────────────────────────────
+    hist = (score_history or {}).get(s.ticker, [])
+    hist_scores = [h["score"] for h in hist if "score" in h]
+    if len(hist_scores) >= 3:
+        spread = max(hist_scores) - min(hist_scores)
+        if spread <= 3:
+            pts += 1
+            parts.append(f"stable ({spread:.1f}pt spread, +1)")
+        else:
+            parts.append(f"volatile ({spread:.1f}pt spread, +0)")
+    else:
+        parts.append("history <3 runs (+0)")
+
+    # ── Component 5: no data validation flags ─────────────────────────────────
+    data_flags = [fl for fl in (s.red_flags or []) if "data check" in fl.lower()]
+    if not data_flags:
+        pts += 1
+        parts.append("no data flags (+1)")
+    else:
+        parts.append(f"{len(data_flags)} data flag(s) (+0)")
+
+    # ── Label ────────────────────────────────────────────────────────────────
+    if pts >= 9:
+        label = "Maximum conviction — deploy full sizing"
+    elif pts >= 7:
+        label = "High conviction — normal sizing"
+    elif pts >= 5:
+        label = "Moderate — start at 50%, watch for confirmation"
+    elif pts >= 3:
+        label = "Low — research priority, not yet actionable"
+    else:
+        label = "Insufficient — data gaps or model uncertainty too high"
+
+    rationale = " | ".join(parts)
+    return pts, label
+
+
 def _score_trend(ticker: str, current_score: float, history: dict) -> str:
     """Return a trend arrow based on rolling history: ↑ / ↓ / → / (empty)."""
     entries = (history or {}).get(ticker, [])
@@ -1807,6 +1907,69 @@ def generate_report(
             "",
         ]
 
+    # ── Portfolio scenario P&L (when portfolio_size is set) ──────────────────
+    if portfolio_size and portfolio_size > 0 and deployable_rows:
+        bear_total = 0.0
+        base_total = 0.0
+        bull_total = 0.0
+        pnl_rows   = []
+        for ticker, _, _, _, _, _, size_pct, cur_price in deployable_rows:
+            s_pnl = next((s for s in ranked_scores if s.ticker == ticker), None)
+            if not s_pnl or not s_pnl.dcf:
+                continue
+            dollar_alloc = portfolio_size * size_pct / 100.0
+            bear_iv  = s_pnl.dcf.bear_iv
+            base_iv  = s_pnl.dcf.base_iv
+            bull_iv  = s_pnl.dcf.bull_iv
+            bear_mos = s_pnl.dcf.bear_mos
+            base_mos = s_pnl.dcf.margin_of_safety_base
+            bull_mos = s_pnl.dcf.bull_mos
+            if cur_price and cur_price > 0:
+                bear_pnl = dollar_alloc * (bear_mos / 100.0) if bear_mos is not None else None
+                base_pnl = dollar_alloc * (base_mos / 100.0) if base_mos is not None else None
+                bull_pnl = dollar_alloc * (bull_mos / 100.0) if bull_mos is not None else None
+                pnl_rows.append((ticker, dollar_alloc, bear_pnl, base_pnl, bull_pnl, bear_mos, base_mos, bull_mos))
+                if bear_pnl is not None:
+                    bear_total += bear_pnl
+                if base_pnl is not None:
+                    base_total += base_pnl
+                if bull_pnl is not None:
+                    bull_total += bull_pnl
+
+        if pnl_rows:
+            lines += [
+                "**Portfolio Scenario Analysis** *(based on DCF intrinsic values)*",
+                "",
+                "> Shows estimated portfolio-level P&L if prices converge to DCF intrinsic values.",
+                "> Not a return forecast — reflects where our model says fair value is today.",
+                "",
+                "| Ticker | Allocation | 🐻 Bear P&L | 📊 Base P&L | 🐂 Bull P&L |",
+                "|--------|----------:|:-----------:|:-----------:|:-----------:|",
+            ]
+            for ticker, alloc, bear_pnl, base_pnl, bull_pnl, bm, bam, bum in pnl_rows:
+                def _pnl_fmt(pnl, mos):
+                    if pnl is None or mos is None:
+                        return "—"
+                    sign = "+" if pnl >= 0 else ""
+                    return f"{sign}${pnl:,.0f} ({sign}{mos:.0f}%)"
+                lines.append(
+                    f"| {ticker} | ${alloc:,.0f}"
+                    f" | {_pnl_fmt(bear_pnl, bm)}"
+                    f" | {_pnl_fmt(base_pnl, bam)}"
+                    f" | {_pnl_fmt(bull_pnl, bum)} |"
+                )
+            # Totals row
+            base_pct_total = base_total / portfolio_size * 100
+            bear_pct_total = bear_total / portfolio_size * 100
+            bull_pct_total = bull_total / portfolio_size * 100
+            lines.append(
+                f"| **Total** | **${portfolio_size * total_pct / 100:,.0f}** (deployed)"
+                f" | **{'+' if bear_total >= 0 else ''}${bear_total:,.0f} ({bear_pct_total:+.1f}% port)**"
+                f" | **{'+' if base_total >= 0 else ''}${base_total:,.0f} ({base_pct_total:+.1f}% port)**"
+                f" | **{'+' if bull_total >= 0 else ''}${bull_total:,.0f} ({bull_pct_total:+.1f}% port)** |"
+            )
+            lines += ["", ""]
+
     # ── Sector allocation summary (after sizing table) ────────────────────────
     lines += _generate_sector_allocation(ranked_scores, fundamentals_map or {})
 
@@ -2225,6 +2388,17 @@ def generate_report(
             if parts:
                 lines.append(f"**Thesis:** {' | '.join(parts)}.")
                 lines.append("")
+
+        # ── Signal Strength (conviction score) — PA+ only ─────────────────────
+        if s.verdict in (Verdict.STRONG_CANDIDATE, Verdict.POTENTIALLY_ATTRACTIVE, Verdict.RESEARCH_FURTHER):
+            conv_pts, conv_label = _compute_conviction_score(s, f_ctx, score_history)
+            filled = "●" * conv_pts
+            empty  = "○" * (10 - conv_pts)
+            lines.append(
+                f"**Signal Strength: {conv_pts}/10** {filled}{empty}  "
+                f"*{conv_label}*"
+            )
+            lines.append("")
 
         lines += [
             "#### Score Breakdown",

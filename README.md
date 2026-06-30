@@ -454,6 +454,26 @@ report sections. They're derived from composite scores, base MoS, and bear-case 
   / near-zero = ⚠️ marginal / negative = ❌ growth destroys value. Example: GD +6.4pp = strong
   compounder; a company with ROIC below its WACC is destroying capital on every reinvestment.
 
+- **Signal Strength Score (0–10)** — Each PA+ company's deep dive now opens with a
+  Signal Strength score synthesizing five independent conviction signals:
+  (1) Composite score position relative to the PA+ threshold (0–3 pts: score ≥75/≥68/≥63/below);
+  (2) Bear-case MoS quality (0–3 pts: ≥5% / ≥0% / ≥−15% / below −15%);
+  (3) Data completeness grade (0–2 pts: A/B/C or below);
+  (4) Score stability across runs (0–1 pt: spread ≤3 pts over ≥3 runs);
+  (5) No data validation flags (0–1 pt: clean data).
+  Displayed as: `**Signal Strength: 8/10** ●●●●●●●●○○ *High conviction — normal sizing*`
+  Labels: 9–10 = Maximum conviction | 7–8 = High | 5–6 = Moderate (start at 50%) | 3–4 = Low |
+  0–2 = Insufficient. This collapses the score, DCF, data quality, and stability signals into
+  a single deployability number that directly answers "how much capital should I put here today?"
+
+- **3-Year Revenue CAGR anchor in DCF** — The DCF growth engine now blends three data sources
+  instead of two: 40% weight on the 3-year revenue CAGR (`revenue_cagr_3yr` from the overlay),
+  35% on forward analyst consensus, and 25% on TTM revenue growth. When only two are available,
+  the blend gracefully falls back (e.g., CAGR + TTM when no consensus). The 3yr CAGR smooths
+  out acquisition-year distortions and single-quarter anomalies that can cause lumpy TTM figures
+  to over-anchor the DCF (e.g., GD's 10.3% TTM vs. 4.5% forward consensus — the 3yr CAGR
+  breaks the tie). Requires `revenue_cagr_3yr` to be set in `data/mock_fundamentals.json`.
+
 - **Enhanced Executive Summary** — The report opens with a 5-bullet situation summary:
   (1) 10-yr yield vs. DCF baseline (are intrinsic values still valid?);
   (2) Highest-conviction names (bear MoS ≥ 0%, both shield and breakeven cases);
@@ -480,11 +500,14 @@ report sections. They're derived from composite scores, base MoS, and bear-case 
   ➡️ on-track (±15%), 📉 below run-rate. Most reliable for specialist/mid-cap names; large primes
   have hundreds of contracts/yr and the 1,000-award sample captures only their largest awards.
 
-- **`--portfolio-size` capital calculator** — Pass `--portfolio-size 100000` (your investable
-  equity in dollars) and the Capital Deployment table in Section 1 adds two columns: **$ Amount**
-  (weight × portfolio size) and **Shares** (floor(dollar amount ÷ current price)). Removes the
-  mental math step between "6.0% sizing" and the actual order ticket. This is a calculator, not a
-  tracker — it does not record positions or track P&L.
+- **`--portfolio-size` capital calculator + portfolio scenario P&L** — Pass `--portfolio-size 100000`
+  (your investable equity in dollars) and the Capital Deployment table in Section 1 adds **$ Amount**
+  and **Shares** columns, plus a new **Portfolio Scenario Analysis** table showing aggregated
+  bear/base/bull P&L for the full deployed portfolio. Each row shows: Ticker | Allocation | 🐻 Bear P&L
+  | 📊 Base P&L | 🐂 Bull P&L, with a totals row showing portfolio-level P&L and % of total portfolio.
+  Example: *"Total $16,500 deployed: Bear -$190 (-0.2%), Base +$2,202 (+2.2%), Bull +$10,722 (+10.7%)"*
+  — the full scenario bridge from today's prices to intrinsic values in one table. Calculator only,
+  not a portfolio tracker.
 
 - **Data completeness breakdown** (Section 11) — A per-company table sorted worst-first shows
   completeness %, letter grade (A–F), and which specific key fields are missing. Grades:

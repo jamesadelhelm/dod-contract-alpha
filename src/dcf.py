@@ -113,10 +113,15 @@ def run_dcf(
     terminal_g = _terminal_growth(sector, f)
 
     # Note when growth is anchored to actual company revenue data
-    actual_growth = f.revenue_growth_1yr
+    actual_growth = f.revenue_cagr_3yr if f.revenue_cagr_3yr is not None else f.revenue_growth_1yr
     if actual_growth is not None and -10 < actual_growth < 60:
+        anchor_note = (
+            f"3yr CAGR {f.revenue_cagr_3yr:+.1f}% / fwd {f.revenue_growth_forward:+.1f}% / TTM {f.revenue_growth_1yr:+.1f}%"
+            if (f.revenue_cagr_3yr is not None and f.revenue_growth_forward is not None and f.revenue_growth_1yr is not None)
+            else f"{actual_growth:+.1f}% anchor"
+        )
         caveats.append(
-            f"Growth anchored to actual revenue growth ({actual_growth:+.1f}% YoY) blended with "
+            f"Growth anchored to actual data ({anchor_note}) blended with "
             f"sector defaults — bear/base/bull yr1–5: {bear_g1:.0f}%/{base_g1:.0f}%/{bull_g1:.0f}%."
         )
 
@@ -397,15 +402,30 @@ def _growth_assumptions(
 
     # Anchor to revenue growth when available.
     # Blend forward consensus (60%) with TTM (40%) when both are available:
+    #   - 3yr CAGR smooths lumpy single-year results (e.g. acquisition years)
     #   - Forward consensus corrects for lumpy TTM (e.g. GD 10.3% TTM vs 4.5% forward)
     #   - TTM component preserves current-period reality (e.g. BAH -6.5% DOGE impact)
-    # Fall back to TTM alone when forward estimates are unavailable.
-    fwd = f.revenue_growth_forward
-    ttm = f.revenue_growth_1yr
-    if fwd is not None and ttm is not None and -10 < fwd < 60 and -10 < ttm < 60:
+    # When all three are available, weight: 40% 3yr CAGR, 35% fwd, 25% TTM.
+    # This prevents single-year distortions from dominating the growth anchor.
+    cagr3 = f.revenue_cagr_3yr
+    fwd   = f.revenue_growth_forward
+    ttm   = f.revenue_growth_1yr
+    cagr3_valid = cagr3 is not None and -10 < cagr3 < 60
+    fwd_valid   = fwd   is not None and -10 < fwd   < 60
+    ttm_valid   = ttm   is not None and -10 < ttm   < 60
+
+    if cagr3_valid and fwd_valid and ttm_valid:
+        actual = round(cagr3 * 0.40 + fwd * 0.35 + ttm * 0.25, 1)
+    elif cagr3_valid and fwd_valid:
+        actual = round(cagr3 * 0.50 + fwd * 0.50, 1)
+    elif cagr3_valid and ttm_valid:
+        actual = round(cagr3 * 0.60 + ttm * 0.40, 1)
+    elif fwd_valid and ttm_valid:
         actual = round(fwd * 0.60 + ttm * 0.40, 1)
-    elif fwd is not None and -10 < fwd < 60:
+    elif fwd_valid:
         actual = fwd
+    elif cagr3_valid:
+        actual = cagr3
     else:
         actual = ttm
     if actual is not None and -10 < actual < 60:
