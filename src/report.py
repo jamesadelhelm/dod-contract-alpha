@@ -225,6 +225,10 @@ def _generate_changes_section(ranked_scores, last_scores, fundamentals_map, scor
 
     changes = []
     new_entries = []
+    _COMP_LABELS = {"bq": "Buffett", "gv": "Graham", "ds": "DoD",
+                    "mq": "Mgmt", "cc": "Catalyst", "bs": "BalSheet"}
+    _COMP_WEIGHTS = {"bq": 0.25, "gv": 0.20, "ds": 0.20, "mq": 0.15, "cc": 0.10, "bs": 0.10}
+
     for s in ranked_scores:
         prev = last_scores.get(s.ticker)
         if prev is None:
@@ -238,6 +242,36 @@ def _generate_changes_section(ranked_scores, last_scores, fundamentals_map, scor
             old_bear is not None and new_bear is not None
             and (old_bear > 0) != (new_bear > 0)
         )
+
+        # Component attribution: compare stored component scores to current values
+        attribution = None
+        prev_comps = prev.get("components")
+        if abs(score_delta) >= 3.0 and prev_comps:
+            curr_comps = {
+                "bq": s.buffett_quality.raw,
+                "gv": s.graham_value.raw,
+                "ds": s.dod_stability.raw,
+                "mq": s.management.raw,
+                "cc": s.contract_catalyst.raw,
+                "bs": s.balance_sheet.raw,
+            }
+            deltas = []
+            for k in _COMP_LABELS:
+                old_c = prev_comps.get(k)
+                new_c = curr_comps.get(k)
+                if old_c is not None and new_c is not None:
+                    weighted_delta = (new_c - old_c) * _COMP_WEIGHTS[k]
+                    if abs(weighted_delta) >= 0.3:
+                        deltas.append((k, weighted_delta))
+            deltas.sort(key=lambda x: x[1])  # most negative first
+            if deltas:
+                top = deltas[:2] if score_delta < 0 else deltas[-2:]
+                parts = []
+                for k, wd in top:
+                    direction = "↓" if wd < 0 else "↑"
+                    parts.append(f"{_COMP_LABELS[k]} {direction}{abs(wd):.1f}pt")
+                attribution = ", ".join(parts)
+
         if abs(score_delta) >= 0.5 or verdict_changed or bear_flipped:
             changes.append({
                 "ticker": s.ticker,
@@ -250,6 +284,7 @@ def _generate_changes_section(ranked_scores, last_scores, fundamentals_map, scor
                 "old_bear": old_bear,
                 "new_bear": new_bear,
                 "bear_flipped": bear_flipped,
+                "attribution": attribution,
             })
     removed = [t for t in last_tickers if t not in current_tickers]
 
@@ -286,6 +321,10 @@ def _generate_changes_section(ranked_scores, last_scores, fundamentals_map, scor
                 f"{ch['old_score']:.1f} → {ch['new_score']:.1f} | "
                 f"{verdict_str} | {bear_str} |"
             )
+            # Inline attribution note for large moves
+            if ch.get("attribution") and abs(ch["score_delta"]) >= 3.0:
+                direction = "drivers" if ch["score_delta"] > 0 else "drags"
+                lines.append(f"  *Score change {direction}: {ch['attribution']}*")
         lines.append("")
 
     if new_entries:

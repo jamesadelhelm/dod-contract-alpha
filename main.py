@@ -146,6 +146,15 @@ def _save_last_scores(scores: list, fundamentals_map: dict) -> None:
                 "base_mos": round(s.dcf.margin_of_safety_base, 1) if s.dcf and s.dcf.margin_of_safety_base is not None else None,
                 "bear_mos": round(s.dcf.bear_mos, 1) if s.dcf and s.dcf.bear_mos is not None else None,
                 "date": datetime.now().strftime("%Y-%m-%d"),
+                # Component scores — enables attribution analysis when score changes materially
+                "components": {
+                    "bq": round(s.buffett_quality.raw, 1),
+                    "gv": round(s.graham_value.raw, 1),
+                    "ds": round(s.dod_stability.raw, 1),
+                    "mq": round(s.management.raw, 1),
+                    "cc": round(s.contract_catalyst.raw, 1),
+                    "bs": round(s.balance_sheet.raw, 1),
+                },
             }
         _LAST_SCORES_PATH.write_text(json.dumps(data, indent=2))
     except Exception:
