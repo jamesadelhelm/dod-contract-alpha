@@ -331,7 +331,15 @@ def _generate_changes_section(ranked_scores, last_scores, fundamentals_map, scor
         lines.append(f"**New in this run:** {', '.join(new_entries)}")
         lines.append("")
     if removed:
-        lines.append(f"**No longer appearing:** {', '.join(removed)}")
+        if len(removed) > 6:
+            # Large drop-off usually indicates source/filter switch rather than real signal.
+            # Suppress the full list to avoid noise; show count only.
+            lines.append(
+                f"**Universe change:** {len(removed)} companies from the prior run are not in "
+                "this run's contract universe — likely a source switch (live→mock or filter change)."
+            )
+        else:
+            lines.append(f"**No longer appearing:** {', '.join(sorted(removed))}")
         lines.append("")
 
     # ── Exit / position management signals ───────────────────────────────────
