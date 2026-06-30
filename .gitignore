@@ -19,6 +19,10 @@ reports/*.json
 data/edgar_company_index.json
 data/resolved_cache.json
 
+# Per-run score history (generated after each live run; ignored to avoid merge conflicts)
+data/last_scores.json
+data/score_history.json
+
 # API keys / secrets
 .env
 *.env
