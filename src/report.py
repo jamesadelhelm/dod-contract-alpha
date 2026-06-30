@@ -2233,6 +2233,52 @@ def generate_report(
                 )
             lines.append("")
 
+            # Terminal growth sensitivity — the other half of DCF sensitivity
+            # dIV/IV ≈ (TV_pct / (WACC - tg_base)) * (dtg / WACC - tg)
+            # Simplified: IV(tg) ≈ base_iv * (WACC - tg_base) / (WACC - tg_new)
+            lines += [
+                "**Terminal Growth Sensitivity — PA+ Names**",
+                "",
+                "> Terminal growth rate drives 60–80% of intrinsic value in a 10-yr DCF.",
+                "> Stress-test: how does base IV change if the long-run growth assumption is wrong?",
+                "> Default terminal rate: 2.5–3.5% (sector-adjusted). Sensitivity shows IV at ±0.5pp.",
+                "",
+                "| Ticker | Term Rate | Base IV | −0.5pp TG | −1.0pp TG | +0.5pp TG |",
+                "|--------|:---------:|--------:|----------:|----------:|----------:|",
+            ]
+            for s_tg in pa_plus_dcf:
+                d = s_tg.dcf
+                if not d.discount_rate_base or not d.base_iv:
+                    continue
+                wacc = d.discount_rate_base / 100.0
+                tg_base = 0.03  # default; in practice sector-specific but we use 3% for sensitivity
+                def _tg_adj_iv(base_iv, wacc_f, tg_b, dtg):
+                    new_tg = tg_b + dtg
+                    if wacc_f <= new_tg or wacc_f <= tg_b:
+                        return base_iv
+                    # Gordon growth terminal value adjustment: TV ∝ 1/(WACC - tg)
+                    tv_frac = tv_pct  # same 70% TV fraction
+                    non_tv = (1 - tv_frac)
+                    # Scale only the terminal value portion
+                    tv_base = base_iv * tv_frac
+                    tv_new  = tv_base * (wacc_f - tg_b) / (wacc_f - new_tg)
+                    return base_iv * non_tv + tv_new
+                iv_m05 = _tg_adj_iv(d.base_iv, wacc, tg_base, -0.005)
+                iv_m10 = _tg_adj_iv(d.base_iv, wacc, tg_base, -0.010)
+                iv_p05 = _tg_adj_iv(d.base_iv, wacc, tg_base, +0.005)
+                lines.append(
+                    f"| {s_tg.ticker} | {tg_base*100:.1f}% | ${d.base_iv:.0f} "
+                    f"| ${iv_m05:.0f} | ${iv_m10:.0f} | ${iv_p05:.0f} |"
+                )
+            lines.append("")
+            lines.append(
+                "> **Reading:** If the long-run industry growth rate settles 1pp lower than assumed, "
+                "intrinsic value falls proportionally to how much WACC − TG compresses. "
+                "Names with WACC close to TG are most sensitive. Use reverse DCF "
+                "(Section 2b) to check what growth rate the current price already implies."
+            )
+            lines.append("")
+
     lines += ["", "---", ""]
 
     # ── 3. Red Flags ──────────────────────────────────────────────────────────
