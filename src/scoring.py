@@ -1065,6 +1065,25 @@ def _validate_fundamentals(f: CompanyFundamentals) -> List[str]:
                 "Verify FCF trend in cash flow statement before relying on operating margin."
             )
 
+    # Dividend sustainability: does FCF actually cover the dividend?
+    # A high yield with low FCF coverage is a dividend cut risk.
+    div_yield = getattr(f, "dividend_yield", None)
+    fcf_margin = f.free_cash_flow_margin
+    payout = getattr(f, "payout_ratio", None)
+    if div_yield is not None and div_yield > 2.0:  # material dividend
+        if payout is not None and payout > 100:
+            flags.append(
+                f"⚠️ DATA CHECK: Dividend payout ratio {payout:.0f}% — dividend exceeds net income. "
+                "Verify FCF coverage: if FCF also doesn't cover the dividend, a cut is likely. "
+                "High yield may be a yield trap rather than a sustainable income stream."
+            )
+        elif fcf_margin is not None and fcf_margin < div_yield * 0.5:
+            flags.append(
+                f"⚠️ DATA CHECK: Dividend yield {div_yield:.1f}% but FCF margin {fcf_margin:.1f}% — "
+                "FCF appears thin relative to dividend commitment. Confirm payout is covered by "
+                "free cash flow in the latest 10-K cash flow statement."
+            )
+
     return flags
 
 
@@ -1203,6 +1222,20 @@ def score_company(
                     f"is in the {program_name} program. Cancellation or restructuring would "
                     "materially impact the contract pipeline. Verify in latest 10-K backlog disclosures."
                 )
+
+    # DOGE/efficiency mandate risk — flag as explicit Red Flag for federal IT and consulting
+    # companies where the revenue data already shows contraction. Narrative-only was insufficient;
+    # this needs to appear in Section 3 Red Flags so it doesn't get missed in a PM review.
+    if sector in (Sector.AI_DATA_SOFTWARE, Sector.CLOUD_IT_SERVICES, Sector.CONSULTING_SERVICES):
+        ttm_growth = getattr(f, "revenue_growth_1yr", None)
+        gov_exp = _safe(getattr(f, "government_revenue_pct", None)) or _safe(getattr(f, "dod_revenue_pct", None))
+        if gov_exp >= 40 and ttm_growth is not None and ttm_growth < -3:
+            all_flags.append(
+                f"DOGE/efficiency risk: {ticker} has {gov_exp:.0f}% federal revenue exposure "
+                f"with TTM revenue declining {abs(ttm_growth):.1f}% — consistent with federal IT/services "
+                "budget compression from efficiency mandates. Contract ceiling prices and durations "
+                "at risk; verify pipeline-to-backlog conversion in latest earnings."
+            )
 
     # Near-term earnings — binary risk to position sizing
     next_earn = getattr(f, "next_earnings_date", None)
@@ -1362,7 +1395,8 @@ def score_company(
             ["score capped", "capped at", "dangerous", "dilution", "negative fcf",
              "negative roe", "contracting", "consensus", "short interest",
              "destroying", "binary catalyst", "distressed", "dcf:", "overvalued at",
-             "bear case", "data check"])],
+             "bear case", "data check", "doge/efficiency", "program concentration",
+             "dividend payout", "dividend yield"])],
         low_ticker_confidence=_is_low_confidence(contracts, ticker, OVERRIDE_RULES["low_ticker_confidence_flag_threshold"]),
         specialist=specialist,
         dcf=dcf,
