@@ -193,7 +193,11 @@
     "earnings_stability_years": 20,
     "moat_rating": "Wide",
     "data_notes": "Mock data \u2014 verify via 10-K. Price ~$288 approx mid-2025.",
-    "dividend_yield": 2.1
+    "dividend_yield": 2.1,
+    "revenue_cagr_3yr": 7.1,
+    "revenue_growth_forward": 4.8,
+    "revenue_growth_1yr": 10.3,
+    "shares_chg_1yr_pct": -1.4
   },
   "HII": {
     "company_name": "Huntington Ingalls Industries",
@@ -249,7 +253,11 @@
     "earnings_stability_years": 10,
     "moat_rating": "Narrow",
     "data_notes": "Mock data \u2014 verify via 10-K. Price ~$167 approx mid-2025.",
-    "dividend_yield": 1.2
+    "dividend_yield": 1.2,
+    "revenue_cagr_3yr": 5.7,
+    "revenue_growth_forward": 5.3,
+    "revenue_growth_1yr": 5.4,
+    "shares_chg_1yr_pct": -2.2
   },
   "PLTR": {
     "company_name": "Palantir Technologies Inc",
@@ -277,7 +285,11 @@
     "earnings_stability_years": 2,
     "moat_rating": "Narrow",
     "data_notes": "Mock data. High valuation is the dominant risk. Revenue growth ~27% YoY. Government revenue concentration creates both stability and exposure. Price ~$80 approx mid-2025.",
-    "dividend_yield": 0.0
+    "dividend_yield": 0.0,
+    "revenue_cagr_3yr": 23.8,
+    "revenue_growth_forward": 30.1,
+    "revenue_growth_1yr": 27.6,
+    "shares_chg_1yr_pct": 2.1
   },
   "BAH": {
     "company_name": "Booz Allen Hamilton Holding Corporation",
@@ -305,7 +317,11 @@
     "earnings_stability_years": 15,
     "moat_rating": "Narrow",
     "data_notes": "Mock data. High P/B from leveraged recaps. High ROE is partly leverage-driven. Strong clearance/IC relationships are a moat component. Price ~$140 approx mid-2025.",
-    "dividend_yield": 1.5
+    "dividend_yield": 1.5,
+    "revenue_cagr_3yr": 7.9,
+    "revenue_growth_forward": 3.2,
+    "revenue_growth_1yr": -6.5,
+    "shares_chg_1yr_pct": -2.8
   },
   "KTOS": {
     "company_name": "Kratos Defense & Security Solutions Inc",
@@ -333,7 +349,11 @@
     "earnings_stability_years": 4,
     "moat_rating": "Narrow",
     "data_notes": "Mock data. Kratos is a high-growth lower-tier defense tech company. Sole-source drone work provides moat element but profitability is still limited. Valuation is speculative. Price ~$35 approx mid-2025.",
-    "dividend_yield": 0.0
+    "dividend_yield": 0.0,
+    "revenue_cagr_3yr": 17.4,
+    "revenue_growth_forward": 20.2,
+    "revenue_growth_1yr": 15.3,
+    "shares_chg_1yr_pct": 2.9
   },
   "HUM": {
     "company_name": "Humana Inc",
@@ -361,7 +381,11 @@
     "earnings_stability_years": 14,
     "moat_rating": "Narrow",
     "data_notes": "Mock data. TRICARE contract is highly visible, durable government revenue. DoD % is relatively small vs total revenue; Medicare Advantage is core. Medical cost pressures are significant risk. Price ~$280 approx mid-2025.",
-    "dividend_yield": 0.0
+    "dividend_yield": 0.0,
+    "revenue_cagr_3yr": 9.8,
+    "revenue_growth_forward": 6.7,
+    "revenue_growth_1yr": 7.9,
+    "shares_chg_1yr_pct": -1.9
   },
   "BWXT": {
     "company_name": "BWX Technologies Inc",
@@ -389,7 +413,11 @@
     "earnings_stability_years": 20,
     "moat_rating": "Wide",
     "data_notes": "Mock data. Sole supplier of naval nuclear reactor components and fuel. Extraordinarily durable moat \u2014 no practical substitute exists. High P/B from leverage. ROE inflated by leverage and buybacks. Price ~$113 approx mid-2025.",
-    "dividend_yield": 1.2
+    "dividend_yield": 1.2,
+    "revenue_cagr_3yr": 8.3,
+    "revenue_growth_forward": 8.5,
+    "revenue_growth_1yr": 7.2,
+    "shares_chg_1yr_pct": -1.8
   },
   "LMT": {
     "company_name": "Lockheed Martin Corporation",
@@ -417,7 +445,11 @@
     "earnings_stability_years": 25,
     "moat_rating": "Wide",
     "data_notes": "Mock data. F-35 program creates massive long-term backlog. THAAD is a national security critical program. Some F-35 execution risk and C-130 maturity drag. Price ~$463 approx mid-2025.",
-    "dividend_yield": 2.5
+    "dividend_yield": 2.5,
+    "revenue_cagr_3yr": 2.1,
+    "revenue_growth_forward": 1.8,
+    "revenue_growth_1yr": 1.5,
+    "shares_chg_1yr_pct": -2.6
   },
   "NOC": {
     "company_name": "Northrop Grumman Corporation",
@@ -445,7 +477,11 @@
     "earnings_stability_years": 22,
     "moat_rating": "Wide",
     "data_notes": "Mock data. B-21 sole-source position is a generational moat. Space Systems and Mission Systems provide additional durable program exposure. Price ~$468 approx mid-2025.",
-    "dividend_yield": 1.8
+    "dividend_yield": 1.8,
+    "revenue_cagr_3yr": 4.8,
+    "revenue_growth_forward": 5.2,
+    "revenue_growth_1yr": 4.4,
+    "shares_chg_1yr_pct": -2.9
   },
   "TMO": {
     "company_name": "Thermo Fisher Scientific Inc",
@@ -473,7 +509,11 @@
     "earnings_stability_years": 18,
     "moat_rating": "Wide",
     "data_notes": "Mock data. Very wide moat in life sciences tools. DoD CBRN biodefense work is small but growing. Primary thesis is commercial life sciences, not defense. Price ~$581 approx mid-2025.",
-    "dividend_yield": 0.3
+    "dividend_yield": 0.3,
+    "revenue_cagr_3yr": 4.7,
+    "revenue_growth_forward": 5.2,
+    "revenue_growth_1yr": 3.1,
+    "shares_chg_1yr_pct": -1.1
   },
   "CRWD": {
     "company_name": "CrowdStrike Holdings Inc",
@@ -501,7 +541,11 @@
     "earnings_stability_years": 2,
     "moat_rating": "Narrow",
     "data_notes": "Mock data. Strong product, expanding DoD footprint. Falcon platform stickiness creates moat. Valuation requires near-perfect execution and is extremely sensitive to growth deceleration. July 2024 outage is a reputational and legal overhang. Price ~$388 approx mid-2025.",
-    "dividend_yield": 0.0
+    "dividend_yield": 0.0,
+    "revenue_cagr_3yr": 35.9,
+    "revenue_growth_forward": 28.4,
+    "revenue_growth_1yr": 32.1,
+    "shares_chg_1yr_pct": 1.5
   },
   "PSN": {
     "company_name": "Parsons Corporation",
@@ -529,7 +573,11 @@
     "earnings_stability_years": 8,
     "moat_rating": "Narrow",
     "data_notes": "Mock data. Growing electronic warfare and directed energy exposure is differentiating. Infrastructure and critical mission work adds durability. Valuation relatively elevated for profitability level. Price ~$91 approx mid-2025.",
-    "dividend_yield": 0.9
+    "dividend_yield": 0.9,
+    "revenue_cagr_3yr": 6.5,
+    "revenue_growth_forward": 5.8,
+    "revenue_growth_1yr": 4.9,
+    "shares_chg_1yr_pct": 0.8
   },
   "RKLB": {
     "company_name": "Rocket Lab USA Inc",
@@ -557,7 +605,11 @@
     "earnings_stability_years": 0,
     "moat_rating": "None",
     "data_notes": "Mock data. Company is unprofitable. Neutron development is capital intensive. Electron has established track record but faces competition from SpaceX. Valuation is speculative and requires growth realization. Price ~$26 approx mid-2025.",
-    "dividend_yield": 0.0
+    "dividend_yield": 0.0,
+    "revenue_cagr_3yr": 58.2,
+    "revenue_growth_forward": 62.0,
+    "revenue_growth_1yr": 54.7,
+    "shares_chg_1yr_pct": 8.4
   },
   "SAIC": {
     "company_name": "Science Applications International Corporation",
@@ -585,7 +637,11 @@
     "earnings_stability_years": 10,
     "moat_rating": "Narrow",
     "data_notes": "Mock data. Deep government IT embedding and recompete track record. Margins are thin (cost-plus dominant). Leverage is elevated from acquisitions. Price ~$119 approx mid-2025.",
-    "dividend_yield": 1.5
+    "dividend_yield": 1.5,
+    "revenue_cagr_3yr": 2.9,
+    "revenue_growth_forward": 3.1,
+    "revenue_growth_1yr": 2.2,
+    "shares_chg_1yr_pct": -3.1
   },
   "RTX": {
     "company_name": "RTX Corporation",
@@ -1025,7 +1081,11 @@
     "earnings_stability_years": 20,
     "moat_rating": "Wide",
     "data_notes": "Mock data. AFS is subsidiary. DoD revenue is small relative to Accenture's total. Primary thesis is commercial consulting/technology, not defense. Price ~$333 approx mid-2025.",
-    "dividend_yield": 1.6
+    "dividend_yield": 1.6,
+    "revenue_cagr_3yr": 8.6,
+    "revenue_growth_forward": 5.1,
+    "revenue_growth_1yr": 3.4,
+    "shares_chg_1yr_pct": -1.3
   },
   "HON": {
     "company_name": "Honeywell International Inc",

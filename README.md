@@ -72,6 +72,11 @@ tickers, fetching live fundamentals, running a DCF, and ranking every company by
 |  + Specialist Tier bonus for mid-cap, high-DoD-concentration companies   |
 |  + Data validation pass: flags suspicious P/E, EV/EBITDA, ROIC, FCF      |
 |    yield outliers and metric inconsistencies before scores are used       |
+|  + Customer concentration: single-branch flag when all visible contracts  |
+|    originate from one DoD service (e.g., all Navy, all Army)              |
+|  + Program concentration: keyword detection across 13 major DoD programs  |
+|    (F-35, B-21, Columbia-class, HIMARS, THAAD, etc.) — flags when ≥45%  |
+|    of visible contract value ties to a single program                     |
 +----------------------------------+------------------------------------------+
                                    |
 +----------------------------------v------------------------------------------+
@@ -434,6 +439,22 @@ report sections. They're derived from composite scores, base MoS, and bear-case 
   flags appear in Red Flags for visibility and are ⚠️-prefixed so analysts can distinguish
   data quality alerts from fundamental concerns.
 
+- **Customer concentration detection** — When all visible contracts for a company originate from
+  a single DoD branch (e.g., all Navy, all Army, all USAF) and the sample size is ≥3 contracts,
+  a flag is appended to Red Flags: *"Single-customer concentration: all N contracts from NAVY.
+  Revenue is vulnerable to that service's budget decisions."* This is a risk dimension the raw
+  score does not penalize directly — the flag surfaces it for analyst review. Multi-branch
+  customers (≥3 branches) receive a small stability credit in the DoD Stability component.
+
+- **Program concentration detection** — Contract descriptions are scanned against 13 major DoD
+  programs (F-35/JSF, B-21, Columbia-class SSBN, Virginia-class SSN, HIMARS, Patriot/LTAMDS,
+  THAAD, Aegis, GPS III, KC-46, C-17, Sentinel ICBM, F/A-18 Super Hornet). When ≥45% of visible
+  contract value references a single program, a flag appears in Red Flags: *"Program concentration:
+  ~X% of visible contract value is in the [program] program. Cancellation or restructuring would
+  materially impact the contract pipeline. Verify in latest 10-K backlog disclosures."* This is
+  particularly important for companies like LMT (F-35 ~25% of revenue), where program risk is
+  a known but underappreciated tail risk.
+
 - **Score Stability History (Section 11)** — After the data completeness breakdown, a new table
   shows each company's score range and trend across all historical runs tracked in
   `data/score_history.json`. Columns: Runs tracked | Score Range | Spread (pts) | Trend (▲/▼/→)
@@ -594,7 +615,7 @@ Final Score = Buffett(25%) + Graham(20%) + DoD(20%) + Management(15%) + Catalyst
 | **FCF margin** | 3-year normalized average from EDGAR XBRL (--xbrl flag); falls back to yfinance TTM |
 | **Discount rate** | 9% base +/- adjustments for DoD concentration, moat, leverage, size, profitability |
 | **DoD WACC penalty** | +3% for DoD < 15%, +1% for < 25%, +0.5% for < 40% (commercial revenue risk) |
-| **Growth anchor** | 60% analyst forward consensus + 40% TTM actual (both from yfinance) |
+| **Growth anchor** | 3-source blend: 40% 3yr revenue CAGR + 35% fwd analyst consensus + 25% TTM; graceful fallback when sources are missing |
 | **Growth yr 1-5** | Blended anchor x 60% + sector default x 40%; bear = 40% of anchor; bull = 85% |
 | **Growth yr 6-10** | Mean-reverts toward sector long-run rate |
 | **Terminal growth** | 2.5-3.5% depending on sector and DoD concentration |
@@ -607,8 +628,10 @@ sanity check -- if the current price requires 20%+/yr growth for 10 years, skip 
 
 **The blended growth anchor** prevents two failure modes: (1) using only TTM, which anchors to
 BAH's -6% DOGE revenue drop and produces an unnecessarily pessimistic base case; (2) using only
-forward consensus, which misses current-period headwinds. 60/40 forward/TTM preserves both
-analyst outlook and current reality.
+forward consensus, which misses current-period headwinds. The 3-source blend (40% 3yr CAGR /
+35% forward / 25% TTM) adds a smoothed multi-year anchor that dampens acquisition-year distortions
+and single-quarter anomalies while preserving real-time signals from both analyst outlook and
+current-period results.
 
 ---
 
@@ -715,6 +738,12 @@ These override yfinance only when yfinance returns None:
 - `backlog_to_revenue` — not available from yfinance
 - `moat_rating` — subjective; must be set manually ("Wide" / "Narrow" / "None")
 - `roic` — derived from financial statements; override if yfinance ROIC is unreliable
+- `revenue_cagr_3yr` — 3-year revenue CAGR (%); used as the 40% anchor in the DCF growth blend.
+  Set from SEC filings or earnings releases. Without it, the blend falls back to 2-source.
+- `revenue_growth_forward` — forward year analyst consensus revenue growth (%); 35% anchor weight.
+  Distinct from yfinance's `revenue_growth_1yr` (which is TTM, not forward).
+- `shares_chg_1yr_pct` — 1-year change in diluted share count (positive = dilution, negative = buyback).
+  Feeds Management Quality component; when set explicitly this overrides yfinance's share-count delta.
 
 **Always overrides yfinance:**
 - `earnings_stability_years` — yfinance caps at 4 years; established primes need the real number

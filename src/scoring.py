@@ -476,6 +476,21 @@ def score_dod_stability(
     points += sec_pts
     details.append(f"Sector durability [{sector.value}] (+{sec_pts:.0f})")
 
+    # Customer diversity — single-branch concentration is a funding risk
+    # If all contracts come from one military service, that service's budget
+    # can unilaterally pause or cut the entire revenue stream.
+    if contracts:
+        branches = {(c.branch or c.agency or "").strip().upper() for c in contracts if (c.branch or c.agency)}
+        branches.discard("")
+        if len(branches) == 1 and len(contracts) >= 3:
+            branch_name = next(iter(branches))
+            flags.append(
+                f"Single-customer concentration: all {len(contracts)} visible contracts from "
+                f"{branch_name}. Revenue is vulnerable to that service's budget decisions."
+            )
+        elif len(branches) >= 3:
+            details.append(f"Multi-service customers ({len(branches)} branches) (+0, stability credit)")
+
     score = _clamp(points)
     explanation = (
         f"DoD Stability Score: {score:.0f}/100. "
@@ -1139,6 +1154,40 @@ def score_company(
             f"Share count grew {shares_chg:+.1f}% YoY — dilution is destroying equity value; "
             "check for M&A financing, equity compensation burn, or ongoing raises"
         )
+
+    # Major program concentration check
+    # Detecting a single program dominating the visible contract sample is an important
+    # risk signal — program cancellations or restructurings would hit a disproportionate
+    # share of this company's revenue pipeline.
+    if len(contracts) >= 3:
+        _PROGRAM_KEYWORDS = {
+            "F-35 / JSF": ["f-35", "jsf", "joint strike fighter", "f35"],
+            "F/A-18 Super Hornet": ["f/a-18", "fa-18", "super hornet"],
+            "B-21 Raider": ["b-21", "raider"],
+            "Columbia-class SSBN": ["columbia-class", "columbia class", "ssbn"],
+            "Virginia-class SSN": ["virginia-class", "virginia class", "block iv", "block v submarine"],
+            "C-17 Globemaster": ["c-17", "globemaster"],
+            "KC-46 Tanker": ["kc-46", "pegasus tanker"],
+            "Sentinel ICBM": ["gbsd", "sentinel icbm", "ground based strategic deterrent"],
+            "HIMARS": ["himars", "high mobility artillery"],
+            "Patriot / LTAMDS": ["patriot", "ltamds"],
+            "THAAD": ["thaad"],
+            "Aegis": ["aegis combat system", "aegis weapon"],
+            "GPS III": ["gps iii", "gps block"],
+        }
+        total_cv = sum(c.contract_value or 0 for c in contracts) or 1
+        for program_name, keywords in _PROGRAM_KEYWORDS.items():
+            prog_contracts = [
+                c for c in contracts
+                if any(kw in (c.description or c.raw_text or "").lower() for kw in keywords)
+            ]
+            prog_cv = sum(c.contract_value or 0 for c in prog_contracts)
+            if prog_cv / total_cv >= 0.45 and prog_cv > 50:  # 45%+ and >$50M sample
+                all_flags.append(
+                    f"Program concentration: ~{prog_cv/total_cv*100:.0f}% of visible contract value "
+                    f"is in the {program_name} program. Cancellation or restructuring would "
+                    "materially impact the contract pipeline. Verify in latest 10-K backlog disclosures."
+                )
 
     # Near-term earnings — binary risk to position sizing
     next_earn = getattr(f, "next_earnings_date", None)
