@@ -660,17 +660,16 @@ def _run_watch_loop(args) -> None:
         now_str = datetime.now().strftime("%Y-%m-%d %H:%M")
         print(f"[{now_str}] Run #{iteration}...", end="", flush=True)
         try:
+            # Capture prior-run state BEFORE calling main() — main() overwrites
+            # data/last_scores.json with the current run's scores as one of its
+            # last steps, so loading "last scores" after main() returns reads back
+            # the run that just happened, not the run before it. That made every
+            # comparison below compare this run's state against itself, so no
+            # alert could ever fire regardless of what actually changed.
+            last = _load_last_scores()
             scores = main()
             if scores:
-                last = _load_last_scores()
-                # Re-fetch fundamentals map from last run (stored in last_scores for prices)
-                # Use the scores we just got
-                alerts = []
-                # We need fundamentals_map — re-build a minimal version from last_scores prices
-                # (full fundamentals not returned by main(); alerts use last_scores for prior state)
                 print(f" {len(scores)} companies scored.")
-                last_after = _load_last_scores()
-                # Build prior state from last run's last_scores BEFORE this run
                 alerts_txt = []
                 for s in scores:
                     prev = last.get(s.ticker)
