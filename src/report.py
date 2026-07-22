@@ -448,13 +448,13 @@ def _what_would_change(
     for comp_name, raw, wt, drop_needed in rows[:3]:
         seen_comps.add(comp_name)
         if comp_name == "Graham Value":
-            if f and f.current_price and s.dcf and s.dcf.base_iv:
-                pct_rise_to_flip = (s.final_score - PA_PLUS_FLOOR) / wt / 100 * s.dcf.base_iv
-                new_price = f.current_price + pct_rise_to_flip
+            expansion_price = _estimate_graham_expansion_price(s, f) if f else None
+            if expansion_price and f and f.current_price:
+                pct_rise = (expansion_price / f.current_price - 1) * 100
                 scenarios.append(
-                    f"📈 **Multiple expansion**: If the stock rallies to ~${new_price:.0f} "
-                    f"(+{pct_rise_to_flip:.0f} from ${f.current_price:.0f}), the MoS compresses "
-                    f"and Graham Value score drops ~{drop_needed:.0f} pts → verdict flips to Watchlist. "
+                    f"📈 **Multiple expansion**: If the stock rallies to ~${expansion_price:.0f} "
+                    f"(+{pct_rise:.0f}% from ${f.current_price:.0f}), the MoS compresses "
+                    f"and Graham Value score drops enough to flip the verdict to Watchlist. "
                     "Don't chase momentum; set a maximum entry price and hold discipline."
                 )
             else:
@@ -1048,6 +1048,58 @@ def _estimate_graham_upgrade_price(s: CompanyScore, f) -> Optional[float]:
     return None
 
 
+def _estimate_graham_expansion_price(s: CompanyScore, f) -> Optional[float]:
+    """
+    For a PA+ name, estimate the stock price at which a rally would compress
+    Graham Value enough to flip the verdict below the PA+ threshold (68).
+
+    Mirrors _estimate_graham_upgrade_price but scans upward (multiple expansion
+    compresses P/E, FCF yield, P/B, EV/EBITDA) instead of downward.
+    """
+    from src.scoring import score_graham_value
+
+    if f is None or f.current_price is None or f.current_price <= 0:
+        return None
+
+    score_gap = s.final_score - 68.0
+    if score_gap <= 0:
+        return None
+
+    cur_price = f.current_price
+
+    # Binary-search-style scan: try multipliers from 1.01x to 2.50x rally
+    for mult_10 in range(101, 251):
+        mult = mult_10 / 100.0
+        new_price = cur_price * mult
+
+        f_dict = {field: getattr(f, field, None) for field in f.__dataclass_fields__}
+
+        if f.pe_ratio is not None and f.pe_ratio > 0:
+            f_dict["pe_ratio"] = f.pe_ratio * mult
+        if f.forward_pe is not None and f.forward_pe > 0:
+            f_dict["forward_pe"] = f.forward_pe * mult
+        if f.fcf_yield is not None and f.fcf_yield > 0:
+            f_dict["fcf_yield"] = f.fcf_yield / mult
+        if f.price_to_book is not None and f.price_to_book > 0:
+            f_dict["price_to_book"] = f.price_to_book * mult
+        if f.ev_ebitda is not None and f.ev_ebitda > 0:
+            f_dict["ev_ebitda"] = f.ev_ebitda * mult
+
+        try:
+            f_copy = f.__class__(**f_dict)
+            new_graham_raw, _, _ = score_graham_value(f_copy)
+        except Exception:
+            continue
+
+        graham_delta = new_graham_raw - s.graham_value.raw
+        projected_score = s.final_score + graham_delta * 0.20
+
+        if projected_score < 68.0:
+            return new_price
+
+    return None
+
+
 def _generate_watchlist_upgrade_targets(
     ranked_scores: List[CompanyScore],
     fundamentals_map: Dict,
@@ -1495,6 +1547,7 @@ def _generate_brief_report(
     fundamentals_map: Dict = None,
     macro_context = None,
     score_history: Dict = None,
+    data_source_note: Optional[str] = None,
 ) -> str:
     """
     Condensed executive summary — 1-page PM-ready format.
@@ -1507,6 +1560,8 @@ def _generate_brief_report(
         f"*{run_date} | --brief mode | Full report: `python main.py` without --brief*",
         "",
     ]
+    if data_source_note:
+        lines += [f"> 🔶 **DATA SOURCE FALLBACK:** {data_source_note}", ""]
 
     # Macro context box (compact)
     if macro_context and macro_context.ten_year_yield is not None:
@@ -1620,6 +1675,7 @@ def generate_report(
     portfolio: Dict = None,
     portfolio_size: Optional[float] = None,
     brief: bool = False,
+    data_source_note: Optional[str] = None,
 ) -> str:
     if brief:
         return _generate_brief_report(
@@ -1629,6 +1685,7 @@ def generate_report(
             fundamentals_map=fundamentals_map,
             macro_context=macro_context,
             score_history=score_history,
+            data_source_note=data_source_note,
         )
     run_date = run_date or datetime.now().strftime("%Y-%m-%d %H:%M UTC")
 
@@ -1764,6 +1821,13 @@ def generate_report(
         "> ⚠️ **DISCLAIMER:** Research tool only. Not investment advice. All scores require",
         "> independent verification. Consult a licensed financial advisor before any investment decision.",
         "",
+    ]
+    if data_source_note:
+        lines += [
+            f"> 🔶 **DATA SOURCE FALLBACK:** {data_source_note}",
+            "",
+        ]
+    lines += [
         "---",
         "",
     ]

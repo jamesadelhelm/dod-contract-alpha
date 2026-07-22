@@ -607,6 +607,12 @@ report sections. They're derived from composite scores, base MoS, and bear-case 
   price, confirming the 🛡️ shield. If rates spike +1pp, bear IV drops to ~$339 — below current
   price, the shield breaks. This context is critical before sizing a position.
 
+- **Data Source Fallback Banner** — `--source usaspending` runs that hit a network or API
+  failure silently fell back to the bundled `sample_contracts.json` demo data, with only a
+  console warning that's easy to miss in a scheduled/`--watch` run. The report itself now
+  carries a `🔶 DATA SOURCE FALLBACK` banner in the header (and in `--brief` mode) whenever this
+  happens, so a "live" report can't be mistaken for one backed by real, current contract awards.
+
 ---
 
 ## Scoring Framework
@@ -890,7 +896,9 @@ dod_contract_agent/
 │   └── resolved_cache.json      # Auto-generated EDGAR lookup cache
 ├── tests/
 │   ├── test_scoring.py          # 46 unit tests: scoring components, verdict, flags
-│   └── test_dcf.py              # 31 unit tests: DCF math, WACC, growth blend
+│   ├── test_dcf.py              # 31 unit tests: DCF math, WACC, growth blend
+│   ├── test_signal_strength.py  # 18 unit tests: Signal Strength conviction score
+│   └── test_graham_expansion.py # 5 unit tests: multiple-expansion price estimate
 └── src/
     ├── models.py                # Dataclasses: Contract, CompanyFundamentals, CompanyScore
     ├── fetch_usaspending.py     # USAspending API client (fiscal year mode)
@@ -904,7 +912,7 @@ dod_contract_agent/
     └── edgar.py                 # SEC 10-K extraction (--edgar flag)
 ```
 
-**Run tests:** `pytest tests/ -v` (77 tests: 46 scoring + 31 DCF, all should pass in <1s)
+**Run tests:** `pytest tests/ -v` (100 tests: 46 scoring + 31 DCF + 18 signal strength + 5 Graham expansion, all should pass in <1s)
 
 ---
 
