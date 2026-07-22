@@ -678,7 +678,7 @@ def overlay_xbrl_into_fundamentals(f: "CompanyFundamentals", xbrl: Dict) -> None
 
     # 3-year normalized FCF margin — more reliable than TTM
     if xbrl.get("fcf_margin_3yr") is not None:
-        f.fcf_margin = xbrl["fcf_margin_3yr"]
+        f.free_cash_flow_margin = xbrl["fcf_margin_3yr"]
 
     # 3-year revenue CAGR as narrative context signal.
     # Guard: suppress extreme negative CAGRs that result from corporate restructuring
