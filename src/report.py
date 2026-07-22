@@ -880,12 +880,12 @@ def _conviction_checklist(
         ins_pct = f.insider_net_pct_6m * 100
         if ins_pct >= 10:
             status, detail = "✅", f"Net insider **buying** (+{ins_pct:.0f}% of held shares, 6m) — management aligned with thesis"
-        elif ins_pct <= -20:
-            status, detail = "⚠️", f"Net insider **selling** ({ins_pct:.0f}% of held shares, 6m) — warrants scrutiny (could be planned selling, but verify)"
-            warnings += 1
         elif ins_pct <= -40:
             status, detail = "❌", f"Heavy insider **selling** ({ins_pct:.0f}% of held shares, 6m) — significant insider distribution; re-examine thesis"
             warnings += 2
+        elif ins_pct <= -20:
+            status, detail = "⚠️", f"Net insider **selling** ({ins_pct:.0f}% of held shares, 6m) — warrants scrutiny (could be planned selling, but verify)"
+            warnings += 1
         else:
             status, detail = "✅", f"Insider activity neutral ({ins_pct:+.0f}% net, 6m) — no clear signal"
     else:
