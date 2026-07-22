@@ -216,13 +216,20 @@ def enrich_contracts(contracts: List[Contract]) -> List[Contract]:
     return enriched
 
 
-def load_and_enrich(source: str = "mock", days_back: int = 7) -> List[Contract]:
+def load_and_enrich(source: str = "mock", days_back: int = 7) -> tuple[List[Contract], Optional[str]]:
     """
     Main entry: load contracts from 'mock', 'live' (defense.gov), or 'usaspending'.
     source='usaspending': fetch from USAspending.gov API (best structured data)
     source='live'       : scrape defense.gov HTML (good for same-day announcements)
     source='mock'       : use sample_contracts.json (offline / testing)
+
+    Returns (contracts, fallback_note). fallback_note is None on a clean load; when
+    a requested live source fails and the loader silently falls back to the bundled
+    mock/sample contracts, fallback_note explains what happened so the caller can
+    surface it in the report — a console-only warning is too easy to miss, and a
+    "live" run silently backed by stale demo data is a data-integrity risk.
     """
+    fallback_note = None
     if source == "usaspending":
         try:
             from src.fetch_usaspending import load_from_usaspending
@@ -230,12 +237,16 @@ def load_and_enrich(source: str = "mock", days_back: int = 7) -> List[Contract]:
             raw_contracts = parse_from_json_list(raw_dicts)
         except Exception as e:
             print(f"[parse] USAspending failed ({e}), falling back to mock")
+            fallback_note = (
+                f"USAspending fetch failed ({e}) — this run used the bundled "
+                "sample_contracts.json demo data instead of live contract awards."
+            )
             raw_contracts = parse_from_json()
     elif source == "live":
         raw_contracts = parse_from_dod_html()
     else:
         raw_contracts = parse_from_json()
-    return enrich_contracts(raw_contracts)
+    return enrich_contracts(raw_contracts), fallback_note
 
 
 def parse_from_json_list(raw_list: list) -> List[Contract]:

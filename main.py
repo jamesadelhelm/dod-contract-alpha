@@ -293,8 +293,10 @@ def main():
 
     # ── Step 1: Load and enrich contracts ────────────────────────────────────
     print(f"\n[1/4] Loading contracts (source={args.source})...")
-    contracts = load_and_enrich(source=args.source, days_back=args.days)
+    contracts, data_source_fallback = load_and_enrich(source=args.source, days_back=args.days)
     print(f"      Loaded {len(contracts)} contracts.")
+    if data_source_fallback:
+        print(f"      ⚠️  {data_source_fallback}")
 
     # ── Step 2: Group by ticker ───────────────────────────────────────────────
     print("[2/4] Grouping contracts by company...")
@@ -547,6 +549,7 @@ def main():
             portfolio=portfolio,
             portfolio_size=args.portfolio_size,
             brief=getattr(args, "brief", False),
+            data_source_note=data_source_fallback,
         )
         save_report(report_content, output_path)
         print(f"\nReport → {output_path}")

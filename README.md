@@ -607,6 +607,12 @@ report sections. They're derived from composite scores, base MoS, and bear-case 
   price, confirming the 🛡️ shield. If rates spike +1pp, bear IV drops to ~$339 — below current
   price, the shield breaks. This context is critical before sizing a position.
 
+- **Data Source Fallback Banner** — `--source usaspending` runs that hit a network or API
+  failure silently fell back to the bundled `sample_contracts.json` demo data, with only a
+  console warning that's easy to miss in a scheduled/`--watch` run. The report itself now
+  carries a `🔶 DATA SOURCE FALLBACK` banner in the header (and in `--brief` mode) whenever this
+  happens, so a "live" report can't be mistaken for one backed by real, current contract awards.
+
 ---
 
 ## Scoring Framework
