@@ -1677,6 +1677,14 @@ def generate_report(
     brief: bool = False,
     data_source_note: Optional[str] = None,
 ) -> str:
+    # Store authoritative signal_strength (history-aware) on each CompanyScore so all
+    # sections — including --brief mode, which returns before the full-report body
+    # below — can reference s.signal_strength rather than recomputing inline or
+    # silently showing the dataclass default of 0.
+    for s in ranked_scores:
+        f_ctx_ss = (fundamentals_map or {}).get(s.ticker)
+        s.signal_strength, _ = _compute_conviction_score(s, f_ctx_ss, score_history or {})
+
     if brief:
         return _generate_brief_report(
             ranked_scores=ranked_scores,
@@ -1715,12 +1723,6 @@ def generate_report(
     _tier2_ex = [s for s in _pa_plus if s not in _tier1_ex and _is_not_overvalued(s)]
     # Blocked: PA+ verdict but overvalued by DCF
     _blocked_ex = [s for s in _pa_plus if not _is_not_overvalued(s)]
-
-    # Store authoritative signal_strength (history-aware) on each CompanyScore so all
-    # sections can reference s.signal_strength rather than recomputing inline.
-    for s in ranked_scores:
-        f_ctx_ss = (fundamentals_map or {}).get(s.ticker)
-        s.signal_strength, _ = _compute_conviction_score(s, f_ctx_ss, score_history or {})
 
     _deploy_rows_ex = [(s, *_compute_position_size(s, (fundamentals_map or {}).get(s.ticker))) for s in ranked_scores]
     _total_pct_ex   = sum(pct for _, pct, _ in _deploy_rows_ex if pct > 0)
