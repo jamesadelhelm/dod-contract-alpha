@@ -898,7 +898,11 @@ dod_contract_agent/
 │   ├── test_scoring.py          # 46 unit tests: scoring components, verdict, flags
 │   ├── test_dcf.py              # 31 unit tests: DCF math, WACC, growth blend
 │   ├── test_signal_strength.py  # 18 unit tests: Signal Strength conviction score
-│   └── test_graham_expansion.py # 5 unit tests: multiple-expansion price estimate
+│   ├── test_graham_expansion.py # 5 unit tests: multiple-expansion price estimate
+│   ├── test_edgar_overlay.py    # 10 unit tests: XBRL overlay field mapping
+│   ├── test_classify_sector.py  # 9 unit tests: sector keyword + fallback matching
+│   ├── test_narrative_risks.py  # 3 unit tests: key-risks narrative flags
+│   └── test_integration_smoke.py # 5 end-to-end tests: full CLI pipeline (mock data)
 └── src/
     ├── models.py                # Dataclasses: Contract, CompanyFundamentals, CompanyScore
     ├── fetch_usaspending.py     # USAspending API client (fiscal year mode)
@@ -912,7 +916,8 @@ dod_contract_agent/
     └── edgar.py                 # SEC 10-K extraction (--edgar flag)
 ```
 
-**Run tests:** `pytest tests/ -v` (100 tests: 46 scoring + 31 DCF + 18 signal strength + 5 Graham expansion, all should pass in <1s)
+**Run tests:** `pytest tests/ -v` (127 tests: 46 scoring + 31 DCF + 18 signal strength + 5 Graham expansion +
+10 XBRL overlay + 9 sector classification + 3 narrative risks + 5 end-to-end pipeline smoke tests, ~1s)
 
 ---
 
