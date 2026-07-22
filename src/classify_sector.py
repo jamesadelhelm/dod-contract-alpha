@@ -33,13 +33,17 @@ def classify_sector(contract: Contract) -> Sector:
             scores[sector_name] = hits
 
     if not scores:
-        # Try awardee-based heuristics
+        # Try awardee-based heuristics. Uses the same word-boundary matching as
+        # the primary keyword pass above — plain substring checks here would
+        # misclassify e.g. "Township Solutions Inc" as Shipbuilding ("ship" is
+        # a substring of "township") or "Cybernetics Analytics LLC" as
+        # Cybersecurity ("cyber" is a substring of "cybernetics").
         awardee = contract.awardee_name.lower()
-        if any(w in awardee for w in ["health", "medical", "pharma", "hospital", "clinical"]):
+        if any(_kw_hit(w, awardee) for w in ["health", "medical", "pharma", "hospital", "clinical"]):
             return Sector.MILITARY_HEALTHCARE
-        if any(w in awardee for w in ["ship", "marine", "naval"]):
+        if any(_kw_hit(w, awardee) for w in ["ship", "marine", "naval"]):
             return Sector.SHIPBUILDING
-        if any(w in awardee for w in ["cyber", "security solutions"]):
+        if any(_kw_hit(w, awardee) for w in ["cyber", "security solutions"]):
             return Sector.CYBERSECURITY
         return Sector.UNCLEAR
 
