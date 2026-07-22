@@ -1490,7 +1490,7 @@ def _generate_narrative(
     rev_growth = getattr(f, "revenue_growth_1yr", None)
     if rev_growth is not None and rev_growth < -3:
         risks.append(f"Revenue shrinking ({rev_growth:.1f}% YoY) — confirm whether cycle trough or secular decline")
-    op_delta = getattr(f, "op_margin_delta", None)
+    op_delta = getattr(f, "operating_margin_delta", None)
     if op_delta is not None and op_delta < -3:
         risks.append(f"Operating margin compressed {op_delta:.1f}pp YoY — cost discipline or pricing power concern")
     if not risks:
