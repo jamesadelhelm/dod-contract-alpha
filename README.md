@@ -33,7 +33,7 @@ tickers, fetching live fundamentals, running a DCF, and ranking every company by
 +----------------------------------v------------------------------------------+
 |  STEP 2: RESOLVE                                                            |
 |  Awardee name -> public ticker (3-pass pipeline)                           |
-|   Pass 1: 210-entry curated subsidiary map  (ELECTRIC BOAT -> GD)         |
+|   Pass 1: 228-entry curated subsidiary map  (ELECTRIC BOAT -> GD)         |
 |   Pass 2: Prefix/fuzzy match  (HUMANA GOVERNMENT BUSINESS -> HUM)         |
 |   Pass 3: SEC EDGAR company index fallback  (~10,000 tickers, cached)     |
 |  Unresolved names are flagged as private/unknown (shown in Coverage Gap)  |
@@ -734,7 +734,7 @@ Automatically flagged and surfaced in Section 3 of the report:
 
 USAspending awardee names are often subsidiary or division names. Resolution runs in 3 passes:
 
-1. **Curated map** — 210-entry `data/ticker_map.yaml`: 161 public tickers, 49 explicit private suppressions
+1. **Curated map** — 228-entry `data/ticker_map.yaml`: 179 public tickers, 49 explicit private suppressions
 2. **Prefix/fuzzy match** — detects parent brand at start of subsidiary name. Threshold: similarity ≥ 0.55 when matched key ≥ 6 chars
 3. **EDGAR fallback** — full SEC company index (~10,000 tickers), cached locally
 
