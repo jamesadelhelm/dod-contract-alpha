@@ -44,9 +44,9 @@ tickers, fetching live fundamentals, running a DCF, and ranking every company by
 |   yfinance (live):  price, P/E, Fwd P/E, EV/EBITDA, FCF yield, short %,  |
 |                     share count chg, dividend yield, earnings calendar,    |
 |                     analyst consensus, 52-week range, ROIC (derived)      |
-|   Curated overlay:  44-entry database -- DoD revenue %, gov revenue %,    |
+|   Curated overlay:  46-entry database -- DoD revenue %, gov revenue %,    |
 |                     backlog/revenue, moat rating, earnings stability yrs   |
-|                     (supplements or corrects yfinance for 44 defense and  |
+|                     (supplements or corrects yfinance for 46 defense and  |
 |                     adjacent companies including RTX, BA, LHX, CACI, HII,  |
 |                     HON, OSK, CNC, UNH, VSAT, AVAV, TXT, and all primes)  |
 |  Sector classifier: keyword voting on contract descriptions -> 15 sectors |
