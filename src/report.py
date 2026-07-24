@@ -2670,7 +2670,12 @@ def generate_report(
 
             # Return range (3-yr annualized)
             def _ann3(iv):
-                if iv and cur > 0:
+                # iv <= 0 must be excluded, not just `iv` truthy — a negative
+                # bear-case intrinsic value is a real, reachable DCF outcome
+                # (see dcf.py's EV-to-equity adjustment), and a fractional
+                # power of a negative base produces a Python complex number
+                # that formats silently instead of raising (e.g. "-69+54j%").
+                if iv is not None and iv > 0 and cur > 0:
                     div = (f_ctx.dividend_yield or 0.0) / 100.0
                     return ((iv / cur) ** (1/3) - 1 + div) * 100
                 return None
