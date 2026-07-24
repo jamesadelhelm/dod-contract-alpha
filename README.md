@@ -889,7 +889,7 @@ dod_contract_agent/
 ├── config.py                    # Weights, thresholds, sector keywords, specialist tier
 ├── requirements.txt
 ├── data/
-│   ├── ticker_map.yaml          # Curated awardee → ticker map (210 entries)
+│   ├── ticker_map.yaml          # Curated awardee → ticker map (228 entries)
 │   ├── mock_fundamentals.json   # DoD%, backlog, moat overlay (edit to improve scores)
 │   ├── sample_contracts.json    # Mock contracts for offline testing
 │   ├── edgar_company_index.json # Auto-generated SEC company index cache
@@ -902,7 +902,14 @@ dod_contract_agent/
 │   ├── test_edgar_overlay.py    # 10 unit tests: XBRL overlay field mapping
 │   ├── test_classify_sector.py  # 9 unit tests: sector keyword + fallback matching
 │   ├── test_narrative_risks.py  # 3 unit tests: key-risks narrative flags
-│   └── test_integration_smoke.py # 5 end-to-end tests: full CLI pipeline (mock data)
+│   ├── test_integration_smoke.py # 5 end-to-end tests: full CLI pipeline (mock data)
+│   ├── test_conviction_checklist.py # 4 unit tests: pre-deployment checklist thresholds
+│   ├── test_brief_signal_strength.py # 2 unit tests: --brief mode signal strength wiring
+│   ├── test_thesis_negative_bear_iv.py # 2 unit tests: negative-IV thesis formatting
+│   ├── test_watch_loop_ordering.py # 1 unit test: --watch state-capture ordering
+│   ├── test_data_integrity.py   # 1 test: gov% vs DoD% cross-file invariant
+│   ├── test_mock_data_consistency.py # 1 test: market cap = shares × price invariant
+│   └── test_readme_*.py         # 2 tests: README entry counts stay in sync with data files
 └── src/
     ├── models.py                # Dataclasses: Contract, CompanyFundamentals, CompanyScore
     ├── fetch_usaspending.py     # USAspending API client (fiscal year mode)
@@ -916,8 +923,10 @@ dod_contract_agent/
     └── edgar.py                 # SEC 10-K extraction (--edgar flag)
 ```
 
-**Run tests:** `pytest tests/ -v` (127 tests: 46 scoring + 31 DCF + 18 signal strength + 5 Graham expansion +
-10 XBRL overlay + 9 sector classification + 3 narrative risks + 5 end-to-end pipeline smoke tests, ~1s)
+**Run tests:** `pytest tests/ -v` (140 tests: 46 scoring + 31 DCF + 18 signal strength + 5 Graham expansion +
+10 XBRL overlay + 9 sector classification + 4 conviction checklist + 3 narrative risks + 5 end-to-end
+pipeline smoke tests + 2 brief-mode signal strength + 2 negative-bear-IV thesis + 1 watch-loop ordering +
+1 data integrity (gov%/DoD%) + 1 mock data consistency (market cap) + 2 README/data sync checks, ~1s)
 
 ---
 
